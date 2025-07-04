@@ -26,8 +26,7 @@ pros::adi::Potentiometer autonSelector(6);
 // Team Selector Digital Input (e.g., bumper switch) on ADI port 7
 pros::adi::DigitalIn teamSelector(7);
 
-// Distance Sensors (Note: All on port 3. If these are separate physical sensors,
-// they must be on different physical ports. This might be a placeholder for multiple sensors.)
+// Distance Sensors (for odometry resets)
 pros::Distance rightDistance(3);
 pros::Distance leftDistance(3);
 pros::Distance frontDistance(3);
