@@ -1,76 +1,127 @@
-# VEX V5 PROS Robot Code - 2602K RobotCode
+# 2602K KryptoKnights VEX V5 Robot Code (2025-2026 Season)
 
-This project provides a clean and commented starting point for a VEX V5 robot using the PROS and LemLib libraries. It sets up a basic drivetrain, integrates advanced odometry for precise movement, and includes a foundation for running autonomous routines and basic driver control.
+## 1. Project Overview
 
-## What This Code Does
+This repository contains the PROS (PROS Robot Operating System) C++ code for the 2602K KryptoKnights VEX V5 Competition Robot for the 2025-2026 season. The code leverages the LemLib library for advanced odometry, precise motion profiling, and robust chassis control, aiming for highly consistent and reliable autonomous routines and intuitive driver control.
 
-At its core, this code makes your robot drive smoothly and accurately using LemLib. It allows you to select different autonomous routines before a match and gives you manual control over the drivetrain during the driver control period. While currently focused on driving, it's designed to be easily expandable for more robot mechanisms.
+**Key Features:**
+* **LemLib-based Odometry & Motion Control:** Utilizes an IMU and tracking wheels for accurate position tracking and path following.
+* **Modular Drivetrain:** Configurable motor groups for left and right sides.
+* **Autonomous Selector:** Allows selection of 10 different autonomous routines using a potentiometer.
+* **Team Selector:** Simple switch/potentiometer input to select alliance color (Red/Blue), enabling adaptive autonomous paths.
+* **Real-time Telemetry:** Displays robot pose (X, Y, Theta) directly on the V5 Brain screen.
+* **Arcade Drive:** Standard and intuitive driver control scheme.
 
-## How the Robot is Set Up (Hardware & Configuration)
+## 2. Setup and Installation
 
-The `main.cpp` file begins by including necessary libraries like `main.h` (the main PROS header) and `lemlib/api.hpp` for the LemLib functions.
+### Prerequisites
+* **PROS Editor/CLI:** Ensure you have the PROS CLI installed and configured.
+    * [PROS Installation Guide](https://pros.cs.purdue.edu/v5/getting-started/installation.html)
+* **VS Code:** Recommended IDE for PROS development.
+    * [VS Code Installation](https://code.visualstudio.com/download)
+    * PROS VS Code Extension is highly recommended.
+* **VEX V5 Robot Brain:** With updated firmware.
 
-It then declares all the **robot's hardware**:
-* A `pros::Controller` is set up for driver input.
-* The **drivetrain motors** are defined, indicating which ports they're on and their gearing (blue for 600 RPM motors). Negative port numbers usually mean the motor's direction is reversed.
-* For **accurate odometry (tracking the robot's position)**, an `Imu` (Inertial Measurement Unit) is used to sense heading, and two `pros::Rotation` sensors act as tracking wheels to measure linear movement.
-* A `pros::adi::Potentiometer` and a `pros::adi::DigitalIn` are included to allow for selecting autonomous routines and team side before a match.
-* Placeholder `pros::Distance` sensors are defined, ready to be used if your robot has them.
+### Cloning the Repository
+1.  Open a terminal or command prompt.
+2.  Navigate to your desired directory.
+3.  Clone the repository:
+    ```bash
+    git clone [https://github.com/Pahlaj-Sharma/2602K-KryptoKnights_Code_2025-2026.git](https://github.com/Pahlaj-Sharma/2602K-KryptoKnights_Code_2025-2026.git)
+    cd 2602K-KryptoKnights_Code_2025-2026
+    ```
 
-Following hardware definitions, **LemLib is configured**:
-* A `lemlib::Drivetrain` object tells LemLib about your robot's wheels, their size, and how fast the motors can spin.
-* `lemlib::OdomSensors` brings together your IMU and tracking wheels, allowing LemLib to constantly calculate your robot's precise X, Y, and heading.
-* `lemlib::ControllerSettings` objects define **PID (Proportional-Integral-Derivative) constants**. These are crucial for LemLib to control your robot's movement accurately, both for driving straight (`lateral_controller`) and turning (`angular_controller`). They help the robot reach its target smoothly without overshooting.
-* Finally, a `lemlib::Chassis` object is created, combining all these drivetrain, sensor, and PID settings into one powerful object that handles all your robot's driving and odometry needs.
+### Building and Uploading
+1.  **Open in VS Code:**
+    ```bash
+    code .
+    ```
+2.  **Initialize PROS Project (if necessary):**
+    If this is a new clone and not yet a PROS project (e.g., if you only copied `src` and `include` folders), you may need to initialize it:
+    ```bash
+    pros conduct init
+    ```
+3.  **Install LemLib:**
+    This project uses LemLib. Ensure it's installed as a PROS dependency:
+    ```bash
+    pros conduct install lemlib@0.4.7 # Or the latest stable version you are using
+    ```
+    *Note: If you encounter compiler errors related to C++11 features (like brace-enclosed initializer lists), you might need to manually add compiler flags to your `project.pros` file or `Makefile` (e.g., `-std=c++11` or `-std=gnu++11`).*
+4.  **Build the Project:**
+    ```bash
+    pros make
+    ```
+5.  **Upload to V5 Brain:**
+    Connect your V5 Brain to your computer via USB.
+    ```bash
+    pros upload
+    ```
 
-Some simple **global variables** like `team` and `autonSelect` are set up to keep track of match settings, like which autonomous routine is chosen.
+## 3. Hardware Overview
 
-## How the Code Runs (Program Flow)
+* **V5 Brain:** The central control unit.
+* **V5 Motors:** Blue cartridge (600 RPM) motors for drivetrain.
+    * Left Motors: Ports 14, 15, 16 (reversed)
+    * Right Motors: Ports 11, 13, 12
+* **V5 Inertial Sensor (IMU):** Port 2 (for odometry heading).
+* **V5 Rotation Sensors:**
+    * Horizontal Tracking Wheel: ADI Port -3 (reversed)
+    * Vertical Tracking Wheel: ADI Port 17
+* **V5 Potentiometers:**
+    * Autonomous Selector: ADI Port 6
+    * Team Selector: ADI Port 7 (used as a 2-state switch)
+* **V5 Distance Sensors:** Ports 3 (ensure these are configured correctly if used for odometry resets or object detection).
 
-VEX PROS organizes robot code into specific functions that run at different times:
+## 4. Software Overview
 
-### `initialize()`
-This function runs once when the robot starts up. Here, the code:
-* Sets your drive motors to `COAST` mode.
-* Resets the odometry tracking wheel encoders.
-* Initializes the VEX Brain's LCD screen.
-* **Calibrates the LemLib chassis**, which is very important for accurate odometry (especially for the IMU).
-* It also starts a background task to constantly **display your robot's X, Y, and heading on the brain screen**, which is super helpful for debugging odometry.
+The code is structured around standard PROS project conventions.
 
-### `disabled()`
-This short function runs continuously whenever the robot is disabled (e.g., between matches). It's a good spot for any cleanup or to ensure motors are stopped.
+* **`src/main.cpp`**: The main application file.
+    * **Motor & Sensor Definitions**: All hardware components are instantiated here.
+    * **LemLib Configuration**: `Drivetrain`, `TrackingWheel`s, `OdomSensors`, `ControllerSettings` (PID tunings), and `Chassis` objects are defined for motion control.
+    * **`initialize()`**: Called once when the robot starts. Handles motor brake modes, sensor resets, LCD initialization, and LemLib calibration. Also sets up a real-time screen telemetry task.
+    * **`disabled()`**: Called when the robot is disabled. Good for resetting variables.
+    * **`competition_initialize()`**: Runs after `initialize()` and before `autonomous()` or `opcontrol()`. This is where the autonomous and team selection logic runs, continuously updating the V5 Brain screen based on potentiometer readings.
+    * **`autonomous()`**: Called when the robot is in autonomous mode. It selects and executes the chosen autonomous routine based on `autonSelect`.
+    * **`opcontrol()`**: Called when the robot is in driver control mode. Implements arcade drive using controller joysticks.
+    * **`autons` namespace**: Contains individual autonomous routine functions (e.g., `autons::auton1()`).
 
-### `competition_initialize()`
-This function runs after `initialize()` and before `autonomous()` or `opcontrol()`. It's typically used for things like:
-* **Autonomous selection**: The code includes a *commented-out example* of a sophisticated autonomous selector. You can uncomment and adapt this section to use the potentiometer and digital input to choose different autonomous routines and display them on the brain screen. This setup is often preferred over putting selection logic in `initialize()` so that it can be easily updated after the robot has finished its initial boot-up.
+## 5. Autonomous Selection and Modes
 
-### `autonomous()`
-This is where your robot performs its pre-programmed actions without driver input.
-* It checks the `autonSelect` variable (which would be set in `competition_initialize` or `initialize`) and calls the corresponding autonomous routine from the `autons` namespace.
-* Currently, if `autonSelect` is 1, it runs `autons::auton1()`.
+The robot features two main selectors managed in `competition_initialize()`:
 
-### `opcontrol()`
-This is the driver control period. The code continuously runs a loop that:
-* Reads joystick inputs from the `pros::Controller`.
-* Uses `chassis.arcade()` to control the drivetrain. This means the left joystick's up/down movement controls forward/backward, and the right joystick's left/right movement controls turning.
-* Includes a small `pros::delay(25)` to prevent the code from hogging the CPU, allowing other PROS tasks to run smoothly.
-* **Note**: This version of the driver control code is simplified and does not contain logic for any additional mechanisms like arms, intakes, or mobile goal systems. You would add that functionality here as your robot design progresses.
+### Autonomous Selector
+* Uses a potentiometer on **ADI Port 6**.
+* The potentiometer's 0-330 range is divided into 10 segments, each corresponding to an autonomous routine from 1 to 10.
+* Turn the potentiometer to select the desired autonomous routine before the match starts. The selected routine name will be displayed on the V5 Brain screen.
 
-## Autonomous Routines (`namespace autons`)
+### Team Selector
+* Uses a potentiometer on **ADI Port 7**.
+* This potentiometer is treated as a simple switch:
+    * `0-165` degrees: "RED" team.
+    * `166-330` degrees: "BLUE" team.
+* The selected team color is displayed on the V5 Brain screen. Your autonomous routines can use this `teamtype` string (or the `selectedTeam` integer) to adapt their paths for the red or blue alliance.
 
-The `autons` namespace is where all your specific autonomous paths are defined. This keeps your autonomous code organized.
+## 6. Driver Control
 
-* **`autons::auton1()`**:
-    * This is set up as a "Skills" routine example.
-    * It first sets the robot's starting position (`chassis.setPose(0, 0, 0)`).
-    * Then, it uses `chassis.moveToPose()` to command the robot to drive to a specific X, Y coordinate and end at a particular heading, with parameters to fine-tune its motion.
+* **Arcade Drive:**
+    * **Left Joystick (Y-axis):** Controls forward and backward movement.
+    * **Right Joystick (X-axis):** Controls turning.
 
-## Getting Started & Expanding
+## 7. Troubleshooting and Notes
 
-1.  **Configure Ports**: Make sure all motor and sensor ports in `main.cpp` accurately reflect your robot's wiring.
-2.  **Tune PIDs**: For precise movement, you'll need to tune the `lateral_controller` and `angular_controller` PID values in `main.cpp` based on your robot's weight, friction, and motor power. LemLib's documentation provides guides for this.
-3.  **Enable Autonomous Selector**: If you want to use the included selector, uncomment and customize the `competition_initialize()` section.
-4.  **Add Subsystem Control**: Implement code in `opcontrol()` for any additional robot mechanisms (e.g., an arm, claw, or intake).
-5.  **Create More Autons**: Duplicate and modify `autons::auton1()` to create additional autonomous routines as needed for your competition strategy.
+* **"C++11 standard" / "brace-enclosed initializer list" errors:** If you encounter errors related to C++11 features (specifically with `chassis.moveToPose` parameters like `{ .lead = 0.7, .minSpeed = 60 }`), ensure your PROS project is configured to use a C++ standard of C++11 or newer. You might need to add `-std=c++11` or `-std=gnu++11` to your compiler flags in `project.pros` or `Makefile`.
+    * **Workaround for LemLib `moveToPose`:** If updating compiler flags doesn't work, you may need to explicitly create the parameter struct:
+        ```cpp
+        lemlib::MoveToPointParams params = {.lead = 0.7, .minSpeed = 60};
+        chassis.moveToPose(45, 24, 90, 4500, params);
+        ```
+* **Potentiometer Calibration:** The exact analog values for your potentiometer may vary slightly. Test your potentiometer's full range to fine-tune the thresholds for autonomous and team selection.
+* **IMU Calibration:** The `chassis.calibrate()` function will hold the robot still for a few seconds during `initialize()`. Ensure the robot is stationary during this process for accurate odometry.
+* **Git Issues:** If you encounter `non-fast-forward` or `divergent branches` errors when pushing to GitHub, remember to `git pull origin main` *before* `git push origin main` to synchronize your local and remote branches.
 
-This code provides a strong, well-structured foundation for your VEX robot, ready for further development!
+## 8. Contributors
+
+* Pahlaj Sharma (psharma1)
+
+---
