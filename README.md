@@ -1,4 +1,4 @@
-# VEX V5 PROS Robot Code - Basic Chassis and Autonomous Control
+# VEX V5 PROS Robot Code - 2602K RobotCode
 
 This project provides a clean and commented starting point for a VEX V5 robot using the PROS and LemLib libraries. It sets up a basic drivetrain, integrates advanced odometry for precise movement, and includes a foundation for running autonomous routines and basic driver control.
 

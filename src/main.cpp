@@ -1,7 +1,8 @@
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
-#include <map>    // Required for std::map (used in commented-out auton selector)
-#include <string> // Required for std::string (used in commented-out auton selector)
+#include "pros/adi.hpp"
+#include <map>
+#include <string>
 
 // --- Controller Definition ---
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
@@ -24,7 +25,7 @@ pros::Rotation vertical_encoder(17);
 // Autonomous Selector Potentiometer on ADI port 6
 pros::adi::Potentiometer autonSelector(6);
 // Team Selector Digital Input (e.g., bumper switch) on ADI port 7
-pros::adi::DigitalIn teamSelector(7);
+pros::adi::Potentiometer teamSelector(7);
 
 // Distance Sensors (for odometry resets)
 pros::Distance rightDistance(3);
@@ -81,6 +82,8 @@ void initialize() {
 
     pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
     chassis.calibrate();     // Calibrate the LemLib odometry sensors (IMU, encoders)
+	teamSelector.calibrate(); // Calibrate team selector
+	autonSelector.calibrate(); // Calibrate autonomous selector
     
     // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
     pros::Task screen_task([&]() {
@@ -90,7 +93,7 @@ void initialize() {
             pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Y: %f", chassis.getPose().y);      // Y coordinate
             pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta); // Heading (angle)
 
-            pros::delay(20); // Small delay to save resources and prevent blocking
+            pros::delay(25); // Small delay to save resources and prevent blocking
         }
     });
 
@@ -119,16 +122,16 @@ void competition_initialize() {
     // The following code block was commented out in the original submission.
     // It provides an example of how to implement an autonomous selector using
     // a team selector switch and a potentiometer, displaying options on the screen.
-    /*
-    std::string teamtype = "RED"; // Initialize team type string
+    std::string teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE"; // Initialize team type string
+	autonSelect = std::clamp(autonSelector.get_value() / 33, 1, 10); // Initialize autonomous value
     // Map to store autonomous routine descriptions keyed by their selection number
     std::map<int, std::string> auton_map = {
-        {1, "SKILLS, POSITION FACING TOWARDS ALLIANCE STAKE"},
-        {2, "NEGATIVE SIDE AWP GETS ALLIANCE STAKE, POSITION FACING TOWARDS THE ALLIANCE STAKE"},
-        {3, "POSITIVE SIDE AWP GETS MIDDLE RINGS, POSITION FACING TOWARDS GOAL"},
-        {4, "NEGATIVE SIDE ELIMS GETS ALLIANCE STAKE, POSITION FACING TOWARDS GOAL"},
-        {5, "POSITIVE SIDE ELIMS GETS MIDDLE RINGS, POSITION FACING TOWARDS GOAL"},
-        {6, "SOLO AWP GETS AWP SOLO, POSITION ALLIANCE STAKE ON NEG SIDE"},
+        {1, "Auton1"},
+        {2, "Auton2"},
+        {3, "Auton3"},
+        {4, "Auton4"},
+        {5, "Auton5"},
+        {6, "Auton6"},
         {7, "Auton7"},
         {8, "Auton8"},
         {9, "Auton9"},
@@ -137,27 +140,17 @@ void competition_initialize() {
 
     while (true) {
         // Toggle team (RED/BLUE) on new press of the teamSelector digital input
-        if (teamSelector.get_new_press()) {
-            team = (team + 1) % 2; // Cycle between 0 and 1
-            if (team == 1) {
-                teamtype = "RED";
-            } else {
-                teamtype = "BLUE";
-            }
-        }
-
+        teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
+		autonSelect = std::clamp(autonSelector.get_value() / 33, 1, 10);
         // Display selected autonomous routine description on the screen
         // autonSelect should be set by reading the autonSelector potentiometer here,
         // typically in a range-based 'if/else if' structure.
-        // Example: int potValue = autonSelector.get_value();
-        // if (potValue < 400) { autonSelect = 1; } else if (potValue < 800) { autonSelect = 2; } ...
-        pros::screen::print(pros::E_TEXT_MEDIUM, 1, auton_map[autonSelect].c_str());
-        pros::screen::print(pros::E_TEXT_MEDIUM, 3, teamtype.c_str()); // Display selected team type
+        pros::screen::print(pros::E_TEXT_MEDIUM, 5, auton_map[autonSelect].c_str());
+        pros::screen::print(pros::E_TEXT_MEDIUM, 6, teamtype.c_str()); // Display selected team type
 
         pros::delay(150); // Delay to prevent rapid updates and allow screen to be read
         pros::screen::erase(); // Clear the screen for the next update
     }
-    */
 }
 
 // --- Namespace for Autonomous Paths ---
