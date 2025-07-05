@@ -70,9 +70,11 @@ To run an autonomous routine:
 
 ## 5. Changelog / Version History
 
+# Changelog: 2602K KryptoKnights VEX V5 Robot Code
+
 This document provides a chronological record of significant changes, refactorings, and bug fixes applied to the 2602K VEX V5 Robot Code.
 
-### Version 1.0.0 - Initial Codebase (Pre-July 2025 Refactor)
+## Version 1.0.0 - Initial Codebase (Pre-July 2025 Refactor)
 
 * **Initial State:** Monolithic `main.cpp` containing all drivetrain, sensor, LemLib, autonomous, and driver control logic.
 * **Features:**
@@ -83,7 +85,7 @@ This document provides a chronological record of significant changes, refactorin
     * Motors, IMU, rotation sensors, potentiometers, and distance sensors defined directly in `main.cpp`.
 * **Known Issues:** Large `main.cpp` file, making it less modular and harder to maintain or expand.
 
-### Version 1.1.0 - Modular Refactoring Attempt (July 4, 2025)
+## Version 1.1.0 - Modular Refactoring Attempt (July 4, 2025)
 
 * **Changes:**
     * Attempted to introduce a `Robot` class (`robot.hpp`, `robot.cpp`) to encapsulate hardware and LemLib objects for better organization.
@@ -92,7 +94,7 @@ This document provides a chronological record of significant changes, refactorin
 * **Issues Introduced:**
     * **"Use of undeclared identifier 'robot'"**: This error occurred because `main.cpp` attempted to use a global `robot` object that was declared in `robot.hpp` but was not correctly linked or defined due to the incomplete refactoring or misunderstanding of the intended scope.
 
-### Version 1.2.0 - Refactored for Flat Structure & Bug Fixes (July 4-5, 2025)
+## Version 1.2.0 - Refactored for Flat Structure & Bug Fixes (July 4-5, 2025)
 
 * **Changes:**
     * **Reverted `main.cpp` to a flatter structure:** Removed the `Robot` class concept and re-integrated direct definitions of motors, sensors, and LemLib objects into `main.cpp`.
@@ -106,7 +108,20 @@ This document provides a chronological record of significant changes, refactorin
     * C++ standard (`gnu++20`) now persists correctly.
 * **Current Status:** Stable and organized codebase for continued development.
 
-### Version 1.2.1 - Cache Management Notes (July 5, 2025)
+## Version 1.2.1 - Cache Management Notes (July 5, 2025)
 
 * **Change:** Clarified that the `.cache` folder can be safely deleted to free up disk space or resolve minor build/IDE issues, as it only contains temporary build artifacts and indexing data.
 * **Outcome:** Improved understanding of project file management.
+
+## Version 1.3.0 - Cross-File Access & UI Optimization (July 5, 2025)
+
+* **Features/Improvements:**
+    * **Enabled `chassis` access in `autons.cpp`:** Added `extern lemlib::Chassis chassis;` and `#include "lemlib/api.hpp"` to `include/main.h` to allow `autons.cpp` to properly access the globally defined `chassis` object.
+    * **Enabled `selectedAuton` access in `autons.cpp`:** Added `extern int selectedAuton;` to `include/main.h` to allow `autons.cpp` to use the global autonomous selection variable.
+    * **Optimized `competition_initialize()` function:**
+        * Moved `std::map` initialization outside the `while` loop to prevent redundant re-creation on every iteration, significantly improving efficiency.
+        * Refined variable declarations (`potValue`, `selectedAuton`, `teamtype`) to occur only once inside the `while` loop, avoiding unnecessary re-declarations.
+    * **Improved Autonomous Selection Logic:** Switched the `autonomous()` function's `if-else if` chain to a more readable and scalable `switch` statement for better autonomous routine dispatch.
+* **Outcome:** Enhanced code modularity, improved runtime performance of the pre-autonomous selector, and cleaner autonomous routine dispatch.
+
+---
