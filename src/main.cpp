@@ -135,17 +135,15 @@ void competition_initialize() {
 
         // Display selected autonomous routine description on the screen
         // --- Optimization 3: Use 'selectedAuton' for consistency ---
-        pros::screen::print(pros::E_TEXT_MEDIUM, 5, auton_map[selectedAuton].c_str());
+        std::string autonDisplay = "Autonomous: " + auton_map[selectedAuton];
+        std::string teamDisplay = "Team: " + teamtype;
+        pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", autonDisplay);
         
         // Display selected team type
-        pros::screen::print(pros::E_TEXT_MEDIUM, 6, teamtype.c_str()); 
+        pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", teamDisplay); 
 
         // Add a small delay to control update rate and prevent CPU hogging.
-        pros::delay(150); 
-        
-        // Clear the screen for the next update.
-        // Note: For only two lines, flickering might occur with erase.
-        pros::screen::erase(); 
+        pros::delay(200);
     }
 }
 
@@ -167,22 +165,24 @@ void autonomous() {
         case 1:
             auton1(); break;
         case 2:
-            auton1(); break;
+            auton2(); break;
         case 3:
-            auton1(); break;
+            auton3(); break;
         case 4:
-            auton1(); break;
+            auton4(); break;
         case 5:
-            auton1(); break;
+            auton5(); break;
         case 6:
-            auton1(); break;
+            auton6(); break;
         case 7:
-            auton1(); break;
+            auton7(); break;
         case 8:
-            auton1(); break;
+            auton8(); break;
         case 9:
-            auton1(); break;
+            auton9(); break;
         case 10:
+            auton10(); break;
+        default:
             auton1(); break;
     }
 }
