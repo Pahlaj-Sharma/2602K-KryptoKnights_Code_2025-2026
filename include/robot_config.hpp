@@ -61,8 +61,26 @@
 #define ANGULAR_EXIT_TIME 0    // Time (ms) robot must be within exit_err to exit early
 #define ANGULAR_MIN_SPEED 0    // Minimum speed the robot will turn at
 
-// --- Team Selector Constants ---
-#define TEAM_RED_MAX_VALUE 165  // Potentiometer value threshold for selecting the RED team.
-                                // Values <= 165 are RED, > 165 are BLUE.
+// --- Robot Physical Dimensions (approximate, for odometry resets) ---
+// Distance from robot's center to its front/back edge
+#define ROBOT_HALF_LENGTH_INCHES 9.0 // Example: if your robot is 18 inches long
+// Distance from robot's center to its left/right edge
+#define ROBOT_HALF_WIDTH_INCHES  9.0 // Example: if your robot is 18 inches wide
+
+// --- Distance Sensor Offsets ---
+// Distance from the actual distance sensor reading point to the closest physical edge of the robot
+// in that direction. E.g., if your front sensor is 1 inch behind the absolute front of the robot.
+#define DS_FRONT_OFFSET_INCHES 1.0
+#define DS_BACK_OFFSET_INCHES  1.0
+#define DS_LEFT_OFFSET_INCHES  1.0
+#define DS_RIGHT_OFFSET_INCHES 1.0
+
+// --- Field Dimensions (assuming origin (0,0) is at the center of a 12x12 foot field) ---
+#define FIELD_HALF_LENGTH_INCHES 72.0 // Half of 12 feet (144 inches)
+#define FIELD_HALF_WIDTH_INCHES  72.0 // Half of 12 feet (144 inches)
+
+// --- Wall Detection Threshold ---
+// Max distance (in inches) for a sensor reading to be considered "against a wall"
+#define WALL_DETECTION_THRESHOLD_INCHES 12.0 // Adjust based on your sensor accuracy and robot speed
 
 #endif

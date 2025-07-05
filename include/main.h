@@ -78,8 +78,18 @@ void opcontrol(void);
 //#include <iostream>
 #include "lemlib/api.hpp"
 extern lemlib::Chassis chassis;
+extern pros::Controller controller;
+extern pros::MotorGroup right_motors;
+extern pros::MotorGroup left_motors;
+extern pros::Imu imu;
+extern pros::Rotation horizontal_encoder;
+extern pros::Rotation vertical_encoder;
+extern pros::Distance rightDistance;
+extern pros::Distance leftDistance;
+extern pros::Distance frontDistance;
+extern pros::Distance backDistance;
 extern int selectedAuton;
-extern int team;
+extern std::string teamtype;
 #endif
 
 #endif  // _PROS_MAIN_H_

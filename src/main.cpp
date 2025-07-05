@@ -46,6 +46,10 @@ lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD
 // Chassis definition: Integrates all LemLib components
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors);
 
+// Global Variables
+int selectedAuton = 1;
+std::string teamtype = "RED";
+
 
 /**
  * @brief Runs initialization code.
@@ -64,8 +68,6 @@ void initialize() {
 
     pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
     chassis.calibrate();     // Calibrate the LemLib odometry sensors (IMU, encoders)
-	teamSelector.calibrate(); // Calibrate team selector
-	autonSelector.calibrate(); // Calibrate autonomous selector
     
     // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
     pros::Task screen_task([&]() {
@@ -106,16 +108,8 @@ void competition_initialize() {
     // --- Optimization 1 & 2: Initialize map once, outside the loop ---
     // This map defines the names of your autonomous routines.
     std::map<int, std::string> auton_map = {
-        {1, "Auton1"},
-        {2, "Auton2"},
-        {3, "Auton3"},
-        {4, "Auton4"},
-        {5, "Auton5"},
-        {6, "Auton6"},
-        {7, "Auton7"},
-        {8, "Auton8"},
-        {9, "Auton9"},
-        {10, "Auton10"},
+        {1, "Auton1"}, {2, "Auton2"}, {3, "Auton3"}, {4, "Auton4"}, {5, "Auton5"},
+        {6, "Auton6"}, {7, "Auton7"}, {8, "Auton8"}, {9, "Auton9"}, {10, "Auton10"},
     };
 
     while (true) {
@@ -131,16 +125,14 @@ void competition_initialize() {
 
         // Determine team type based on teamSelector potentiometer's angle
         // Assuming TEAM_RED_MAX_VALUE or similar constant is used, or replace 165 with your constant.
-        std::string teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
+        teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
 
         // Display selected autonomous routine description on the screen
         // --- Optimization 3: Use 'selectedAuton' for consistency ---
-        std::string autonDisplay = "Autonomous: " + auton_map[selectedAuton];
-        std::string teamDisplay = "Team: " + teamtype;
-        pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", autonDisplay);
+        pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Autonomous: " + auton_map[selectedAuton]).c_str());
         
         // Display selected team type
-        pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", teamDisplay); 
+        pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", ("Team: " + teamtype).c_str()); 
 
         // Add a small delay to control update rate and prevent CPU hogging.
         pros::delay(200);
