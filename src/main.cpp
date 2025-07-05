@@ -50,7 +50,6 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 int selectedAuton = 1;
 std::string teamtype = "RED";
 
-
 /**
  * @brief Runs initialization code.
  * This function will be called in a task on the CPU until the robot has been configured.
@@ -113,7 +112,6 @@ void competition_initialize() {
     };
 
     while (true) {
-        // --- Optimization 1: Declare and update variables only once inside the loop ---
         // Read potentiometer values to determine selection
         int potValue = autonSelector.get_value();
         
@@ -128,7 +126,6 @@ void competition_initialize() {
         teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
 
         // Display selected autonomous routine description on the screen
-        // --- Optimization 3: Use 'selectedAuton' for consistency ---
         pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Autonomous: " + auton_map[selectedAuton]).c_str());
         
         // Display selected team type

@@ -7,13 +7,13 @@
 #define PORT_RIGHT_MOTOR_1 11
 #define PORT_RIGHT_MOTOR_2 13
 #define PORT_RIGHT_MOTOR_3 12
-#define PORT_LEFT_MOTOR_1  -14 // Note: these will be negated again in Robot constructor for reversal
-#define PORT_LEFT_MOTOR_2  -15 // Note: these will be negated again in Robot constructor for reversal
-#define PORT_LEFT_MOTOR_3  -16 // Note: these will be negated again in Robot constructor for reversal
+#define PORT_LEFT_MOTOR_1  -14
+#define PORT_LEFT_MOTOR_2  -15
+#define PORT_LEFT_MOTOR_3  -16
 
 // --- Sensor Ports ---
 #define PORT_IMU                 2  // Inertial Measurement Unit
-#define PORT_HORIZONTAL_ENCODER -3 // Horizontal tracking wheel encoder (negative for reversed direction)
+#define PORT_HORIZONTAL_ENCODER  -3 // Horizontal tracking wheel encoder (negative for reversed direction)
 #define PORT_VERTICAL_ENCODER    17 // Vertical tracking wheel encoder
 #define PORT_AUTON_SELECTOR_POT  6  // Potentiometer for autonomous routine selection
 #define PORT_TEAM_SELECTOR_POT   7  // Potentiometer used for team selection (treated as a switch)
