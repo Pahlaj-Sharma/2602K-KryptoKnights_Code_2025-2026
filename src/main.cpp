@@ -2,6 +2,7 @@
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
 #include "robot_config.hpp"
 #include "autons.hpp"
+#include "subsystems.hpp"
 #include <map>
 #include <string>
 
