@@ -1,64 +1,48 @@
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
-#include "pros/adi.hpp"
+#include "robot_config.hpp"
+#include "autons.hpp"
 #include <map>
 #include <string>
 
 // --- Controller Definition ---
+// Initializes the primary VEX V5 controller connected to the robot.
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // --- Motor Definitions ---
-// Right Motors: Ports 11, 13, 12. Negative signs on ports usually indicate reversed motors.
-pros::MotorGroup right_motors({11, 13, 12}, pros::MotorGearset::blue);
-// Left Motors: Ports 14, 15, 16. Negative signs on ports usually indicate reversed motors.
-pros::MotorGroup left_motors({-14, -15, -16}, pros::MotorGearset::blue);
+// MotorGroup is a LemLib class that allows you to control multiple motors as a single unit.
+// Using constants from robot_config.hpp for port numbers.
+pros::MotorGroup right_motors({PORT_RIGHT_MOTOR_1, PORT_RIGHT_MOTOR_2, PORT_RIGHT_MOTOR_3}, pros::MotorGearset::blue);
+pros::MotorGroup left_motors({PORT_LEFT_MOTOR_1, PORT_LEFT_MOTOR_2, PORT_LEFT_MOTOR_3}, pros::MotorGearset::blue);
 
 // --- Sensor Definitions ---
-// Inertial Sensor (IMU) on port 2 for heading and rotation
-pros::Imu imu(2);
-
-// Horizontal Odometry Tracker using a Rotation Sensor on port -3 (reversed)
-pros::Rotation horizontal_encoder(-3);
-// Vertical Odometry Tracker using a Rotation Sensor on port 17
-pros::Rotation vertical_encoder(17);
-
-// Autonomous Selector Potentiometer on ADI port 6
-pros::adi::Potentiometer autonSelector(6);
-// Team Selector Digital Input (e.g., bumper switch) on ADI port 7
-pros::adi::Potentiometer teamSelector(7);
-
-// Distance Sensors (for odometry resets)
-pros::Distance rightDistance(3);
-pros::Distance leftDistance(3);
-pros::Distance frontDistance(3);
-pros::Distance backDistance(3);
+// Using constants from robot_config.hpp for port numbers.
+pros::Imu imu(PORT_IMU);
+pros::Rotation horizontal_encoder(PORT_HORIZONTAL_ENCODER);
+pros::Rotation vertical_encoder(PORT_VERTICAL_ENCODER);
+pros::adi::Potentiometer autonSelector(PORT_AUTON_SELECTOR_POT);
+pros::adi::Potentiometer teamSelector(PORT_TEAM_SELECTOR_POT);
+pros::Distance rightDistance(PORT_DISTANCE_RIGHT);
+pros::Distance leftDistance(PORT_DISTANCE_LEFT);
+pros::Distance frontDistance(PORT_DISTANCE_FRONT);
+pros::Distance backDistance(PORT_DISTANCE_BACK);
 
 // --- LemLib Definitions ---
-// Drivetrain configuration:
-// - Left and right motor groups
-// - Wheel track width (distance between left and right wheels in inches)
-// - Wheel diameter (Omniwheel::NEW_275 is a pre-defined 2.75 inch wheel)
-// - RPM (Max motor RPM for the given gearset, 450 for blue)
-// - Gearing (External gearing, if any, applied to the drivetrain)
-lemlib::Drivetrain drivetrain(&left_motors, &right_motors, 11.875, lemlib::Omniwheel::NEW_275, 450, 2);
+// Drivetrain configuration, using constants from robot_config.hpp
+lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_275, MOTOR_RPM, DRIVETRAIN_GEARING);
 
-// Odometry Sensors configuration:
-// - Horizontal tracking wheel: &horizontal_encoder, wheel diameter, offset from robot center
-// - Vertical tracking wheel: &vertical_encoder, wheel diameter, offset from robot center
-// - IMU: &imu for heading
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder, lemlib::Omniwheel::NEW_275, -5.25);
-lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_275, 0.0625);
+// Odometry Tracking Wheel configurations, using constants from robot_config.hpp
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder, lemlib::Omniwheel::NEW_275, HORIZONTAL_TRACKING_OFFSET);
+lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_275, VERTICAL_TRACKING_OFFSET);
+
+// Odometry Sensors configuration
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, &horizontal_tracking_wheel, nullptr, &imu);
 
-// --- PID Definitions for LemLib Chassis ---
-// Lateral PID (for straight movement and path following):
-// kP, kI, kD, settling error, settling time, timeout, exit error, exit time, min speed (new params for newer LemLib)
-lemlib::ControllerSettings lateral_controller(7, 0, 9, 3, 1, 100, 3, 500, 15);
-// Angular PID (for turning):
-// kP, kI, kD, settling error, settling time, timeout, exit error, exit time, min speed
-lemlib::ControllerSettings angular_controller(2, 0, 16, 3, 1, 100, 3, 500, 0);
+// PID Controller Settings, using constants from robot_config.hpp
+lemlib::ControllerSettings lateral_controller(LATERAL_KP, LATERAL_KI, LATERAL_KD, LATERAL_SETTLE_ERR, LATERAL_SETTLE_TIME, LATERAL_TIMEOUT, LATERAL_EXIT_ERR, LATERAL_EXIT_TIME, LATERAL_MIN_SPEED);
+lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD, ANGULAR_SETTLE_ERR, ANGULAR_SETTLE_TIME, ANGULAR_TIMEOUT, ANGULAR_EXIT_ERR, ANGULAR_EXIT_TIME, ANGULAR_MIN_SPEED);
 
-// Chassis definition using drivetrain, PIDs, and odometry sensors
+// Chassis definition: Integrates all LemLib components
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors);
 
 // --- Global Variables ---
@@ -119,9 +103,7 @@ void disabled() {}
  * This task will exit when the robot is enabled and autonomous or opcontrol starts.
  */
 void competition_initialize() {
-    // The following code block was commented out in the original submission.
-    // It provides an example of how to implement an autonomous selector using
-    // a team selector switch and a potentiometer, displaying options on the screen.
+
     std::string teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE"; // Initialize team type string
 	int potValue = autonSelector.get_value();
 	int selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
@@ -140,10 +122,10 @@ void competition_initialize() {
     };
 
     while (true) {
-        // Toggle team (RED/BLUE) on new press of the teamSelector digital input
-		potValue = autonSelector.get_value();
-        teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
-		selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
+        // Update the Autonomous Selector and Team Selector
+        int potValue = autonSelector.get_value();
+        std::string teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE"; // Initialize team type string
+	    int selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
         // Display selected autonomous routine description on the screen
         // autonSelect should be set by reading the autonSelector potentiometer here,
         // typically in a range-based 'if/else if' structure.
@@ -185,7 +167,9 @@ void autonomous() {
     // Select and run the chosen autonomous routine based on 'autonSelect' variable.
     // (0 = blue side auton, 1 = red side auton, or specific routine index)
     if (autonSelect == 1) { // If 'autonSelect' is 1, run the Skills routine
-        autons::auton1();
+        auton1();
+    } else if (autonSelect == 2) {
+        auton2();
     }
     // Add 'else if' conditions here for other autonomous routines
     // e.g., else if (autonSelect == 2) { autons::auton2(); }
