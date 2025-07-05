@@ -34,7 +34,7 @@
 // Offsets from the robot's center to the tracking wheel in inches.
 // Negative for horizontal means it's behind the center, or adjust sign based on orientation.
 #define HORIZONTAL_TRACKING_OFFSET -5.25
-#define VERTICAL_TRACKING_OFFSET 0.0625
+#define VERTICAL_TRACKING_OFFSET 0
 
 // --- PID Controller Settings for LemLib Chassis ---
 // These constants define how the robot's movement and turning are controlled.
