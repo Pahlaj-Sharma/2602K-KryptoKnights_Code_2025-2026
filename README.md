@@ -1,127 +1,112 @@
-# 2602K KryptoKnights VEX V5 Robot Code (2025-2026 Season)
+# 2602K KryptoKnights VEX V5 Robot Code
 
-## 1. Project Overview
+This repository contains the PROS C++ code for the 2602K KryptoKnights VEX V5 competitive robotics team. It features a modular structure designed for clarity, maintainability, and easy development of autonomous routines and driver control functionalities.
 
-This repository contains the PROS (PROS Robot Operating System) C++ code for the 2602K KryptoKnights VEX V5 Competition Robot for the 2025-2026 season. The code leverages the LemLib library for advanced odometry, precise motion profiling, and robust chassis control, aiming for highly consistent and reliable autonomous routines and intuitive driver control.
-
-**Key Features:**
-* **LemLib-based Odometry & Motion Control:** Utilizes an IMU and tracking wheels for accurate position tracking and path following.
-* **Modular Drivetrain:** Configurable motor groups for left and right sides.
-* **Autonomous Selector:** Allows selection of 10 different autonomous routines using a potentiometer.
-* **Team Selector:** Simple switch/potentiometer input to select alliance color (Red/Blue), enabling adaptive autonomous paths.
-* **Real-time Telemetry:** Displays robot pose (X, Y, Theta) directly on the V5 Brain screen.
-* **Arcade Drive:** Standard and intuitive driver control scheme.
-
-## 2. Setup and Installation
-
-### Prerequisites
-* **PROS Editor/CLI:** Ensure you have the PROS CLI installed and configured.
-    * [PROS Installation Guide](https://pros.cs.purdue.edu/v5/getting-started/installation.html)
-* **VS Code:** Recommended IDE for PROS development.
-    * [VS Code Installation](https://code.visualstudio.com/download)
-    * PROS VS Code Extension is highly recommended.
-* **VEX V5 Robot Brain:** With updated firmware.
-
-### Cloning the Repository
-1.  Open a terminal or command prompt.
-2.  Navigate to your desired directory.
-3.  Clone the repository:
-    ```bash
-    git clone [https://github.com/Pahlaj-Sharma/2602K-KryptoKnights_Code_2025-2026.git](https://github.com/Pahlaj-Sharma/2602K-KryptoKnights_Code_2025-2026.git)
-    cd 2602K-KryptoKnights_Code_2025-2026
-    ```
-
-### Building and Uploading
-1.  **Open in VS Code:**
-    ```bash
-    code .
-    ```
-2.  **Initialize PROS Project (if necessary):**
-    If this is a new clone and not yet a PROS project (e.g., if you only copied `src` and `include` folders), you may need to initialize it:
-    ```bash
-    pros conduct init
-    ```
-3.  **Install LemLib:**
-    This project uses LemLib. Ensure it's installed as a PROS dependency:
-    ```bash
-    pros conduct install lemlib@0.4.7 # Or the latest stable version you are using
-    ```
-    *Note: If you encounter compiler errors related to C++11 features (like brace-enclosed initializer lists), you might need to manually add compiler flags to your `project.pros` file or `Makefile` (e.g., `-std=c++11` or `-std=gnu++11`).*
-4.  **Build the Project:**
-    ```bash
-    pros make
-    ```
-5.  **Upload to V5 Brain:**
-    Connect your V5 Brain to your computer via USB.
-    ```bash
-    pros upload
-    ```
-
-## 3. Hardware Overview
-
-* **V5 Brain:** The central control unit.
-* **V5 Motors:** Blue cartridge (600 RPM) motors for drivetrain.
-    * Left Motors: Ports 14, 15, 16 (reversed)
-    * Right Motors: Ports 11, 13, 12
-* **V5 Inertial Sensor (IMU):** Port 2 (for odometry heading).
-* **V5 Rotation Sensors:**
-    * Horizontal Tracking Wheel: ADI Port -3 (reversed)
-    * Vertical Tracking Wheel: ADI Port 17
-* **V5 Potentiometers:**
-    * Autonomous Selector: ADI Port 6
-    * Team Selector: ADI Port 7 (used as a 2-state switch)
-* **V5 Distance Sensors:** Ports 3 (ensure these are configured correctly if used for odometry resets or object detection).
-
-## 4. Software Overview
-
-The code is structured around standard PROS project conventions.
-
-* **`src/main.cpp`**: The main application file.
-    * **Motor & Sensor Definitions**: All hardware components are instantiated here.
-    * **LemLib Configuration**: `Drivetrain`, `TrackingWheel`s, `OdomSensors`, `ControllerSettings` (PID tunings), and `Chassis` objects are defined for motion control.
-    * **`initialize()`**: Called once when the robot starts. Handles motor brake modes, sensor resets, LCD initialization, and LemLib calibration. Also sets up a real-time screen telemetry task.
-    * **`disabled()`**: Called when the robot is disabled. Good for resetting variables.
-    * **`competition_initialize()`**: Runs after `initialize()` and before `autonomous()` or `opcontrol()`. This is where the autonomous and team selection logic runs, continuously updating the V5 Brain screen based on potentiometer readings.
-    * **`autonomous()`**: Called when the robot is in autonomous mode. It selects and executes the chosen autonomous routine based on `autonSelect`.
-    * **`opcontrol()`**: Called when the robot is in driver control mode. Implements arcade drive using controller joysticks.
-    * **`autons` namespace**: Contains individual autonomous routine functions (e.g., `autons::auton1()`).
-
-## 5. Autonomous Selection and Modes
-
-The robot features two main selectors managed in `competition_initialize()`:
-
-### Autonomous Selector
-* Uses a potentiometer on **ADI Port 6**.
-* The potentiometer's 0-330 range is divided into 10 segments, each corresponding to an autonomous routine from 1 to 10.
-* Turn the potentiometer to select the desired autonomous routine before the match starts. The selected routine name will be displayed on the V5 Brain screen.
-
-### Team Selector
-* Uses a potentiometer on **ADI Port 7**.
-* This potentiometer is treated as a simple switch:
-    * `0-165` degrees: "RED" team.
-    * `166-330` degrees: "BLUE" team.
-* The selected team color is displayed on the V5 Brain screen. Your autonomous routines can use this `teamtype` string (or the `selectedTeam` integer) to adapt their paths for the red or blue alliance.
-
-## 6. Driver Control
-
-* **Arcade Drive:**
-    * **Left Joystick (Y-axis):** Controls forward and backward movement.
-    * **Right Joystick (X-axis):** Controls turning.
-
-## 7. Troubleshooting and Notes
-
-* **"C++11 standard" / "brace-enclosed initializer list" errors:** If you encounter errors related to C++11 features (specifically with `chassis.moveToPose` parameters like `{ .lead = 0.7, .minSpeed = 60 }`), ensure your PROS project is configured to use a C++ standard of C++11 or newer. You might need to add `-std=c++11` or `-std=gnu++11` to your compiler flags in `project.pros` or `Makefile`.
-    * **Workaround for LemLib `moveToPose`:** If updating compiler flags doesn't work, you may need to explicitly create the parameter struct:
-        ```cpp
-        lemlib::MoveToPointParams params = {.lead = 0.7, .minSpeed = 60};
-        chassis.moveToPose(45, 24, 90, 4500, params);
-        ```
-* **Potentiometer Calibration:** The exact analog values for your potentiometer may vary slightly. Test your potentiometer's full range to fine-tune the thresholds for autonomous and team selection.
-* **IMU Calibration:** The `chassis.calibrate()` function will hold the robot still for a few seconds during `initialize()`. Ensure the robot is stationary during this process for accurate odometry.
-* **Git Issues:** If you encounter `non-fast-forward` or `divergent branches` errors when pushing to GitHub, remember to `git pull origin main` *before* `git push origin main` to synchronize your local and remote branches.
-
-## 8. Contributors
-
-* Pahlaj Sharma (psharma1)
+## Table of Contents
+1.  [Project Description](#project-description)
+2.  [Key Features](#key-features)
+3.  [Code Structure](#code-structure)
+4.  [Usage](#usage)
+    * [Driver Control (OpControl)](#driver-control-opcontrol)
+    * [Autonomous Mode](#autonomous-mode)
+5.  [Changelog / Version History](#changelog--version-history)
 
 ---
+
+## 1. Project Description
+
+This code operates a VEX V5 competition robot, leveraging the [LemLib](https://lemlib.github.io/lemlib/index.html) motion profiling library for advanced odometry and precise autonomous movements. The project is structured to separate configuration, autonomous logic, and main robot control, making it easier for new team members to understand and contribute.
+
+## 2. Key Features
+
+* **LemLib Integration:** Utilizes LemLib for accurate odometry, advanced motion profiling (e.g., `moveToPose`), and robust drivetrain control.
+* **Modular Design:** Code is organized into dedicated files (`robot_config.hpp`, `autons.hpp`/`autons.cpp`, `main.cpp`) for improved readability and maintainability.
+* **Centralized Configuration:** All hardware port definitions, drivetrain constants, and PID tunings are consolidated in `robot_config.hpp`.
+* **Autonomous Routine Management:** Dedicated `autons.hpp` and `autons.cpp` files for declaring and implementing multiple autonomous strategies.
+* **In-Match Autonomous Selection:** Features an interactive autonomous selector using a potentiometer on the VEX V5 Brain's screen.
+* **Arcade Driver Control:** Intuitive joystick control for robot movement.
+* **Real-time Telemetry:** Displays robot's current X, Y, and Theta (heading) coordinates on the V5 Brain's screen during operation.
+
+## 3. Code Structure
+
+The project is organized into the following key files:
+
+* `src/main.cpp`:
+    * The primary entry point for the PROS project.
+    * Contains the `pros::Controller` definition, all motor and sensor object instantiations, and the LemLib `chassis` object.
+    * Implements the core PROS lifecycle functions: `initialize()`, `disabled()`, `competition_initialize()`, `autonomous()`, and `opcontrol()`.
+    * Handles autonomous routine selection and basic driver control logic.
+* `include/robot_config.hpp`:
+    * **Configuration Header:** Defines all compile-time constants for your robot's hardware.
+    * Includes motor port numbers, sensor port numbers (IMU, encoders, potentiometers, distance sensors), drivetrain dimensions, and LemLib PID tuning constants.
+    * Designed for easy modification of robot specifications without touching core logic.
+* `include/autons.hpp`:
+    * **Autonomous Declarations:** Declares the prototype functions for all your specific autonomous routines (e.g., `autons::auton1()`).
+    * Part of the `autons` namespace for clear organization.
+* `src/autons.cpp`:
+    * **Autonomous Implementations:** Contains the actual C++ code for each autonomous routine declared in `autons.hpp`.
+    * Each function (`autons::auton1()`, etc.) will outline a specific set of movements and actions for the robot during the autonomous period.
+
+## 4. Usage
+
+### Driver Control (OpControl)
+
+To operate the robot in driver control mode:
+
+1.  Ensure the robot is enabled (via competition switch or Field Management System).
+2.  The `opcontrol()` function in `main.cpp` will continuously read joystick inputs.
+3.  **Left Joystick Y-axis:** Controls forward and backward movement.
+4.  **Right Joystick X-axis:** Controls turning.
+5.  (Further subsystem controls, e.g., for intake, arm, mogo, can be added in `opcontrol()` using controller buttons).
+
+### Autonomous Mode
+
+To run an autonomous routine:
+
+1.  During the pre-autonomous period, the V5 Brain's screen will display an **autonomous selector**.
+2.  Use the **autonomous selector potentiometer** (defined in `robot_config.hpp`) to scroll through the available autonomous routines (e.g., "Auton1", "Auton2", etc.).
+3.  The screen will also display the **selected team** (RED/BLUE) based on another potentiometer or digital switch.
+4.  Once the desired autonomous routine is selected, enable the robot in autonomous mode. The `autonomous()` function in `main.cpp` will execute the chosen routine from the `autons` namespace.
+
+## 5. Changelog / Version History
+
+This document provides a chronological record of significant changes, refactorings, and bug fixes applied to the 2602K VEX V5 Robot Code.
+
+### Version 1.0.0 - Initial Codebase (Pre-July 2025 Refactor)
+
+* **Initial State:** Monolithic `main.cpp` containing all drivetrain, sensor, LemLib, autonomous, and driver control logic.
+* **Features:**
+    * LemLib-based odometry and chassis control.
+    * Basic autonomous selection and execution.
+    * Arcade driver control.
+    * On-screen telemetry for robot pose.
+    * Motors, IMU, rotation sensors, potentiometers, and distance sensors defined directly in `main.cpp`.
+* **Known Issues:** Large `main.cpp` file, making it less modular and harder to maintain or expand.
+
+### Version 1.1.0 - Modular Refactoring Attempt (July 4, 2025)
+
+* **Changes:**
+    * Attempted to introduce a `Robot` class (`robot.hpp`, `robot.cpp`) to encapsulate hardware and LemLib objects for better organization.
+    * Planned to move autonomous functions into `autons.hpp` and `autons.cpp`.
+    * Introduced `robot_config.hpp` for centralized hardware and constant definitions.
+* **Issues Introduced:**
+    * **"Use of undeclared identifier 'robot'"**: This error occurred because `main.cpp` attempted to use a global `robot` object that was declared in `robot.hpp` but was not correctly linked or defined due to the incomplete refactoring or misunderstanding of the intended scope.
+
+### Version 1.2.0 - Refactored for Flat Structure & Bug Fixes (July 4-5, 2025)
+
+* **Changes:**
+    * **Reverted `main.cpp` to a flatter structure:** Removed the `Robot` class concept and re-integrated direct definitions of motors, sensors, and LemLib objects into `main.cpp`.
+    * **Fully Integrated `robot_config.hpp`:** All hardware ports, drivetrain constants, and PID tunings were successfully moved to and referenced from `robot_config.hpp`, centralizing configuration.
+    * **Fully Integrated `autons.hpp` and `autons.cpp`:** All autonomous routine declarations and implementations were successfully moved into these dedicated files, cleaning up `main.cpp`.
+    * **Fixed C++ Standard Resetting:** Resolved the issue where the `project.pros` file would revert the C++ standard flag (`-std=gnu++20`) by ensuring correct direct editing of `project.pros` and removing conflicting entries.
+    * **Removed Erroneous `src/robot_config.cpp`:** Identified and deleted the incorrectly created `src/robot_config.cpp` file, which was an unnecessary compilation unit for a header-only configuration.
+* **Outcome:**
+    * Code is now modularized into `main.cpp`, `robot_config.hpp`, `autons.hpp`, and `autons.cpp`.
+    * Compilation errors resolved.
+    * C++ standard (`gnu++20`) now persists correctly.
+* **Current Status:** Stable and organized codebase for continued development.
+
+### Version 1.2.1 - Cache Management Notes (July 5, 2025)
+
+* **Change:** Clarified that the `.cache` folder can be safely deleted to free up disk space or resolve minor build/IDE issues, as it only contains temporary build artifacts and indexing data.
+* **Outcome:** Improved understanding of project file management.
