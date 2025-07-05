@@ -122,6 +122,7 @@ This document provides a chronological record of significant changes, refactorin
         * Moved `std::map` initialization outside the `while` loop to prevent redundant re-creation on every iteration, significantly improving efficiency.
         * Refined variable declarations (`potValue`, `selectedAuton`, `teamtype`) to occur only once inside the `while` loop, avoiding unnecessary re-declarations.
     * **Improved Autonomous Selection Logic:** Switched the `autonomous()` function's `if-else if` chain to a more readable and scalable `switch` statement for better autonomous routine dispatch.
-* **Outcome:** Enhanced code modularity, improved runtime performance of the pre-autonomous selector, and cleaner autonomous routine dispatch.
+    * **Added Subsystem Files:** Introduced `subsystems.hpp` and `subsystems.cpp` to further modularize robot functionality, allowing for organized management of individual robot mechanisms (e.g., intake, lift, arm).
+* **Outcome:** Enhanced code modularity, improved runtime performance of the pre-autonomous selector, and cleaner autonomous routine dispatch, with a clear structure for future subsystem development.
 
 ---
