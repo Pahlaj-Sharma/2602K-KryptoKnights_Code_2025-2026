@@ -45,9 +45,6 @@ lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD
 // Chassis definition: Integrates all LemLib components
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors);
 
-// --- Global Variables ---
-int team = 0; // 0 for blue, 1 for red (based on teamSelector potentially)
-int autonSelect = 1; // Default autonomous routine selection (e.g., 1 for Skills)
 
 /**
  * @brief Runs initialization code.
@@ -103,11 +100,10 @@ void disabled() {}
  * This task will exit when the robot is enabled and autonomous or opcontrol starts.
  */
 void competition_initialize() {
+    pros::screen::erase(); // Clear the screen initially for a clean display
 
-    std::string teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE"; // Initialize team type string
-	int potValue = autonSelector.get_value();
-	int selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
-    // Map to store autonomous routine descriptions keyed by their selection number
+    // --- Optimization 1 & 2: Initialize map once, outside the loop ---
+    // This map defines the names of your autonomous routines.
     std::map<int, std::string> auton_map = {
         {1, "Auton1"},
         {2, "Auton2"},
@@ -122,35 +118,35 @@ void competition_initialize() {
     };
 
     while (true) {
-        // Update the Autonomous Selector and Team Selector
+        // --- Optimization 1: Declare and update variables only once inside the loop ---
+        // Read potentiometer values to determine selection
         int potValue = autonSelector.get_value();
-        std::string teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE"; // Initialize team type string
-	    int selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
-        // Display selected autonomous routine description on the screen
-        // autonSelect should be set by reading the autonSelector potentiometer here,
-        // typically in a range-based 'if/else if' structure.
-        pros::screen::print(pros::E_TEXT_MEDIUM, 5, auton_map[autonSelect].c_str());
-        pros::screen::print(pros::E_TEXT_MEDIUM, 6, teamtype.c_str()); // Display selected team type
+        
+        // Determine selected autonomous routine (assuming 0-329 range for potValue)
+        // This is based on your current logic for 10 autons.
+        // Make sure your AUTON_POT_MAX_VALUE and AUTON_DIVISOR constants match in robot_config.hpp
+        // For clarity, I'm using your direct numbers here.
+        selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
 
-        pros::delay(150); // Delay to prevent rapid updates and allow screen to be read
-        pros::screen::erase(); // Clear the screen for the next update
+        // Determine team type based on teamSelector potentiometer's angle
+        // Assuming TEAM_RED_MAX_VALUE or similar constant is used, or replace 165 with your constant.
+        std::string teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
+
+        // Display selected autonomous routine description on the screen
+        // --- Optimization 3: Use 'selectedAuton' for consistency ---
+        pros::screen::print(pros::E_TEXT_MEDIUM, 5, auton_map[selectedAuton].c_str());
+        
+        // Display selected team type
+        pros::screen::print(pros::E_TEXT_MEDIUM, 6, teamtype.c_str()); 
+
+        // Add a small delay to control update rate and prevent CPU hogging.
+        pros::delay(150); 
+        
+        // Clear the screen for the next update.
+        // Note: For only two lines, flickering might occur with erase.
+        pros::screen::erase(); 
     }
 }
-
-// --- Namespace for Autonomous Paths ---
-namespace autons {
-    /**
-     * @brief Autonomous routine for Skills.
-     * This routine sets the robot's pose and then moves to a specific pose.
-     */
-    void auton1() { // Skills Auton
-        pros::delay(100);       // Small initial delay
-        chassis.setPose(0, 0, 0); // Set initial robot position to (0,0) and heading 0
-        // Move to a target pose (X: 45, Y: 24, Heading: 90 degrees)
-        // With a timeout of 4500ms and custom movement parameters (lead, minSpeed)
-        chassis.moveToPose(45, 24, 90, 4500, {.lead = 0.7, .minSpeed = 60});
-    }
-} // namespace autons
 
 /**
  * @brief Runs the user autonomous code.
@@ -166,13 +162,28 @@ namespace autons {
 void autonomous() {
     // Select and run the chosen autonomous routine based on 'autonSelect' variable.
     // (0 = blue side auton, 1 = red side auton, or specific routine index)
-    if (autonSelect == 1) { // If 'autonSelect' is 1, run the Skills routine
-        auton1();
-    } else if (autonSelect == 2) {
-        auton2();
+    switch (selectedAuton) {
+        case 1:
+            auton1(); break;
+        case 2:
+            auton1(); break;
+        case 3:
+            auton1(); break;
+        case 4:
+            auton1(); break;
+        case 5:
+            auton1(); break;
+        case 6:
+            auton1(); break;
+        case 7:
+            auton1(); break;
+        case 8:
+            auton1(); break;
+        case 9:
+            auton1(); break;
+        case 10:
+            auton1(); break;
     }
-    // Add 'else if' conditions here for other autonomous routines
-    // e.g., else if (autonSelect == 2) { autons::auton2(); }
 }
 
 /**

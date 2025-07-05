@@ -61,11 +61,6 @@
 #define ANGULAR_EXIT_TIME 0    // Time (ms) robot must be within exit_err to exit early
 #define ANGULAR_MIN_SPEED 0    // Minimum speed the robot will turn at
 
-// --- Autonomous Selector Constants ---
-#define AUTON_POT_MAX_VALUE 330 // Maximum expected potentiometer value for 10 autons (0-330)
-#define AUTON_DIVISOR 33        // Value range for each autonomous segment (330 / 10 autons = 33)
-#define NUM_AUTONS 10           // Total number of autonomous routines available
-
 // --- Team Selector Constants ---
 #define TEAM_RED_MAX_VALUE 165  // Potentiometer value threshold for selecting the RED team.
                                 // Values <= 165 are RED, > 165 are BLUE.

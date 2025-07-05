@@ -24,6 +24,7 @@
  * E_CONTROLLER_MASTER is pedantically correct within the PROS styleguide, but
  * not convenient for most student programmers.
  */
+#include "lemlib/chassis/chassis.hpp"
 #define PROS_USE_SIMPLE_NAMES
 
 /**
@@ -75,6 +76,10 @@ void opcontrol(void);
  * You can add C++-only headers here
  */
 //#include <iostream>
+#include "lemlib/api.hpp"
+extern lemlib::Chassis chassis;
+extern int selectedAuton;
+extern int team;
 #endif
 
 #endif  // _PROS_MAIN_H_
