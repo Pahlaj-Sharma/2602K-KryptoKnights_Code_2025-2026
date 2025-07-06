@@ -30,7 +30,7 @@ pros::Distance backDistance(PORT_DISTANCE_BACK);
 
 // --- LemLib Definitions ---
 // Drivetrain configuration, using constants from robot_config.hpp
-lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_275, MOTOR_RPM, DRIVETRAIN_GEARING);
+lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_275, WHEEL_RPM, HORIZONTAL_DRIFT);
 
 // Odometry Tracking Wheel configurations, using constants from robot_config.hpp
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder, lemlib::Omniwheel::NEW_275, HORIZONTAL_TRACKING_OFFSET);
@@ -40,8 +40,8 @@ lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwhe
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, &horizontal_tracking_wheel, nullptr, &imu);
 
 // PID Controller Settings, using constants from robot_config.hpp
-lemlib::ControllerSettings lateral_controller(LATERAL_KP, LATERAL_KI, LATERAL_KD, LATERAL_SETTLE_ERR, LATERAL_SETTLE_TIME, LATERAL_TIMEOUT, LATERAL_EXIT_ERR, LATERAL_EXIT_TIME, LATERAL_MIN_SPEED);
-lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD, ANGULAR_SETTLE_ERR, ANGULAR_SETTLE_TIME, ANGULAR_TIMEOUT, ANGULAR_EXIT_ERR, ANGULAR_EXIT_TIME, ANGULAR_MIN_SPEED);
+lemlib::ControllerSettings lateral_controller(LATERAL_KP, LATERAL_KI, LATERAL_KD, LATERAL_ANTI_WINDUP, LATERAL_SML_ERR, LATERAL_SML_TIMEOUT, LATERAL_LRG_ERR, LATERAL_LRG_TIMEOUT, LATERAL_SLEW);
+lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD, ANGULAR_ANTI_WINDUP, ANGULAR_SML_ERR, ANGULAR_SML_TIMEOUT, ANGULAR_LRG_ERR, ANGULAR_LRG_TIMEOUT, ANGULAR_SLEW);
 
 // Chassis definition: Integrates all LemLib components
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors);

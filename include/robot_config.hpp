@@ -18,17 +18,17 @@
 #define PORT_AUTON_SELECTOR_POT  6  // Potentiometer for autonomous routine selection
 #define PORT_TEAM_SELECTOR_POT   7  // Potentiometer used for team selection (treated as a switch)
 
-// Define distance sensor ports. Adjust if they are on different ports or used differently.
-#define PORT_DISTANCE_RIGHT      3
-#define PORT_DISTANCE_LEFT       3
-#define PORT_DISTANCE_FRONT      3
-#define PORT_DISTANCE_BACK       3
+// Define distance sensor ports.
+#define PORT_DISTANCE_RIGHT      4
+#define PORT_DISTANCE_LEFT       18
+#define PORT_DISTANCE_FRONT      5
+#define PORT_DISTANCE_BACK       19
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
-#define TRACK_WIDTH 11.875     // Distance between the centers of the left and right wheels in inches
-#define WHEEL_DIAMETER 2.75    // Diameter of your drivetrain wheels (e.g., 2.75" Omniwheels)
-#define MOTOR_RPM 450          // Max effective RPM of your drivetrain motors (e.g., 600 RPM blue motors with 1.33:1 external gearing = 450 RPM)
-#define DRIVETRAIN_GEARING 2.0 // External gearing ratio applied to the drivetrain (e.g., 2.0 for 2:1 speed increase)
+#define TRACK_WIDTH 11.875       // Distance between the centers of the left and right wheels in inches
+#define WHEEL_DIAMETER 2.75      // Diameter of your drivetrain wheels (e.g., 2.75" Omniwheels)
+#define WHEEL_RPM 450            // Max effective RPM of your drivetrain motors (e.g., 600 RPM blue motors with 1.33:1 external gearing = 450 RPM)
+#define HORIZONTAL_DRIFT 2.0     // External gearing ratio applied to the drivetrain (e.g., 2.0 for 2:1 speed increase)
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
@@ -40,40 +40,40 @@
 // These constants define how the robot's movement and turning are controlled.
 
 // Lateral PID (for straight movement and path following)
-#define LATERAL_KP 7.0         // Proportional constant
-#define LATERAL_KI 0.0         // Integral constant (often zero for simple control)
-#define LATERAL_KD 9.0         // Derivative constant
-#define LATERAL_SETTLE_ERR 3   // Error threshold (in inches) to consider the robot settled
-#define LATERAL_SETTLE_TIME 100 // Time (ms) robot must be within settle_err
-#define LATERAL_TIMEOUT 3      // Total timeout (seconds) for movement
-#define LATERAL_EXIT_ERR 500   // Error threshold (in inches) to exit early if taking too long
-#define LATERAL_EXIT_TIME 15   // Time (ms) robot must be within exit_err to exit early
-#define LATERAL_MIN_SPEED 15   // Minimum speed the robot will move at
+#define LATERAL_KP 7.0           // Proportional constant
+#define LATERAL_KI 0.0           // Integral constant (often zero for simple control)
+#define LATERAL_KD 9.0           // Derivative constant
+#define LATERAL_ANTI_WINDUP 3    // Error threshold (in inches) to consider the robot settled
+#define LATERAL_SML_ERR 1        // Smallest error
+#define LATERAL_SML_TIMEOUT 100  // Smalles timeout in calculation
+#define LATERAL_LRG_ERR 3        // Largest error
+#define LATERAL_LRG_TIMEOUT 500  // Largest timeout in calculation
+#define LATERAL_SLEW 15          // Slew
 
 // Angular PID (for turning)
-#define ANGULAR_KP 2.0         // Proportional constant
-#define ANGULAR_KI 0.0         // Integral constant
-#define ANGULAR_KD 16.0        // Derivative constant
-#define ANGULAR_SETTLE_ERR 3   // Error threshold (in degrees) to consider the robot settled
-#define ANGULAR_SETTLE_TIME 100 // Time (ms) robot must be within settle_err
-#define ANGULAR_TIMEOUT 3      // Total timeout (seconds) for turn
-#define ANGULAR_EXIT_ERR 500   // Error threshold (in degrees) to exit early if taking too long
-#define ANGULAR_EXIT_TIME 0    // Time (ms) robot must be within exit_err to exit early
-#define ANGULAR_MIN_SPEED 0    // Minimum speed the robot will turn at
+#define ANGULAR_KP 2.0           // Proportional constant
+#define ANGULAR_KI 0.0           // Integral constant
+#define ANGULAR_KD 16.0          // Derivative constant
+#define ANGULAR_ANTI_WINDUP 3    // Error threshold (in degrees) to consider the robot settled
+#define ANGULAR_SML_ERR 1        // Smallest error
+#define ANGULAR_SML_TIMEOUT 100  // Smalles timeout in calculation
+#define ANGULAR_LRG_ERR 3        // Largest error
+#define ANGULAR_LRG_TIMEOUT 500  // Largest timeout in calculation
+#define ANGULAR_SLEW 0           // Slew
 
 // --- Robot Physical Dimensions (approximate, for odometry resets) ---
 // Distance from robot's center to its front/back edge
-#define ROBOT_HALF_LENGTH_INCHES 9.0 // Example: if your robot is 18 inches long
+#define ROBOT_HALF_LENGTH_INCHES 7.6875 // Example: if your robot is 18 inches long
 // Distance from robot's center to its left/right edge
-#define ROBOT_HALF_WIDTH_INCHES  9.0 // Example: if your robot is 18 inches wide
+#define ROBOT_HALF_WIDTH_INCHES  7.0 // Example: if your robot is 18 inches wide
 
 // --- Distance Sensor Offsets ---
 // Distance from the actual distance sensor reading point to the closest physical edge of the robot
 // in that direction. E.g., if your front sensor is 1 inch behind the absolute front of the robot.
-#define DS_FRONT_OFFSET_INCHES 1.0
-#define DS_BACK_OFFSET_INCHES  1.0
-#define DS_LEFT_OFFSET_INCHES  1.0
-#define DS_RIGHT_OFFSET_INCHES 1.0
+#define DS_FRONT_OFFSET_INCHES 5.5
+#define DS_BACK_OFFSET_INCHES  1.375
+#define DS_LEFT_OFFSET_INCHES  1.75
+#define DS_RIGHT_OFFSET_INCHES 1.75
 
 // --- Field Dimensions (assuming origin (0,0) is at the center of a 12x12 foot field) ---
 #define FIELD_HALF_LENGTH_INCHES 72.0 // Half of 12 feet (144 inches)
