@@ -1,5 +1,7 @@
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
+#include "lemlib/util.hpp"
+#include "pros/misc.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -43,19 +45,17 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, &horizontal_track
 lemlib::ControllerSettings lateral_controller(LATERAL_KP, LATERAL_KI, LATERAL_KD, LATERAL_ANTI_WINDUP, LATERAL_SML_ERR, LATERAL_SML_TIMEOUT, LATERAL_LRG_ERR, LATERAL_LRG_TIMEOUT, LATERAL_SLEW);
 lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD, ANGULAR_ANTI_WINDUP, ANGULAR_SML_ERR, ANGULAR_SML_TIMEOUT, ANGULAR_LRG_ERR, ANGULAR_LRG_TIMEOUT, ANGULAR_SLEW);
 
+// Input Curve for throttle/steer input during driver control
+lemlib::ExpoDriveCurve drive_curve(3, 20, 1.02);
+
 // Chassis definition: Integrates all LemLib components
-lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors);
+lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors, &drive_curve, &drive_curve);
 
 // Global Variables
 int selectedAuton = 1;
 std::string teamtype = "RED";
 
-/**
- * @brief Runs initialization code.
- * This function will be called in a task on the CPU until the robot has been configured.
- * It's recommended to keep execution time for this mode under a few seconds.
- * This is where you typically set up sensors, motors, and other subsystems.
- */
+//@brief Runs initialization code.
 void initialize() {
     // Set brake modes for drivetrain motors
     left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
@@ -69,7 +69,7 @@ void initialize() {
     chassis.calibrate();     // Calibrate the LemLib odometry sensors (IMU, encoders)
     
     // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
-    pros::Task screen_task([&]() {
+    pros::Task update_odom([&]() {
         while (true) {
             // Print robot location to the brain screen
             pros::screen::print(pros::E_TEXT_MEDIUM, 0, "X: %f", chassis.getPose().x);      // X coordinate
@@ -79,28 +79,24 @@ void initialize() {
             pros::delay(25); // Small delay to save resources and prevent blocking
         }
     });
+    // Create a task to continuously print robot temp, battery, auton to the controller screen
+    pros::Task robot_info([&]() {
+        while (true) {
+            // Print robot location to the brain screen
+            controller.print(0, 0, "Battery: %f", pros::battery::get_capacity()); // Print Current Battery Level
+            controller.print(1, 0, "DT Temp: %f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2)); // Print Avg temp of motors
 
-    // You would typically add code here to read the autonSelector potentiometer
-    // and set the 'autonSelect' variable based on its value before competition_initialize.
-    // For example, a while loop similar to what was in competition_initialize previously.
+            pros::delay(5000); // Delay to save resources and prevent blocking
+        }
+    });
 }
 
-/**
- * @brief Runs while the robot is in the disabled state.
- *
- * This function will be started in its own task whenever the robot is disabled
- * via the Field Management System or the VEX Competition Switch.
- * This is a good place to reset global variables or ensure motors are stopped.
- */
-void disabled() {}
+// Runs while the robot is in the disabled state.
+void disabled() {
+    //
+}
 
-/**
- * @brief Runs after initialize(), and before autonomous() or opcontrol().
- *
- * This function is intended for competition-specific initialization routines,
- * such as an autonomous selector on the LCD.
- * This task will exit when the robot is enabled and autonomous or opcontrol starts.
- */
+// Runs after initialize(), and before autonomous() or opcontrol().
 void competition_initialize() {
     pros::screen::erase(); // Clear the screen initially for a clean display
 
@@ -115,10 +111,7 @@ void competition_initialize() {
         // Read potentiometer values to determine selection
         int potValue = autonSelector.get_value();
         
-        // Determine selected autonomous routine (assuming 0-329 range for potValue)
-        // This is based on your current logic for 10 autons.
-        // Make sure your AUTON_POT_MAX_VALUE and AUTON_DIVISOR constants match in robot_config.hpp
-        // For clarity, I'm using your direct numbers here.
+        // Determine selected autonomous routine
         selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
 
         // Determine team type based on teamSelector potentiometer's angle
@@ -131,22 +124,15 @@ void competition_initialize() {
         // Display selected team type
         pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", ("Team: " + teamtype).c_str()); 
 
+        // Display on Contoller screen
+        controller.print(2, 0, "%s :: %s",teamtype.c_str(),  auton_map[selectedAuton].c_str());
+
         // Add a small delay to control update rate and prevent CPU hogging.
         pros::delay(200);
     }
 }
 
-/**
- * @brief Runs the user autonomous code.
- *
- * This function will be started in its own task with the default priority and stack size
- * whenever the robot is enabled via the Field Management System or the VEX Competition Switch
- * in the autonomous mode. Alternatively, this function may be called in initialize() or opcontrol()
- * for non-competition testing purposes.
- *
- * If the robot is disabled or communications is lost, the autonomous task will be stopped.
- * Re-enabling the robot will restart the task, not resume it from where it left off.
- */
+// Runs the user autonomous code.
 void autonomous() {
     // Select and run the chosen autonomous routine based on 'autonSelect' variable.
     // (0 = blue side auton, 1 = red side auton, or specific routine index)
@@ -176,20 +162,8 @@ void autonomous() {
     }
 }
 
-/**
- * @brief Runs the operator control code.
- *
- * This function will be started in its own task with the default priority and stack size
- * whenever the robot is enabled via the Field Management System or the VEX Competition Switch
- * in the operator control mode.
- *
- * If no competition control is connected, this function will run immediately
- * following initialize().
- *
- * If the robot is disabled or communications is lost, the operator control task
- * will be stopped. Re-enabling the robot will restart the task, not resume it
- * from where it left off.
- */
+
+//Runs the operator control code.
 void opcontrol() {
     while (true) {
         // --- Driving Control (Arcade Style) ---
