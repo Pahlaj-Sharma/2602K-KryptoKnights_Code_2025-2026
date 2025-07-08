@@ -1,7 +1,9 @@
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
+#include "lemlib/chassis/chassis.hpp"
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
+#include "pros/rtos.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -55,7 +57,7 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 int selectedAuton = 1;
 std::string teamtype = "RED";
 
-//@brief Runs initialization code.
+// Runs initialization code.
 void initialize() {
     // Set brake modes for drivetrain motors
     left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
@@ -67,6 +69,7 @@ void initialize() {
 
     pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
     chassis.calibrate();     // Calibrate the LemLib odometry sensors (IMU, encoders)
+    while (imu.is_calibrating()) {pros::delay(10);} imu.reset(); // Reset to 0 after calibrated
     
     // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
     pros::Task update_odom([&]() {
