@@ -1,9 +1,5 @@
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
-#include "lemlib/chassis/chassis.hpp"
-#include "lemlib/util.hpp"
-#include "pros/misc.hpp"
-#include "pros/rtos.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
