@@ -74,17 +74,16 @@ void initialize() {
             pros::screen::print(pros::E_TEXT_MEDIUM, 0, "X: %f", chassis.getPose().x);      // X coordinate
             pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Y: %f", chassis.getPose().y);      // Y coordinate
             pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta); // Heading (angle)
-
             pros::delay(25); // Small delay to save resources and prevent blocking
         }
     });
     // Create a task to continuously print robot temp, battery, auton to the controller screen
     pros::Task robot_info([&]() {
         while (true) {
-            // Print robot location to the brain screen
-            controller.print(0, 0, "Battery: %f", pros::battery::get_capacity()); // Print Current Battery Level
-            controller.print(1, 0, "DT Temp: %f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2)); // Print Avg temp of motors
-
+            // Print Current Battery Level
+            controller.print(0, 0, "Battery: %f", pros::battery::get_capacity()); 
+            // Print Avg temp of motors
+            controller.print(1, 0, "DT Temp: %f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2)); 
             pros::delay(5000); // Delay to save resources and prevent blocking
         }
     });
@@ -98,34 +97,24 @@ void disabled() {
 // Runs after initialize(), and before autonomous() or opcontrol().
 void competition_initialize() {
     pros::screen::erase(); // Clear the screen initially for a clean display
-
-    // --- Optimization 1 & 2: Initialize map once, outside the loop ---
     // This map defines the names of your autonomous routines.
     std::map<int, std::string> auton_map = {
         {1, "Auton1"}, {2, "Auton2"}, {3, "Auton3"}, {4, "Auton4"}, {5, "Auton5"},
         {6, "Auton6"}, {7, "Auton7"}, {8, "Auton8"}, {9, "Auton9"}, {10, "Auton10"},
     };
-
     while (true) {
         // Read potentiometer values to determine selection
         int potValue = autonSelector.get_value();
-        
         // Determine selected autonomous routine
         selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
-
         // Determine team type based on teamSelector potentiometer's angle
-        // Assuming TEAM_RED_MAX_VALUE or similar constant is used, or replace 165 with your constant.
         teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
-
         // Display selected autonomous routine description on the screen
         pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Autonomous: " + auton_map[selectedAuton]).c_str());
-        
         // Display selected team type
         pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", ("Team: " + teamtype).c_str()); 
-
         // Display on Contoller screen
         controller.print(2, 0, "%s :: %s",teamtype.c_str(),  auton_map[selectedAuton].c_str());
-
         // Add a small delay to control update rate and prevent CPU hogging.
         pros::delay(200);
     }
