@@ -1,13 +1,16 @@
+#include "lemlib/asset.hpp"
 #include "main.h"
 #include "autons.hpp"
 #include "robot_config.hpp"
 #include "lemlib/api.hpp"
 #include <cmath>
 
-
+ASSET(path_jerryio_txt);
 
 void auton1() {
-    
+    chassis.setPose(0, 0, 0);
+    chassis.follow(path_jerryio_txt, 2, 5000);
+    chassis.moveToPose(0, 0, 0, 3000, {.lead = 0.1});
 }
 void auton2() {
     
