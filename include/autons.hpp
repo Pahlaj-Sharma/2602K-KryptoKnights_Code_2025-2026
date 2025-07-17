@@ -14,7 +14,7 @@ void auton8();
 void auton9();
 void auton10();
 
-void moveLinear(double inches, int timeout = 2000);
+void moveLinear(double inches, int timeout = 2000, float maxspeed = 70, float minspeed = 40);
 void resetOdometry();
 
 #endif

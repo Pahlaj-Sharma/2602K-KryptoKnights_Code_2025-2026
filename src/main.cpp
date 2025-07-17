@@ -1,5 +1,6 @@
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
+#include "pros/motors.h"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -91,7 +92,8 @@ void initialize() {
 
 // Runs while the robot is in the disabled state.
 void disabled() {
-    //
+    left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
 }
 
 // Runs after initialize(), and before autonomous() or opcontrol().
@@ -122,6 +124,11 @@ void competition_initialize() {
 
 // Runs the user autonomous code.
 void autonomous() {
+    horizontal_encoder.reset_position();
+    vertical_encoder.reset_position();
+    imu.reset();
+    left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     // Select and run the chosen autonomous routine based on 'autonSelect' variable.
     // (0 = blue side auton, 1 = red side auton, or specific routine index)
     switch (selectedAuton) {
@@ -153,6 +160,8 @@ void autonomous() {
 
 //Runs the operator control code.
 void opcontrol() {
+    left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
     while (true) {
         // --- Driving Control (Arcade Style) ---
         // Get joystick values for left Y-axis (forward/backward) and right X-axis (turning)

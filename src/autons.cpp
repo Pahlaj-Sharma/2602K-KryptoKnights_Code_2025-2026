@@ -40,20 +40,12 @@ void auton10() {
     
 }
 
-void moveLinear(double inches, int timeout) {
-        // Get the robot's current pose (X, Y, Heading)
+void moveLinear(double inches, int timeout, float maxspeed, float minspeed) {
         lemlib::Pose currentPose = chassis.getPose();
-
-        // Convert current heading from degrees to radians for sin/cos functions
-        // LemLib's getPose().theta is in degrees
         double currentThetaRad = lemlib::degToRad(currentPose.theta);
-
-        // Calculate the target X and Y coordinates based on current heading and desired distance
         double targetX = currentPose.x + (inches * std::cos(currentThetaRad));
         double targetY = currentPose.y + (inches * std::sin(currentThetaRad));
-
-        // Move to the calculated target pose, maintaining the current heading (currentPose.theta)
-        chassis.moveToPose(targetX, targetY, currentPose.theta, timeout);
+        chassis.moveToPose(targetX, targetY, currentPose.theta, timeout, {.lead = 0.2, .maxSpeed = maxspeed, .minSpeed = minspeed});
     }
 
 void resetOdometry() {
@@ -146,5 +138,6 @@ void resetOdometry() {
 
         // Set the new odometry pose, keeping the current accurate theta
         chassis.setPose(newX, newY, currentTheta);
-        pros::lcd::print(1, "Odometry Reset to X: %.2f, Y: %.2f", newX, newY);
+        pros::lcd::print(7, "Odometry Reset to X: %.2f, Y: %.2f", newX, newY);
     }
+
