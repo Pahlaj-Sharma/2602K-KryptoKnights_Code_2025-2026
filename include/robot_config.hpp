@@ -49,6 +49,13 @@
 #define LATERAL_LRG_ERR 3        // Largest error
 #define LATERAL_LRG_TIMEOUT 500  // Largest timeout in calculation
 #define LATERAL_SLEW 15          // Slew
+// Custom PIDs
+#define F_LATERAL_KP 7.0           // Proportional constant
+#define F_LATERAL_KI 0.0           // Integral constant (often zero for simple control)
+#define F_LATERAL_KD 9.0           // Derivative constant
+#define P_LATERAL_KP 7.0           // Proportional constant
+#define P_LATERAL_KI 0.0           // Integral constant (often zero for simple control)
+#define P_LATERAL_KD 9.0           // Derivative constant
 
 // Angular PID (for turning)
 #define ANGULAR_KP 2.0           // Proportional constant
@@ -60,6 +67,13 @@
 #define ANGULAR_LRG_ERR 3        // Largest error
 #define ANGULAR_LRG_TIMEOUT 500  // Largest timeout in calculation
 #define ANGULAR_SLEW 0           // Slew
+// Custom PIDs
+#define F_ANGULAR_KP 2.0           // Proportional constant
+#define F_ANGULAR_KI 0.0           // Integral constant
+#define F_ANGULAR_KD 16.0          // Derivative constant
+#define P_ANGULAR_KP 2.0           // Proportional constant
+#define P_ANGULAR_KI 0.0           // Integral constant
+#define P_ANGULAR_KD 16.0          // Derivative constant
 
 // --- Robot Physical Dimensions (approximate, for odometry resets) ---
 // Distance from robot's center to its front/back edge
@@ -70,10 +84,18 @@
 // --- Distance Sensor Offsets ---
 // Distance from the actual distance sensor reading point to the closest physical edge of the robot
 // in that direction. E.g., if your front sensor is 1 inch behind the absolute front of the robot.
-#define DS_FRONT_OFFSET_INCHES 5.5
-#define DS_BACK_OFFSET_INCHES  1.375
-#define DS_LEFT_OFFSET_INCHES  1.75
-#define DS_RIGHT_OFFSET_INCHES 1.75
+#define DS_FRONT_INDENT_INCHES 5.5
+#define DS_BACK_INDENT_INCHES  1.375
+#define DS_LEFT_INDENT_INCHES  1.75
+#define DS_RIGHT_INDENT_INCHES 1.75
+#define DS_FRONT_CENTER_INCHES 5.5
+#define DS_BACK_CENTER_INCHES  1.375
+#define DS_LEFT_CENTER_INCHES  1.75
+#define DS_RIGHT_CENTER_INCHES 1.75
+#define FRONT_CENTER 1.0
+#define BACK_CENTER 1.0
+#define LEFT_CENTER 1.0
+#define RIGHT_CENTER 1.0
 
 // --- Field Dimensions (assuming origin (0,0) is at the center of a 12x12 foot field) ---
 #define FIELD_HALF_LENGTH_INCHES 72.0 // Half of 12 feet (144 inches)

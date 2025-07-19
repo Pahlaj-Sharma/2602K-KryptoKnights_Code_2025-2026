@@ -1,6 +1,5 @@
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
-#include "pros/motors.h"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -12,7 +11,7 @@
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // --- Motor Definitions ---
-// MotorGroup is a LemLib class that allows you to control multiple motors as a single unit.
+// MotorGroup is a class that allows you to control multiple motors as a single unit.
 // Using constants from robot_config.hpp for port numbers.
 pros::MotorGroup right_motors({PORT_RIGHT_MOTOR_1, PORT_RIGHT_MOTOR_2, PORT_RIGHT_MOTOR_3}, pros::MotorGearset::blue);
 pros::MotorGroup left_motors({PORT_LEFT_MOTOR_1, PORT_LEFT_MOTOR_2, PORT_LEFT_MOTOR_3}, pros::MotorGearset::blue);
@@ -29,7 +28,7 @@ pros::Distance leftDistance(PORT_DISTANCE_LEFT);
 pros::Distance frontDistance(PORT_DISTANCE_FRONT);
 pros::Distance backDistance(PORT_DISTANCE_BACK);
 
-// --- LemLib Definitions ---
+// --- Definitions ---
 // Drivetrain configuration, using constants from robot_config.hpp
 lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_275, WHEEL_RPM, HORIZONTAL_DRIFT);
 
@@ -47,7 +46,7 @@ lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD
 // Input Curve for throttle/steer input during driver control
 lemlib::ExpoDriveCurve drive_curve(3, 20, 1.02);
 
-// Chassis definition: Integrates all LemLib components
+// Chassis definition: Integrates all components
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors, &drive_curve, &drive_curve);
 
 // Global Variables
@@ -65,7 +64,7 @@ void initialize() {
     vertical_encoder.reset_position();
 
     pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
-    chassis.calibrate();     // Calibrate the LemLib odometry sensors (IMU, encoders)
+    chassis.calibrate();     // Calibrate the odometry sensors (IMU, encoders)
     while (imu.is_calibrating()) {pros::delay(10);} imu.reset(); // Reset to 0 after calibrated
     
     // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
@@ -104,7 +103,7 @@ void competition_initialize() {
         {1, "Auton1"}, {2, "Auton2"}, {3, "Auton3"}, {4, "Auton4"}, {5, "Auton5"},
         {6, "Auton6"}, {7, "Auton7"}, {8, "Auton8"}, {9, "Auton9"}, {10, "Auton10"},
     };
-    while (true) {
+    while (pros::competition::is_disabled()) {
         // Read potentiometer values to determine selection
         int potValue = autonSelector.get_value();
         // Determine selected autonomous routine
@@ -172,7 +171,6 @@ void opcontrol() {
         // 'leftY' controls forward/backward, 'rightX' controls turning
         chassis.arcade(leftY, rightX);
 
-        // --- Delay for resources ---
         // A small delay to yield control to other PROS tasks and reduce CPU usage.
         pros::delay(25);
     }
