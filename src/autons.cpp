@@ -50,7 +50,8 @@ void moveLinear(double inches, int timeout, float maxspeed, float minspeed) {
         chassis.moveToPose(targetX, targetY, currentPose.theta, timeout, {.lead = 0.2, .maxSpeed = maxspeed, .minSpeed = minspeed});
     }
 
-/* void resetOdometry() {
+void resetOdometry() {
+    /*
     int front = frontDistance.get()-DS_FRONT_INDENT_INCHES; std::vector<int> frontData = {(front < 200) ? front : 1000, frontDistance.get_confidence(), (front < 200) ? 1 : 0};
     int back = backDistance.get()-DS_BACK_INDENT_INCHES; std::vector<int> backData = {(back < 200) ? back : 1000, backDistance.get_confidence(), (back < 200) ? 1 : 0};
     int left = leftDistance.get()-DS_LEFT_INDENT_INCHES; std::vector<int> leftData = {(left < 200) ? left : 1000, leftDistance.get_confidence(), (left < 200) ? 1 : 0};
@@ -89,9 +90,9 @@ void moveLinear(double inches, int timeout, float maxspeed, float minspeed) {
         return;
     } else {
         chassis.setPose(calculated_x, calculated_y, chassis.getPose().theta);
-    }
+    } */
 
-} */
+}
 void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd, double lat_slew, double ang_kp, double ang_ki, double ang_kd){
     // normal, fast, precise
     int selector = 0;
