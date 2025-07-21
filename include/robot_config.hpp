@@ -75,34 +75,16 @@
 #define P_ANGULAR_KI 0.0           // Integral constant
 #define P_ANGULAR_KD 16.0          // Derivative constant
 
-// --- Robot Physical Dimensions (approximate, for odometry resets) ---
-// Distance from robot's center to its front/back edge
-#define ROBOT_HALF_LENGTH_INCHES 7.6875 // Example: if your robot is 18 inches long
-// Distance from robot's center to its left/right edge
-#define ROBOT_HALF_WIDTH_INCHES  7.0 // Example: if your robot is 18 inches wide
-
 // --- Distance Sensor Offsets ---
 // Distance from the actual distance sensor reading point to the closest physical edge of the robot
 // in that direction. E.g., if your front sensor is 1 inch behind the absolute front of the robot.
-#define DS_FRONT_INDENT_INCHES 5.5
-#define DS_BACK_INDENT_INCHES  1.375
-#define DS_LEFT_INDENT_INCHES  1.75
-#define DS_RIGHT_INDENT_INCHES 1.75
-#define DS_FRONT_CENTER_INCHES 5.5
-#define DS_BACK_CENTER_INCHES  1.375
-#define DS_LEFT_CENTER_INCHES  1.75
-#define DS_RIGHT_CENTER_INCHES 1.75
-#define FRONT_CENTER 1.0
-#define BACK_CENTER 1.0
-#define LEFT_CENTER 1.0
-#define RIGHT_CENTER 1.0
-
-// --- Field Dimensions (assuming origin (0,0) is at the center of a 12x12 foot field) ---
-#define FIELD_HALF_LENGTH_INCHES 72.0 // Half of 12 feet (144 inches)
-#define FIELD_HALF_WIDTH_INCHES  72.0 // Half of 12 feet (144 inches)
-
-// --- Wall Detection Threshold ---
-// Max distance (in inches) for a sensor reading to be considered "against a wall"
-#define WALL_DETECTION_THRESHOLD_INCHES 12.0 // Adjust based on your sensor accuracy and robot speed
+#define DS_FRONT_INDENT 5.5
+#define DS_BACK_INDENT  1.375
+#define DS_LEFT_INDENT  1.75
+#define DS_RIGHT_INDENT 1.75
+#define DS_FRONT_CENTER 5.5
+#define DS_BACK_CENTER  1.375
+#define DS_LEFT_CENTER  1.75
+#define DS_RIGHT_CENTER 1.75
 
 #endif
