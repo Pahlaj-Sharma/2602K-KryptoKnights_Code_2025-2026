@@ -3,6 +3,7 @@
 #include "autons.hpp"
 #include "robot_config.hpp"
 #include <cmath>
+#include <optional>
 
 ASSET(path_jerryio_txt);
 
@@ -87,17 +88,18 @@ void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd
         chassis.angularPID.kD = P_ANGULAR_KD;
         }
     }
-void resetOdometry(pros::Distance sensor1, std::string axis, int dist_center){
+void resetOdometry(pros::Distance sensor1, std::string axis, double dist1_center) {
+    //TODO - Make this work with all sensors
     // resets odometry pos using dist sensors (all calculations here are in mm, then converted to inches)
     lemlib::Pose pose = chassis.getPose(true);
     // Calculate the horizontal offset caused by the angle over the vertical height
-    int sensor_val = sensor1.get() * 0.0394; // Convert mm to inches
-    double abs_cos_theta = (std::abs(cos(pose.theta)));
+    double sensor_val = sensor1.get() * 0.0394; // Convert mm to inches
+    double abs_cos_theta = (std::abs(std::cos(pose.theta)));
     const double INVERSE_SQRT_2 = 0.7071;
     // Calculate distance to the sensor
     double dist_to_sensor = ((sensor_val * INVERSE_SQRT_2) + abs_cos_theta * (sensor_val - sensor_val * INVERSE_SQRT_2));
     // Calculate the distance to the center of robot
-    double dist_to_center = ((dist_center * INVERSE_SQRT_2) + abs_cos_theta * (dist_center - dist_center * INVERSE_SQRT_2));
+    double dist_to_center = ((dist1_center * INVERSE_SQRT_2) + abs_cos_theta * (dist1_center - dist1_center * INVERSE_SQRT_2));
     double distance = dist_to_sensor + dist_to_center;
     double calculated_x; double calculated_y;
     // Check the quadrant
@@ -108,13 +110,10 @@ void resetOdometry(pros::Distance sensor1, std::string axis, int dist_center){
         calculated_x = -144 + distance;
         calculated_y = (pose.y > 0) ? -calculated_x : calculated_x; // If Y positive, y=-x, else y=x
     }
-    // Check which axis and within 3 inches of the original position + dist_center
-    if (axis == "X" && (std::abs(calculated_x - pose.x) < dist_center + 3)){
+    // Check which axis and within 3 inches of the original position + dist1_center
+    if (axis == "X" && (std::abs(calculated_x - pose.x) < dist1_center + 3)){
         chassis.setPose(calculated_x, pose.y, pose.theta);
-    } else if (axis == "Y" && (std::abs(calculated_y - pose.y) < dist_center + 3)){
+    } else if (axis == "Y" && (std::abs(calculated_y - pose.y) < dist1_center + 3)){
         chassis.setPose(pose.x, calculated_y, pose.theta);
-    } else {
-        return;
     }
     }
-    
