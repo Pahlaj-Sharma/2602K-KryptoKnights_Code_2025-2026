@@ -78,10 +78,6 @@
 // --- Distance Sensor Offsets ---
 // Distance from the actual distance sensor reading point to the closest physical edge of the robot
 // in that direction. E.g., if your front sensor is 1 inch behind the absolute front of the robot.
-#define DS_FRONT_INDENT 5.5
-#define DS_BACK_INDENT  1.375
-#define DS_LEFT_INDENT  1.75
-#define DS_RIGHT_INDENT 1.75
 #define DS_FRONT_CENTER 5.5
 #define DS_BACK_CENTER  1.375
 #define DS_LEFT_CENTER  1.75
