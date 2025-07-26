@@ -2,9 +2,7 @@
 #include "lemlib/api.hpp"
 #include "autons.hpp"
 #include "robot_config.hpp"
-#include <algorithm>
 #include <cmath>
-#include <optional>
 
 ASSET(path_jerryio_txt);
 
@@ -12,6 +10,7 @@ void auton1() {
     chassis.setPose(0, 0, 0);
     moveLinear(12);
     chassisPID("precise");
+    chassis.follow(path_jerryio_txt, 3, 20000);
 }
 void auton2() {
     

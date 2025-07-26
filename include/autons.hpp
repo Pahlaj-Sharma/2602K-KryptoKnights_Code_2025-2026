@@ -1,5 +1,6 @@
 #ifndef AUTONS_HPP
 #define AUTONS_HPP
+#include "lemlib/asset.hpp"
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "pros/distance.hpp"
