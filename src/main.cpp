@@ -6,7 +6,7 @@
 // Copyright 2025-2026 Pahlaj Sharma. All rights reserved.
 
 #include "main.h" // PROS main header
-#include "lemlib/api.hpp" // LemLib API for odometry and chassis control
+#include "lemlib/api.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
