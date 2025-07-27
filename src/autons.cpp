@@ -91,8 +91,8 @@ void resetOdometry(int threshold) {
         {leftDistance.get() * MM_IN, DS_LEFT_CENTER, "X"}, {rightDistance.get() * MM_IN, DS_RIGHT_CENTER, "X"}};
     // Sort the sensor values
     std::sort(sensor_values.begin(), sensor_values.end());
-    // Check if both sensors calculate same axis
-    if (std::get<2>(sensor_values[0]) == std::get<2>(sensor_values[1])) return;
+    // Check if both sensors calculate same axis and if the first sensor is not too far away
+    if (std::get<2>(sensor_values[0]) == std::get<2>(sensor_values[1]) || std::get<0>(sensor_values[0]) > 10) return;
     // Calculate the maximum theta for the pose
     double max_theta = std::max(std::abs(std::cos(pose.theta)), std::abs(std::sin(pose.theta)));
 
@@ -121,5 +121,10 @@ void resetOdometry(int threshold) {
 
     // Set the pose
     if ((std::abs(calculated_x - pose.x) < threshold) && (std::abs(calculated_y - pose.y) < threshold)){
-        chassis.setPose(calculated_x, calculated_y, chassis.getPose().theta);} else return;
+        chassis.setPose(calculated_x, calculated_y, chassis.getPose().theta);
+    } else if (std::abs(calculated_x - pose.x) < threshold){
+        chassis.setPose(calculated_x, pose.y, chassis.getPose().theta);
+    } else if (std::abs(calculated_y - pose.y) < threshold){
+        chassis.setPose(pose.x, calculated_y, chassis.getPose().theta);
+    } else return;
 }
