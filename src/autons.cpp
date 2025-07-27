@@ -7,13 +7,11 @@
 #include <tuple>
 #include <vector>
 
-ASSET(path_jerryio_txt);
-
 void auton1() {
     chassis.setPose(0, 0, 0);
     moveLinear(12);
     chassisPID("precise");
-    chassis.follow(path_jerryio_txt, 3, 20000);
+    resetOdometry();
 }
 void auton2() {
     
@@ -123,8 +121,8 @@ void resetOdometry(int threshold) {
         if (std::get<2>(sensor_values[0]) == "X"){
             calculated_x = distance2; calculated_y = distance1;} else {calculated_x = distance1; calculated_y = distance2;}}
     // Check the quadrant
-    if (pose.x > 0) {calculated_x = 72 - calculated_x;} else {calculated_x -= 72;}
-    if (pose.y > 0) {calculated_y = 72 - calculated_y;} else {calculated_y -= 72;}
+    if (pose.x > 0) {calculated_x = 70 - calculated_x;} else {calculated_x -= 70;}
+    if (pose.y > 0) {calculated_y = 70 - calculated_y;} else {calculated_y -= 70;}
     // Set the pose
     if ((std::abs(calculated_x - pose.x) < threshold) && (std::abs(calculated_y - pose.y) < threshold)) {
         chassis.setPose(calculated_x, calculated_y, chassis.getPose().theta);
