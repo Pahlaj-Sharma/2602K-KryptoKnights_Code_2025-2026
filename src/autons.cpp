@@ -102,17 +102,17 @@ void resetOdometry(pros::Distance sensor1, std::string axis, double dist1_center
     double distance = dist_to_sensor + dist_to_center;
     double calculated_x; double calculated_y;
     // Check the quadrant
-    if ((pose.x > 0 && pose.y > 0) || (pose.x > 0 && pose.y < 0)) { // Q1 or Q4 (Right Half)
+    if (pose.x > 0) { // Q1 or Q4 (Right Half)
         calculated_x = 144 - distance;
         calculated_y = (pose.y > 0) ? calculated_x : -calculated_x; // If Y positive, y=x, else y=-x
-    } else { // pose.x < 0 (Q2 or Q3 - Left Half)
+    } else if (pose.x < 0) { // pose.x < 0 (Q2 or Q3 - Left Half)
         calculated_x = -144 + distance;
         calculated_y = (pose.y > 0) ? -calculated_x : calculated_x; // If Y positive, y=-x, else y=x
-    }
+    } else {return;}
     // Check which axis and within 3 inches of the original position + dist1_center
     if (axis == "X" && (std::abs(calculated_x - pose.x) < dist1_center + 3)){
         chassis.setPose(calculated_x, pose.y, pose.theta);
     } else if (axis == "Y" && (std::abs(calculated_y - pose.y) < dist1_center + 3)){
         chassis.setPose(pose.x, calculated_y, pose.theta);
-    }
+    } else {return;}
     }
