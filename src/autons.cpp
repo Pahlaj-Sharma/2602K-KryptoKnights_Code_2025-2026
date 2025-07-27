@@ -1,3 +1,4 @@
+#include "lemlib/asset.hpp"
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "autons.hpp"
@@ -6,6 +7,8 @@
 #include <cmath>
 #include <tuple>
 #include <vector>
+
+ASSET(path_jerryio_txt);
 
 void auton1() {
     chassis.setPose(0, 0, 0);
@@ -113,7 +116,8 @@ void resetOdometry(int threshold) {
         calculated_x = distance1; calculated_y = distance2;} else {calculated_x = distance2; calculated_y = distance1;}
     } else { // Other angles
         if (std::get<2>(sensor_values[0]) == "X"){
-        calculated_x = distance2; calculated_y = distance1;} else {calculated_x = distance1; calculated_y = distance2;}}
+        calculated_x = distance2; calculated_y = distance1;} else {calculated_x = distance1; calculated_y = distance2;}
+    }
 
     // Check the quadrant
     if (pose.x > 0) calculated_x = FIELD_SIZE - calculated_x; else calculated_x -= FIELD_SIZE;
