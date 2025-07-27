@@ -7,6 +7,7 @@
 
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp"
+#include "pros/motors.h"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -51,7 +52,7 @@ lemlib::ControllerSettings lateral_controller(LATERAL_KP, LATERAL_KI, LATERAL_KD
 lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD, ANGULAR_ANTI_WINDUP, ANGULAR_SML_ERR, ANGULAR_SML_TIMEOUT, ANGULAR_LRG_ERR, ANGULAR_LRG_TIMEOUT, ANGULAR_SLEW);
 
 // Input Curve for throttle/steer input during driver control
-lemlib::ExpoDriveCurve drive_curve(3, 20, 1.02);
+lemlib::ExpoDriveCurve drive_curve(5, 20, 1.02);
 
 // Chassis definition: Integrates all components
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors, &drive_curve, &drive_curve);
@@ -164,7 +165,7 @@ void autonomous() {
 }
 
 
-//Runs the operator control code.
+// Runs the operator control code.
 void opcontrol() {
     left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);

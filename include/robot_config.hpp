@@ -46,7 +46,7 @@
 #define LATERAL_ANTI_WINDUP 3    // Error threshold (in inches) to consider the robot settled
 #define LATERAL_SML_ERR 1        // Smallest error
 #define LATERAL_SML_TIMEOUT 100  // Smalles timeout in calculation
-#define LATERAL_LRG_ERR 3        // Largest error
+#define LATERAL_LRG_ERR 2        // Largest error
 #define LATERAL_LRG_TIMEOUT 500  // Largest timeout in calculation
 #define LATERAL_SLEW 15          // Slew
 // Custom PIDs
@@ -64,7 +64,7 @@
 #define ANGULAR_ANTI_WINDUP 3    // Error threshold (in degrees) to consider the robot settled
 #define ANGULAR_SML_ERR 1        // Smallest error
 #define ANGULAR_SML_TIMEOUT 100  // Smalles timeout in calculation
-#define ANGULAR_LRG_ERR 3        // Largest error
+#define ANGULAR_LRG_ERR 2        // Largest error
 #define ANGULAR_LRG_TIMEOUT 500  // Largest timeout in calculation
 #define ANGULAR_SLEW 0           // Slew
 // Custom PIDs
