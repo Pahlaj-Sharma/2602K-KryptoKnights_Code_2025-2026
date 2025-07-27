@@ -1,8 +1,10 @@
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "autons.hpp"
+#include "pros/distance.hpp"
 #include "robot_config.hpp"
 #include <cmath>
+#include <vector>
 
 ASSET(path_jerryio_txt);
 
@@ -88,7 +90,44 @@ void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd
         chassis.angularPID.kD = P_ANGULAR_KD;
         }
     }
-void resetOdometry(pros::Distance sensor1, std::string axis, double dist1_center) {
+
+
+void resetOdometry(int threshold) {
+    // Get the chassis pose
+    const double MM_IN = 0.03937;
+    lemlib::Pose pose = chassis.getPose(true);
+    // Get sensor values
+    std::vector<std::pair<double, double>> sensor_values = {{frontDistance.get() * MM_IN, DS_FRONT_CENTER},
+                                                            {backDistance.get() * MM_IN, DS_BACK_CENTER},
+                                                            {leftDistance.get() * MM_IN, DS_LEFT_CENTER}, 
+                                                            {rightDistance.get() * MM_IN, DS_RIGHT_CENTER}};
+    // Sort the sensor values
+    std::sort(sensor_values.begin(), sensor_values.end());
+    double max_theta = std::max(std::abs(std::cos(pose.theta)), std::abs(std::sin(pose.theta)));
+    // Calculate distances to the sensor
+    double dist_to_sensor1 = sensor_values[0].first * max_theta; // First
+    double dist_to_sensor2 = sensor_values[1].first * max_theta; // Second
+    // Calculate distance to the center of the robot
+    double dist_to_center1 = sensor_values[0].second * max_theta;
+    double dist_to_center2 = sensor_values[1].second * max_theta;
+    double distance1 = dist_to_sensor1 + dist_to_center1;
+    double distance2 = dist_to_sensor2 + dist_to_center2;
+    double diff1 = std::abs(std::abs(144 - distance1) - pose.x); double diff2 = std::abs(std::abs(144 - distance2) - pose.x);
+    double calculated_x, calculated_y;
+    // Check which sensor is closer to the current x pos to set that sensor to reset the x axis and the other to the y axis
+    if (diff1 >= diff2) {
+        calculated_x = distance1; calculated_y = distance2;
+    } else {
+        calculated_x = distance2; calculated_y = distance1;}
+    // Check the quadrant
+    if (pose.x > 0) {calculated_x = 144 - calculated_x;} else {calculated_x -= 144;}
+    if (pose.y > 0) {calculated_y = 144 - calculated_y;} else {calculated_y -= 144;}
+    // Set the pose
+    if ((std::abs(calculated_x - pose.x) < threshold) && (std::abs(calculated_y - pose.y) < threshold)) {
+        chassis.setPose(calculated_x, calculated_y, chassis.getPose().theta);
+    } else {return;}
+    }
+/* void resetOdometry(pros::Distance sensor1, std::string axis, double dist1_center) {
     // TODO - Make this work with all sensors
     // resets odometry pos using dist sensors (all calculations here are in mm, then converted to inches)
     lemlib::Pose pose = chassis.getPose(true);
@@ -100,7 +139,7 @@ void resetOdometry(pros::Distance sensor1, std::string axis, double dist1_center
     // Calculate the distance to the center of robot
     double dist_to_center = dist1_center * max_theta;
     double distance = dist_to_sensor + dist_to_center;
-    double calculated_x; double calculated_y;
+    double calculated_x, calculated_y;
     // Check the quadrant
     if (pose.x > 0) { // Q1 or Q4 (Right Half)
         calculated_x = 144 - distance;
@@ -110,9 +149,9 @@ void resetOdometry(pros::Distance sensor1, std::string axis, double dist1_center
         calculated_y = (pose.y > 0) ? -calculated_x : calculated_x; // If Y positive, y=-x, else y=x
     } else {return;}
     // Check which axis and within 3 inches of the original position + dist1_center
-    if (axis == "X" && (std::abs(calculated_x - pose.x) < dist1_center + 3)){
+    if (axis == "X" && (std::abs(calculated_x - pose.x) < 5)){
         chassis.setPose(calculated_x, pose.y, pose.theta);
-    } else if (axis == "Y" && (std::abs(calculated_y - pose.y) < dist1_center + 3)){
+    } else if (axis == "Y" && (std::abs(calculated_y - pose.y) < 5)){
         chassis.setPose(pose.x, calculated_y, pose.theta);
     } else {return;}
-    }
+    } */
