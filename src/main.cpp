@@ -1,3 +1,10 @@
+// Project: 2602K-RobotCode
+// Author: Pahlaj Sharma
+// Date Created: June 14, 2025
+// Current Version: 1.81
+// Last Updated: July 27, 2025
+// Copyright 2025-2026 Pahlaj Sharma. All rights reserved.
+
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp" // LemLib API for odometry and chassis control
 #include "robot_config.hpp"
