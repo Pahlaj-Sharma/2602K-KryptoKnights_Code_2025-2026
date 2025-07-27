@@ -67,18 +67,22 @@ void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd
     case 0:
         chassis.lateralPID.kP = lat_kp; chassis.lateralPID.kI = lat_ki; chassis.lateralPID.kD = lat_kd;
         chassis.angularPID.kP = ang_kp; chassis.angularPID.kI = ang_ki; chassis.angularPID.kD = ang_kd;
+        break;
     case 1:
         //normal
         chassis.lateralPID.kP = LATERAL_KP; chassis.lateralPID.kI = LATERAL_KI; chassis.lateralPID.kD = LATERAL_KD; 
         chassis.angularPID.kP = ANGULAR_KP; chassis.angularPID.kI = ANGULAR_KI; chassis.angularPID.kD = ANGULAR_KD;
+        break;
     case 2:
         //fast
         chassis.lateralPID.kP = F_LATERAL_KP; chassis.lateralPID.kI = F_LATERAL_KI; chassis.lateralPID.kD = F_LATERAL_KD;
         chassis.angularPID.kP = F_ANGULAR_KP; chassis.angularPID.kI = F_ANGULAR_KI; chassis.angularPID.kD = F_ANGULAR_KD;
+        break;
     case 3:
         //precise
         chassis.lateralPID.kP = P_LATERAL_KP; chassis.lateralPID.kI = P_LATERAL_KI; chassis.lateralPID.kD = P_LATERAL_KD;
         chassis.angularPID.kP = P_ANGULAR_KP; chassis.angularPID.kI = P_ANGULAR_KI; chassis.angularPID.kD = P_ANGULAR_KD;
+        break;
         }
 }
 
