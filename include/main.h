@@ -26,6 +26,7 @@
  */
 #include "lemlib/chassis/chassis.hpp"
 #include "pros/adi.hpp"
+#include "pros/imu.hpp"
 #define PROS_USE_SIMPLE_NAMES
 
 /**
@@ -94,6 +95,36 @@ extern pros::adi::DigitalOut pto;
 extern int selectedAuton;
 extern std::string teamtype;
 extern bool ptoState; // PTO state, true = drivetrain, false = intake
+
+class ScalarIMU : public pros::IMU {
+public:
+    /**
+     * @brief Constructor for the CustomIMU class.
+     * @param port The V5 port the IMU is connected to.
+     * @param scalar A scalar value to apply to the rotation reading.
+     */
+    ScalarIMU(int port, double scalar)
+    : pros::IMU(port),
+    m_port(port),
+    m_scalar(scalar) {}
+
+    /**
+     * @brief Gets the scaled rotation of the IMU.
+     * @return The rotation value multiplied by the scalar.
+     */
+    virtual double get_rotation() const {
+        return pros::c::imu_get_rotation(m_port) * m_scalar;
+    }
+
+private:
+    const int m_port;
+    const double m_scalar;
+};
+
+// Declare the global instance of your CustomIMU
+// This tells other files that 'inertial' exists and will be defined elsewhere.
+extern ScalarIMU inertial;
+
 #endif
 
 #endif  // _PROS_MAIN_H_

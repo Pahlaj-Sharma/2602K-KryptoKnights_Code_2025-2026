@@ -42,21 +42,7 @@ pros::Distance leftDistance(PORT_DISTANCE_LEFT);
 pros::Distance frontDistance(PORT_DISTANCE_FRONT);
 pros::Distance backDistance(PORT_DISTANCE_BACK);
 pros::adi::DigitalOut pto(PORT_PTO_DIGITAL_OUT);
-
-class CustomIMU : public pros::IMU {
-public:
-    CustomIMU(int port, double scalar)
-    : pros::IMU(port),
-    m_port(port),
-    m_scalar(scalar) {}
-    virtual double get_rotation() const {
-    return pros::c::imu_get_rotation(m_port) * m_scalar;
-    }
-private:
-    const int m_port;
-    const double m_scalar;
-};
-CustomIMU inertial(PORT_IMU, IMU_SCALER);
+ScalarIMU inertial(PORT_IMU, IMU_SCALER);
 
 // --- Definitions ---
 // Drivetrain configuration, using constants from robot_config.hpp
@@ -205,7 +191,7 @@ void opcontrol() {
         // 'leftY' controls forward/backward, 'rightX' controls turning
         chassis.arcade(leftY, rightX);
 
-        // Add more conditions
+        // Add more conditions for PTO toggle
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) toggle_pto();
 
         // A small delay to yield control to other PROS tasks and reduce CPU usage.

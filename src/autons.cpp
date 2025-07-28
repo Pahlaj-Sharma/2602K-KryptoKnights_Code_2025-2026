@@ -8,6 +8,12 @@
 #include <tuple>
 #include <vector>
 
+// Remove when PID tuned
+pros::Rotation rot_kp(1);
+pros::Rotation rot_ki(2);
+pros::Rotation rot_kd(3);
+pros::adi::DigitalIn limit_switch(4);
+
 ASSET(path_jerryio_txt);
 
 void auton1() {
@@ -136,4 +142,40 @@ void resetOdometry(int threshold) {
     } else if (std::abs(calculated_y - pose.y) < threshold){
         chassis.setPose(pose.x, calculated_y, chassis.getPose().theta);
     } else return;
+}
+
+void tunePID(){
+    // Comment when PID tuned
+    float initial_kp = 0;
+    float initial_ki = 0;
+    float initial_kd = 0;
+	int initial_rot_kp_pos = rot_kp.get_position();
+    int initial_rot_ki_pos = rot_ki.get_position();
+    int initial_rot_kd_pos = rot_kd.get_position();
+	#define KP_SCALE_FACTOR 0.1f // Adjust Kp by 0.1 for every degree of rotation
+	#define KI_SCALE_FACTOR 0.01f // Adjust Ki
+	#define KD_SCALE_FACTOR 0.1f // Adjust Kd
+	while (true) {
+		float delta_kp = (rot_kp.get_position() - initial_rot_kp_pos) * KP_SCALE_FACTOR;
+        float delta_ki = (rot_ki.get_position() - initial_rot_ki_pos) * KI_SCALE_FACTOR;
+        float delta_kd = (rot_kd.get_position() - initial_rot_kd_pos) * KD_SCALE_FACTOR;
+		chassis.lateralPID.kP = initial_kp + delta_kp;
+		chassis.lateralPID.kI = initial_ki + delta_ki;
+		chassis.lateralPID.kD = initial_ki + delta_kd;
+		controller.print(0, 0, "kP: %f", chassis.lateralPID.kP);
+        controller.print(1, 0, "kI: %f", chassis.lateralPID.kP);
+        controller.print(2, 0, "kD: %f", chassis.lateralPID.kP);
+		if (limit_switch.get_new_press()){
+			controller.rumble("-");
+			chassis.calibrate();
+			while (inertial.is_calibrating()) {pros::delay(10);} inertial.reset();
+			chassis.setPose(0, 0, 0);
+			pros::delay(100);
+			chassis.moveToPoint(0, 24, 10000);
+			chassis.waitUntilDone();
+			controller.rumble(".");
+			controller.clear();
+		}
+		pros::delay(40);
+	}
 }
