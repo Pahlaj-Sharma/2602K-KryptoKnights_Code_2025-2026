@@ -65,6 +65,7 @@ void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd
 
     switch (selector) {
     case 0:
+        // custom
         chassis.lateralPID.kP = lat_kp; chassis.lateralPID.kI = lat_ki; chassis.lateralPID.kD = lat_kd;
         chassis.angularPID.kP = ang_kp; chassis.angularPID.kI = ang_ki; chassis.angularPID.kD = ang_kd;
         break;

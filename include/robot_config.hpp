@@ -29,6 +29,7 @@
 #define WHEEL_DIAMETER 2.75      // Diameter of your drivetrain wheels (e.g., 2.75" Omniwheels)
 #define WHEEL_RPM 450            // Max effective RPM of your drivetrain motors (e.g., 600 RPM blue motors with 1.33:1 external gearing = 450 RPM)
 #define HORIZONTAL_DRIFT 2.0     // External gearing ratio applied to the drivetrain (e.g., 2.0 for 2:1 speed increase)
+#define IMU_SCALER 1.0
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.

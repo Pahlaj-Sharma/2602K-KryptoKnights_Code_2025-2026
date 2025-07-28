@@ -26,7 +26,6 @@ pros::MotorGroup left_motors({PORT_LEFT_MOTOR_1, PORT_LEFT_MOTOR_2, PORT_LEFT_MO
 
 // --- Sensor Definitions ---
 // Using constants from robot_config.hpp for port numbers.
-pros::Imu imu(PORT_IMU);
 pros::Rotation horizontal_encoder(PORT_HORIZONTAL_ENCODER);
 pros::Rotation vertical_encoder(PORT_VERTICAL_ENCODER);
 pros::adi::Potentiometer autonSelector(PORT_AUTON_SELECTOR_POT);
@@ -35,6 +34,21 @@ pros::Distance rightDistance(PORT_DISTANCE_RIGHT);
 pros::Distance leftDistance(PORT_DISTANCE_LEFT);
 pros::Distance frontDistance(PORT_DISTANCE_FRONT);
 pros::Distance backDistance(PORT_DISTANCE_BACK);
+
+class CustomIMU : public pros::IMU {
+public:
+    CustomIMU(int port, double scalar)
+    : pros::IMU(port),
+    m_port(port),
+    m_scalar(scalar) {}
+    virtual double get_rotation() const {
+    return pros::c::imu_get_rotation(m_port) * m_scalar;
+    }
+private:
+    const int m_port;
+    const double m_scalar;
+};
+CustomIMU inertial(PORT_IMU, IMU_SCALER);
 
 // --- Definitions ---
 // Drivetrain configuration, using constants from robot_config.hpp
@@ -45,7 +59,7 @@ lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder, lemlib::Omn
 lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_275, VERTICAL_TRACKING_OFFSET);
 
 // Odometry Sensors configuration
-lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, &horizontal_tracking_wheel, nullptr, &imu);
+lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, &horizontal_tracking_wheel, nullptr, &inertial);
 
 // PID Controller Settings, using constants from robot_config.hpp
 lemlib::ControllerSettings lateral_controller(LATERAL_KP, LATERAL_KI, LATERAL_KD, LATERAL_ANTI_WINDUP, LATERAL_SML_ERR, LATERAL_SML_TIMEOUT, LATERAL_LRG_ERR, LATERAL_LRG_TIMEOUT, LATERAL_SLEW);
@@ -73,7 +87,7 @@ void initialize() {
 
     pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
     chassis.calibrate();     // Calibrate the odometry sensors (IMU, encoders)
-    while (imu.is_calibrating()) {pros::delay(10);} imu.reset(); // Reset to 0 after calibrated
+    while (inertial.is_calibrating()) {pros::delay(10);} inertial.reset(); // Reset to 0 after calibrated
     
     // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
     pros::Task update_odom([&]() {
@@ -133,7 +147,7 @@ void competition_initialize() {
 void autonomous() {
     horizontal_encoder.reset_position();
     vertical_encoder.reset_position();
-    imu.reset();
+    inertial.reset();
     left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     // Select and run the chosen autonomous routine based on 'autonSelect' variable.
