@@ -7,8 +7,6 @@
 
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp"
-#include "lemlib/chassis/trackingWheel.hpp"
-#include "pros/motors.h"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -22,8 +20,16 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // --- Motor Definitions ---
 // MotorGroup is a class that allows you to control multiple motors as a single unit.
 // Using constants from robot_config.hpp for port numbers.
-pros::MotorGroup right_motors({PORT_RIGHT_MOTOR_1, PORT_RIGHT_MOTOR_2, PORT_RIGHT_MOTOR_3}, pros::MotorGearset::blue);
-pros::MotorGroup left_motors({PORT_LEFT_MOTOR_1, PORT_LEFT_MOTOR_2, PORT_LEFT_MOTOR_3}, pros::MotorGearset::blue);
+pros::Motor left_front(PORT_LEFT_MOTOR_1, pros::v5::MotorGears::blue);
+pros::Motor left_middle(PORT_LEFT_MOTOR_2, pros::v5::MotorGears::green);
+pros::Motor left_back(PORT_LEFT_MOTOR_3, pros::v5::MotorGears::blue);
+pros::Motor right_front(PORT_RIGHT_MOTOR_1, pros::v5::MotorGears::blue);
+pros::Motor right_middle(PORT_RIGHT_MOTOR_2, pros::v5::MotorGears::green);
+pros::Motor right_back(PORT_RIGHT_MOTOR_3, pros::v5::MotorGears::blue);
+pros::Motor left_PTO(PORT_LEFT_PTO, pros::v5::MotorGears::blue);
+pros::Motor right_PTO(PORT_RIGHT_PTO, pros::v5::MotorGears::blue);
+pros::MotorGroup left_motors(left_front);
+pros::MotorGroup right_motors(right_front);
 
 // --- Sensor Definitions ---
 // Using constants from robot_config.hpp for port numbers.
@@ -35,6 +41,7 @@ pros::Distance rightDistance(PORT_DISTANCE_RIGHT);
 pros::Distance leftDistance(PORT_DISTANCE_LEFT);
 pros::Distance frontDistance(PORT_DISTANCE_FRONT);
 pros::Distance backDistance(PORT_DISTANCE_BACK);
+pros::adi::DigitalOut pto(PORT_PTO_DIGITAL_OUT);
 
 class CustomIMU : public pros::IMU {
 public:
@@ -75,9 +82,13 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 // Global Variables
 int selectedAuton = 1;
 std::string teamtype = "RED";
+bool ptoState = false; // PTO state, true = drivetrain, false = intake
 
 // Runs initialization code.
 void initialize() {
+    // Add all motors to the motor groups
+    left_motors.append(left_middle); left_motors.append(left_back);
+    right_motors.append(right_middle); right_motors.append(right_back);
     // Set brake modes for drivetrain motors
     left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
@@ -193,6 +204,9 @@ void opcontrol() {
         // Control the chassis using arcade drive
         // 'leftY' controls forward/backward, 'rightX' controls turning
         chassis.arcade(leftY, rightX);
+
+        // Add more conditions
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) toggle_pto();
 
         // A small delay to yield control to other PROS tasks and reduce CPU usage.
         pros::delay(25);

@@ -25,6 +25,7 @@
  * not convenient for most student programmers.
  */
 #include "lemlib/chassis/chassis.hpp"
+#include "pros/adi.hpp"
 #define PROS_USE_SIMPLE_NAMES
 
 /**
@@ -81,14 +82,18 @@ extern lemlib::Chassis chassis;
 extern pros::Controller controller;
 extern pros::MotorGroup right_motors;
 extern pros::MotorGroup left_motors;
+extern pros::Motor left_PTO;
+extern pros::Motor right_PTO;
 extern pros::Rotation horizontal_encoder;
 extern pros::Rotation vertical_encoder;
 extern pros::Distance rightDistance;
 extern pros::Distance leftDistance;
 extern pros::Distance frontDistance;
 extern pros::Distance backDistance;
+extern pros::adi::DigitalOut pto;
 extern int selectedAuton;
 extern std::string teamtype;
+extern bool ptoState; // PTO state, true = drivetrain, false = intake
 #endif
 
 #endif  // _PROS_MAIN_H_

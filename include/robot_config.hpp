@@ -10,6 +10,8 @@
 #define PORT_LEFT_MOTOR_1  -14
 #define PORT_LEFT_MOTOR_2  -15
 #define PORT_LEFT_MOTOR_3  -16
+#define PORT_LEFT_PTO      20 
+#define PORT_RIGHT_PTO     21
 
 // --- Sensor Ports ---
 #define PORT_IMU                 2  // Inertial Measurement Unit
@@ -17,6 +19,7 @@
 #define PORT_VERTICAL_ENCODER    17 // Vertical tracking wheel encoder
 #define PORT_AUTON_SELECTOR_POT  6  // Potentiometer for autonomous routine selection
 #define PORT_TEAM_SELECTOR_POT   7  // Potentiometer used for team selection (treated as a switch)
+#define PORT_PTO_DIGITAL_OUT     8  // Digital output for PTO control
 
 // Define distance sensor ports.
 #define PORT_DISTANCE_RIGHT      4

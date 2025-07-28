@@ -6,4 +6,6 @@
 
 //Prototypes for subsytems goes here
 
+void toggle_pto(bool state = !ptoState); // Function to toggle the PTO state
+
 #endif
