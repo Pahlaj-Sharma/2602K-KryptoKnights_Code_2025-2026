@@ -7,6 +7,7 @@
 
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp"
+#include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/motors.h"
 #include "robot_config.hpp"
 #include "autons.hpp"
@@ -52,7 +53,7 @@ CustomIMU inertial(PORT_IMU, IMU_SCALER);
 
 // --- Definitions ---
 // Drivetrain configuration, using constants from robot_config.hpp
-lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_275, WHEEL_RPM, HORIZONTAL_DRIFT);
+lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_2, WHEEL_RPM, HORIZONTAL_DRIFT);
 
 // Odometry Tracking Wheel configurations, using constants from robot_config.hpp
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder, lemlib::Omniwheel::NEW_275, HORIZONTAL_TRACKING_OFFSET);

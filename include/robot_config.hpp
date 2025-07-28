@@ -25,16 +25,16 @@
 #define PORT_DISTANCE_BACK       19
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
-#define TRACK_WIDTH 11.875       // Distance between the centers of the left and right wheels in inches
+#define TRACK_WIDTH 11.55        // Distance between the centers of the left and right wheels in inches
 #define WHEEL_DIAMETER 2.75      // Diameter of your drivetrain wheels (e.g., 2.75" Omniwheels)
 #define WHEEL_RPM 450            // Max effective RPM of your drivetrain motors (e.g., 600 RPM blue motors with 1.33:1 external gearing = 450 RPM)
-#define HORIZONTAL_DRIFT 2.0     // External gearing ratio applied to the drivetrain (e.g., 2.0 for 2:1 speed increase)
-#define IMU_SCALER 1.0
+#define HORIZONTAL_DRIFT 2.0     // Horizontal drift in inches, used for odometry calculations
+#define IMU_SCALER 1.0           // Custom IMU scaling factor, adjust based on your IMU's calibration
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
 // Negative for horizontal means it's behind the center, or adjust sign based on orientation.
-#define HORIZONTAL_TRACKING_OFFSET -5.25
+#define HORIZONTAL_TRACKING_OFFSET 0
 #define VERTICAL_TRACKING_OFFSET 0
 
 // --- PID Controller Settings for LemLib Chassis ---
