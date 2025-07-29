@@ -146,9 +146,7 @@ void resetOdometry(int threshold) {
 
 void tunePID(){
     // Comment when PID tuned
-    float initial_kp = 0;
-    float initial_ki = 0;
-    float initial_kd = 0;
+    float initial_kp = 0; float initial_ki = 0; float initial_kd = 0;
 	int initial_rot_kp_pos = rot_kp.get_position();
     int initial_rot_ki_pos = rot_ki.get_position();
     int initial_rot_kd_pos = rot_kd.get_position();
@@ -159,7 +157,7 @@ void tunePID(){
 		float delta_kp = (rot_kp.get_position() - initial_rot_kp_pos) * KP_SCALE_FACTOR;
         float delta_ki = (rot_ki.get_position() - initial_rot_ki_pos) * KI_SCALE_FACTOR;
         float delta_kd = (rot_kd.get_position() - initial_rot_kd_pos) * KD_SCALE_FACTOR;
-		chassis.lateralPID.kP = initial_kp + delta_kp;
+		chassis.lateralPID.kP = initial_kp + delta_kp; // Interchange between lateral and angular
 		chassis.lateralPID.kI = initial_ki + delta_ki;
 		chassis.lateralPID.kD = initial_ki + delta_kd;
 		controller.print(0, 0, "kP: %f", chassis.lateralPID.kP);
@@ -171,7 +169,7 @@ void tunePID(){
 			while (inertial.is_calibrating()) {pros::delay(10);} inertial.reset();
 			chassis.setPose(0, 0, 0);
 			pros::delay(100);
-			chassis.moveToPoint(0, 24, 10000);
+			chassis.moveToPoint(0, 24, 10000); // Change based on movement
 			chassis.waitUntilDone();
 			controller.rumble(".");
 			controller.clear();
