@@ -1,8 +1,6 @@
-#include "lemlib/asset.hpp"
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "autons.hpp"
-#include "pros/distance.hpp"
 #include "robot_config.hpp"
 #include <cmath>
 #include <tuple>
@@ -122,7 +120,7 @@ void resetOdometry(int threshold) {
     double calculated_x, calculated_y;
 
     // Check which distance is applied to which axis based on the angle
-    if (0 <= pose.theta < M_PI_4 || M_7PI_4 < pose.theta <= M_2_PI || M_3PI_4 < pose.theta < M_5PI_4){ // 315 - 90 degrees
+    if ((0 <= pose.theta && pose.theta < M_PI_4) || (M_7PI_4 < pose.theta && pose.theta <= M_2_PI) || (M_3PI_4 < pose.theta && pose.theta < M_5PI_4)){
         if (std::get<2>(sensor_values[0]) == "X"){
         calculated_x = distance1; calculated_y = distance2;} else {calculated_x = distance2; calculated_y = distance1;}
     } else { // Other angles
@@ -146,7 +144,7 @@ void resetOdometry(int threshold) {
 
 void tunePID(){
     // Comment when PID tuned
-    float initial_kp = 0; float initial_ki = 0; float initial_kd = 0;
+    float initial_kp = chassis.lateralPID.kP; float initial_ki = chassis.lateralPID.kI; float initial_kd = chassis.lateralPID.kD;
 	int initial_rot_kp_pos = rot_kp.get_position();
     int initial_rot_ki_pos = rot_ki.get_position();
     int initial_rot_kd_pos = rot_kd.get_position();
@@ -159,10 +157,10 @@ void tunePID(){
         float delta_kd = (rot_kd.get_position() - initial_rot_kd_pos) * KD_SCALE_FACTOR;
 		chassis.lateralPID.kP = initial_kp + delta_kp; // Interchange between lateral and angular
 		chassis.lateralPID.kI = initial_ki + delta_ki;
-		chassis.lateralPID.kD = initial_ki + delta_kd;
+		chassis.lateralPID.kD = initial_kd + delta_kd;
 		controller.print(0, 0, "kP: %f", chassis.lateralPID.kP);
-        controller.print(1, 0, "kI: %f", chassis.lateralPID.kP);
-        controller.print(2, 0, "kD: %f", chassis.lateralPID.kP);
+        controller.print(1, 0, "kI: %f", chassis.lateralPID.kI);
+        controller.print(2, 0, "kD: %f", chassis.lateralPID.kD);
 		if (limit_switch.get_new_press()){
 			controller.rumble("-");
 			chassis.calibrate();

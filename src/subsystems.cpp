@@ -6,6 +6,7 @@
 
 // Code for subsytems goes here
 void toggle_pto(bool state){
+    ptoState = state;
     pto.set_value(state); // Set the PTO output based on the new state
     if (ptoState) {
         left_motors.append(left_PTO); right_motors.append(right_PTO);
@@ -13,4 +14,3 @@ void toggle_pto(bool state){
         left_motors.erase_port(PORT_LEFT_PTO); right_motors.erase_port(PORT_RIGHT_PTO);
     }
 }
-

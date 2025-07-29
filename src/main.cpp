@@ -101,9 +101,9 @@ void initialize() {
     pros::Task robot_info([&]() {
         while (true) {
             // Print Current Battery Level
-            controller.print(0, 0, "Battery: %f", pros::battery::get_capacity()); 
+            controller.print(0, 0, "Battery: %.1f", pros::battery::get_capacity()); 
             // Print Avg temp of motors
-            controller.print(1, 0, "DT Temp: %f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2)); 
+            controller.print(1, 0, "DT Temp: %.1f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2)); 
             pros::delay(5000); // Delay to save resources and prevent blocking
         }
     });
