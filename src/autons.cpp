@@ -49,16 +49,16 @@ void auton10() {
 }
 
 
-void moveLinear(double inches, int timeout, float maxspeed, float minspeed) {
+void moveLinear(double inches, int timeout, float lead, float maxspeed, float minspeed) {
     // Get position
-    lemlib::Pose currentPose = chassis.getPose(true);
+    const lemlib::Pose currentPose = chassis.getPose(true);
 
     // Calculate target position based on current pose and distance
-    double targetX = currentPose.x + (inches * std::cos(currentPose.theta));
-    double targetY = currentPose.y + (inches * std::sin(currentPose.theta));
+    const double targetX = currentPose.x + (inches * std::cos(currentPose.theta));
+    const double targetY = currentPose.y + (inches * std::sin(currentPose.theta));
 
     // Set the chassis to move to the target position
-    chassis.moveToPose(targetX, targetY, currentPose.theta, timeout, {.lead = 0.2, .maxSpeed = maxspeed, .minSpeed = minspeed});
+    chassis.moveToPose(targetX, targetY, currentPose.theta, timeout, {.lead = lead, .maxSpeed = maxspeed, .minSpeed = minspeed});
 }
 
 void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd, double lat_slew, double ang_kp, double ang_ki, double ang_kd){
@@ -95,7 +95,7 @@ void resetOdometry(int threshold) {
     const double MM_IN = 0.03937; // Conversion factor from mm to inches
     const int FIELD_SIZE = 70; // Size of the field in inches
     // Get the chassis pose
-    lemlib::Pose pose = chassis.getPose(true);
+    const lemlib::Pose pose = chassis.getPose(true);
 
     // Get sensor values
     std::vector<std::tuple<double, double, std::string>> sensor_values = {
@@ -106,17 +106,11 @@ void resetOdometry(int threshold) {
     // Check if both sensors calculate same axis and if the first sensor is not too far away
     if (std::get<2>(sensor_values[0]) == std::get<2>(sensor_values[1]) || std::get<0>(sensor_values[0]) > 10) return;
     // Calculate the maximum theta for the pose
-    double max_theta = std::max(std::abs(std::cos(pose.theta)), std::abs(std::sin(pose.theta)));
+    const double max_theta = std::max(std::abs(std::cos(pose.theta)), std::abs(std::sin(pose.theta)));
 
-    // Calculate distances to the sensor
-    double dist_to_sensor1 = std::get<0>(sensor_values[0]) * max_theta; // First
-    double dist_to_sensor2 = std::get<0>(sensor_values[1]) * max_theta; // Second
-    // Calculate distance to the center of the robot
-    double dist_to_center1 = std::get<1>(sensor_values[0]) * max_theta; // First
-    double dist_to_center2 = std::get<1>(sensor_values[1]) * max_theta; // Second
     // Find total distances
-    double distance1 = dist_to_sensor1 + dist_to_center1;
-    double distance2 = dist_to_sensor2 + dist_to_center2;
+    const double distance1 = (std::get<0>(sensor_values[0]) * max_theta) + (std::get<1>(sensor_values[0]) * max_theta);
+    const double distance2 = (std::get<0>(sensor_values[1]) * max_theta) + (std::get<1>(sensor_values[1]) * max_theta);
     double calculated_x, calculated_y;
 
     // Check which distance is applied to which axis based on the angle
@@ -144,17 +138,17 @@ void resetOdometry(int threshold) {
 
 void tunePID(){
     // Comment when PID tuned
-    float initial_kp = chassis.lateralPID.kP; float initial_ki = chassis.lateralPID.kI; float initial_kd = chassis.lateralPID.kD;
-	int initial_rot_kp_pos = rot_kp.get_position();
-    int initial_rot_ki_pos = rot_ki.get_position();
-    int initial_rot_kd_pos = rot_kd.get_position();
+    double initial_kp = chassis.lateralPID.kP; double initial_ki = chassis.lateralPID.kI; double initial_kd = chassis.lateralPID.kD;
+	const int initial_rot_kp_pos = rot_kp.get_position();
+    const int initial_rot_ki_pos = rot_ki.get_position();
+    const int initial_rot_kd_pos = rot_kd.get_position();
 	#define KP_SCALE_FACTOR 0.1f // Adjust Kp by 0.1 for every degree of rotation
 	#define KI_SCALE_FACTOR 0.01f // Adjust Ki
 	#define KD_SCALE_FACTOR 0.1f // Adjust Kd
 	while (true) {
-		float delta_kp = (rot_kp.get_position() - initial_rot_kp_pos) * KP_SCALE_FACTOR;
-        float delta_ki = (rot_ki.get_position() - initial_rot_ki_pos) * KI_SCALE_FACTOR;
-        float delta_kd = (rot_kd.get_position() - initial_rot_kd_pos) * KD_SCALE_FACTOR;
+		double delta_kp = (rot_kp.get_position() - initial_rot_kp_pos) * KP_SCALE_FACTOR;
+        double delta_ki = (rot_ki.get_position() - initial_rot_ki_pos) * KI_SCALE_FACTOR;
+        double delta_kd = (rot_kd.get_position() - initial_rot_kd_pos) * KD_SCALE_FACTOR;
 		chassis.lateralPID.kP = initial_kp + delta_kp; // Interchange between lateral and angular
 		chassis.lateralPID.kI = initial_ki + delta_ki;
 		chassis.lateralPID.kD = initial_kd + delta_kd;

@@ -46,11 +46,11 @@ ScalarIMU inertial(PORT_IMU, IMU_SCALER);
 
 // --- Definitions ---
 // Drivetrain configuration, using constants from robot_config.hpp
-lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_2, WHEEL_RPM, HORIZONTAL_DRIFT);
+lemlib::Drivetrain drivetrain(&left_motors, &right_motors, TRACK_WIDTH, lemlib::Omniwheel::NEW_275, WHEEL_RPM, HORIZONTAL_DRIFT);
 
 // Odometry Tracking Wheel configurations, using constants from robot_config.hpp
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder, lemlib::Omniwheel::NEW_275, HORIZONTAL_TRACKING_OFFSET);
-lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_275, VERTICAL_TRACKING_OFFSET);
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder, lemlib::Omniwheel::NEW_2, HORIZONTAL_TRACKING_OFFSET);
+lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_2, VERTICAL_TRACKING_OFFSET);
 
 // Odometry Sensors configuration
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, &horizontal_tracking_wheel, nullptr, &inertial);
@@ -95,18 +95,16 @@ void initialize() {
             pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Y: %f", chassis.getPose().y);      // Y coordinate
             pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta); // Heading (angle)
             pros::delay(25); // Small delay to save resources and prevent blocking
-        }
-    });
+        }});
     // Create a task to continuously print robot temp, battery, auton to the controller screen
     pros::Task robot_info([&]() {
         while (true) {
             // Print Current Battery Level
-            controller.print(0, 0, "Battery: %.1f", pros::battery::get_capacity()); 
+            controller.print(0, 0, "Battery: %.1f", pros::battery::get_capacity());
             // Print Avg temp of motors
             controller.print(1, 0, "DT Temp: %.1f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2)); 
             pros::delay(5000); // Delay to save resources and prevent blocking
-        }
-    });
+        }});
 }
 
 // Runs while the robot is in the disabled state.
@@ -131,7 +129,7 @@ void competition_initialize() {
         // Determine team type based on teamSelector potentiometer's angle
         teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
         // Display selected autonomous routine description on the screen
-        pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Autonomous: " + auton_map[selectedAuton]).c_str());
+        pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Auton: " + auton_map[selectedAuton]).c_str());
         // Display selected team type
         pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", ("Team: " + teamtype).c_str()); 
         // Display on Contoller screen
@@ -182,7 +180,6 @@ void opcontrol() {
     left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
     while (true) {
-        // --- Driving Control (Arcade Style) ---
         // Get joystick values for left Y-axis (forward/backward) and right X-axis (turning)
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
