@@ -61,7 +61,7 @@ void moveLinear(double inches, int timeout, float lead, float maxspeed, float mi
     chassis.moveToPose(targetX, targetY, currentPose.theta, timeout, {.lead = lead, .maxSpeed = maxspeed, .minSpeed = minspeed});
 }
 
-void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd, double lat_slew, double ang_kp, double ang_ki, double ang_kd){
+void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd, double ang_kp, double ang_ki, double ang_kd){
     // normal, fast, precise
     int selector = 0;
 
@@ -166,6 +166,6 @@ void tunePID(){
 			controller.rumble(".");
 			controller.clear();
 		}
-		pros::delay(40);
+		pros::delay(100);
 	}
 }
