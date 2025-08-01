@@ -67,8 +67,8 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 
 // Global Variables
 int selectedAuton = 1;
-std::string teamtype = "RED";
-bool ptoState = false; // PTO state, true = drivetrain, false = intake
+std::string teamType = "RED";
+bool ptoState = false; // PTO state, true = intake, false = drivetrain
 
 // Runs initialization code.
 void initialize() {
@@ -127,13 +127,13 @@ void competition_initialize() {
         // Determine selected autonomous routine
         selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
         // Determine team type based on teamSelector potentiometer's angle
-        teamtype = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
+        teamType = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
         // Display selected autonomous routine description on the screen
         pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Auton: " + auton_map[selectedAuton]).c_str());
         // Display selected team type
-        pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", ("Team: " + teamtype).c_str()); 
+        pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", ("Team: " + teamType).c_str()); 
         // Display on Contoller screen
-        controller.print(2, 0, "%s :: %s",teamtype.c_str(),  auton_map[selectedAuton].c_str());
+        controller.print(2, 0, "%s :: %s",teamType.c_str(),  auton_map[selectedAuton].c_str());
         // Add a small delay to control update rate and prevent CPU hogging.
         pros::delay(200);
     }

@@ -1,10 +1,6 @@
 #ifndef AUTONS_HPP
 #define AUTONS_HPP
-#include "lemlib/asset.hpp"
 #include "main.h"
-#include "lemlib/api.hpp"
-#include "pros/distance.hpp"
-#include <string>
 
 void auton1();
 void auton2();
@@ -17,7 +13,4 @@ void auton8();
 void auton9();
 void auton10();
 
-void moveLinear(double inches, int timeout = 2000, float lead = 0.2, float maxspeed = 70, float minspeed = 40);
-void chassisPID(std::string premade = "normal", double lat_kp = chassis.lateralPID.kP, double lat_ki = chassis.lateralPID.kI, double lat_kd = chassis.lateralPID.kD, double ang_kp = chassis.angularPID.kP, double ang_ki = chassis.angularPID.kI, double ang_kd = chassis.angularPID.kD);
-void resetOdometry(int threshold = 5);
 #endif

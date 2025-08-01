@@ -93,7 +93,7 @@ extern pros::Distance frontDistance;
 extern pros::Distance backDistance;
 extern pros::adi::DigitalOut pto;
 extern int selectedAuton;
-extern std::string teamtype;
+extern std::string teamType;
 extern bool ptoState; // PTO state, true = drivetrain, false = intake
 
 class ScalarIMU : public pros::IMU {
