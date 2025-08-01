@@ -10,6 +10,7 @@
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
+#include "functions.hpp"
 #include <map>
 #include <string>
 

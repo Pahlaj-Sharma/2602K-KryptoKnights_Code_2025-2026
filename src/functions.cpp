@@ -2,7 +2,6 @@
 #include "lemlib/api.hpp"
 #include "autons.hpp"
 #include "robot_config.hpp"
-#include "subsystems.hpp"
 #include <cmath>
 #include <tuple>
 #include <vector>
@@ -91,11 +90,12 @@ void resetOdometry(int threshold) {
     if (pose.y > 0) calculated_y = FIELD_SIZE - calculated_y; else calculated_y -= FIELD_SIZE;
 
     // Set the pose
-    if ((std::abs(calculated_x - pose.x) < threshold) && (std::abs(calculated_y - pose.y) < threshold)){
+    const double x_threshold = std::abs(calculated_x - pose.x), y_threshold = std::abs(calculated_y - pose.y);
+    if ((x_threshold < threshold) && y_threshold < threshold){
         chassis.setPose(calculated_x, calculated_y, chassis.getPose().theta);
-    } else if (std::abs(calculated_x - pose.x) < threshold){
+    } else if (x_threshold < threshold){
         chassis.setPose(calculated_x, pose.y, chassis.getPose().theta);
-    } else if (std::abs(calculated_y - pose.y) < threshold){
+    } else if (y_threshold < threshold){
         chassis.setPose(pose.x, calculated_y, chassis.getPose().theta);
     } else return;
 }
