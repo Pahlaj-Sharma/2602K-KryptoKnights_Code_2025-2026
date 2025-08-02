@@ -11,8 +11,9 @@ ASSET(path_jerryio_txt);
 
 void auton1() {
     chassis.setPose(0, 0, 0);
+    chassisPID(PIDPreset::normal);
+    chassisPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
     moveLinear(12);
-    chassisPID("precise");
     resetOdometry();
 }
 void auton2() {

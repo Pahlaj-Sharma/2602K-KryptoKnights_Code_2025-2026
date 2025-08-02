@@ -57,8 +57,8 @@ lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwhe
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, &horizontal_tracking_wheel, nullptr, &inertial);
 
 // PID Controller Settings, using constants from robot_config.hpp
-lemlib::ControllerSettings lateral_controller(LATERAL_KP, LATERAL_KI, LATERAL_KD, LATERAL_ANTI_WINDUP, LATERAL_SML_ERR, LATERAL_SML_TIMEOUT, LATERAL_LRG_ERR, LATERAL_LRG_TIMEOUT, LATERAL_SLEW);
-lemlib::ControllerSettings angular_controller(ANGULAR_KP, ANGULAR_KI, ANGULAR_KD, ANGULAR_ANTI_WINDUP, ANGULAR_SML_ERR, ANGULAR_SML_TIMEOUT, ANGULAR_LRG_ERR, ANGULAR_LRG_TIMEOUT, ANGULAR_SLEW);
+lemlib::ControllerSettings lateral_controller(LATERAL_PID.kP, LATERAL_PID.kI, LATERAL_PID.kD, LATERAL_PID.antiWindup, LATERAL_PID.smallError, LATERAL_PID.smallTimeout, LATERAL_PID.largeError, LATERAL_PID.largeTimeout, LATERAL_PID.slew);
+lemlib::ControllerSettings angular_controller(ANGULAR_PID.kP, ANGULAR_PID.kI, ANGULAR_PID.kD, ANGULAR_PID.antiWindup, ANGULAR_PID.smallError, ANGULAR_PID.smallTimeout, ANGULAR_PID.largeError, ANGULAR_PID.largeTimeout, ANGULAR_PID.slew);
 
 // Input Curve for throttle/steer input during driver control
 lemlib::ExpoDriveCurve drive_curve(5, 20, 1.02);
@@ -67,6 +67,19 @@ lemlib::ExpoDriveCurve drive_curve(5, 20, 1.02);
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors, &drive_curve, &drive_curve);
 
 // Global Variables
+std::map<int, std::pair<std::string, std::function<void()>>> autons = {
+    {0, {"name", auton1}},
+    {1, {"name", auton1}},
+    {2, {"name", auton2}},
+    {3, {"name", auton3}},
+    {4, {"name", auton4}},
+    {5, {"name", auton5}},
+    {6, {"name", auton6}},
+    {7, {"name", auton7}},
+    {8, {"name", auton8}},
+    {9, {"name", auton9}},
+    {10, {"name", auton10}}
+};
 int selectedAuton = 1;
 std::string teamType = "RED";
 bool ptoState = false; // PTO state, true = intake, false = drivetrain
@@ -86,7 +99,6 @@ void initialize() {
 
     pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
     chassis.calibrate();     // Calibrate the odometry sensors (IMU, encoders)
-    while (inertial.is_calibrating()) {pros::delay(10);} inertial.reset(); // Reset to 0 after calibrated
     
     // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
     pros::Task update_odom([&]() {
@@ -117,11 +129,6 @@ void disabled() {
 // Runs after initialize(), and before autonomous() or opcontrol().
 void competition_initialize() {
     pros::screen::erase(); // Clear the screen initially for a clean display
-    // This map defines the names of your autonomous routines.
-    std::map<int, std::string> auton_map = {
-        {1, "Auton1"}, {2, "Auton2"}, {3, "Auton3"}, {4, "Auton4"}, {5, "Auton5"},
-        {6, "Auton6"}, {7, "Auton7"}, {8, "Auton8"}, {9, "Auton9"}, {10, "Auton10"},
-    };
     while (pros::competition::is_disabled()) {
         // Read potentiometer values to determine selection
         int potValue = autonSelector.get_value();
@@ -129,13 +136,12 @@ void competition_initialize() {
         selectedAuton = (potValue < 0) ? 1 : (potValue > 329) ? 10 : (potValue / 33) + 1;
         // Determine team type based on teamSelector potentiometer's angle
         teamType = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
-        // Display selected autonomous routine description on the screen
-        pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Auton: " + auton_map[selectedAuton]).c_str());
-        // Display selected team type
+        if (autons.count(selectedAuton)) {
+            std::string autonName = autons.at(selectedAuton).first;
+            pros::screen::print(pros::E_TEXT_MEDIUM, 5, "%s", ("Auton: " + autonName).c_str());
+            controller.print(2, 0, "%s :: %s", teamType.c_str(), autonName.c_str());
+        }
         pros::screen::print(pros::E_TEXT_MEDIUM, 6, "%s", ("Team: " + teamType).c_str()); 
-        // Display on Contoller screen
-        controller.print(2, 0, "%s :: %s",teamType.c_str(),  auton_map[selectedAuton].c_str());
-        // Add a small delay to control update rate and prevent CPU hogging.
         pros::delay(200);
     }
 }
@@ -144,34 +150,15 @@ void competition_initialize() {
 void autonomous() {
     horizontal_encoder.reset_position();
     vertical_encoder.reset_position();
-    inertial.reset();
     left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
-    // Select and run the chosen autonomous routine based on 'autonSelect' variable.
-    // (0 = blue side auton, 1 = red side auton, or specific routine index)
-    switch (selectedAuton) {
-        case 1:
-            auton1(); break;
-        case 2:
-            auton2(); break;
-        case 3:
-            auton3(); break;
-        case 4:
-            auton4(); break;
-        case 5:
-            auton5(); break;
-        case 6:
-            auton6(); break;
-        case 7:
-            auton7(); break;
-        case 8:
-            auton8(); break;
-        case 9:
-            auton9(); break;
-        case 10:
-            auton10(); break;
-        default:
-            auton1(); break;
+
+    // Select and run the chosen autonomous routine based on 'selectedAuton' variable.
+    if (autons.count(selectedAuton)) {
+        autons.at(selectedAuton).second();
+    } else {
+        // Default to a safe routine if something goes wrong
+        autons.at(0).second();
     }
 }
 
@@ -190,7 +177,7 @@ void opcontrol() {
         chassis.arcade(leftY, rightX);
 
         // Add more conditions for PTO toggle
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) toggle_pto();
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) toggle_pto(!ptoState);
 
         // A small delay to yield control to other PROS tasks and reduce CPU usage.
         pros::delay(25);

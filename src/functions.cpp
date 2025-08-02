@@ -2,6 +2,7 @@
 #include "lemlib/api.hpp"
 #include "autons.hpp"
 #include "robot_config.hpp"
+#include "functions.hpp"
 #include <cmath>
 #include <tuple>
 #include <vector>
@@ -24,80 +25,121 @@ void moveLinear(double inches, int timeout, float lead, float maxspeed, float mi
     chassis.moveToPose(targetX, targetY, currentPose.theta, timeout, {.lead = lead, .maxSpeed = maxspeed, .minSpeed = minspeed});
 }
 
-void chassisPID(std::string premade, double lat_kp, double lat_ki, double lat_kd, double ang_kp, double ang_ki, double ang_kd){
-    // normal, fast, precise
-    int selector = 0;
+void chassisPID(PIDPreset premade) {
+    PIDConstants lateral_pid;
+    PIDConstants angular_pid;
+    switch (premade) {
+        case PIDPreset::normal:
+            lateral_pid = LATERAL_PID;
+            angular_pid = ANGULAR_PID;
+            break;
+        case PIDPreset::fast:
+            // Define your 'fast' PID constants here
+            // Example:
+            lateral_pid = F_LATERAL_PID;
+            angular_pid = F_ANGULAR_PID;
+            break;
+        case PIDPreset::precise:
+            // Define your 'precise' PID constants here
+            // Example:
+            lateral_pid = P_LATERAL_PID;
+            angular_pid = P_ANGULAR_PID;
+            break;
+        default:
+            // Default to normal PID
+            lateral_pid = LATERAL_PID;
+            angular_pid = ANGULAR_PID;
+            break;
+    }}
 
-    if (premade=="normal") selector=1; else if(premade=="fast") selector=2; else if(premade=="precise") selector=3;
-
-    switch (selector) {
-    case 0:
-        // custom
-        chassis.lateralPID.kP = lat_kp; chassis.lateralPID.kI = lat_ki; chassis.lateralPID.kD = lat_kd;
-        chassis.angularPID.kP = ang_kp; chassis.angularPID.kI = ang_ki; chassis.angularPID.kD = ang_kd;
-        break;
-    case 1:
-        //normal
-        chassis.lateralPID.kP = LATERAL_KP; chassis.lateralPID.kI = LATERAL_KI; chassis.lateralPID.kD = LATERAL_KD; 
-        chassis.angularPID.kP = ANGULAR_KP; chassis.angularPID.kI = ANGULAR_KI; chassis.angularPID.kD = ANGULAR_KD;
-        break;
-    case 2:
-        //fast
-        chassis.lateralPID.kP = F_LATERAL_KP; chassis.lateralPID.kI = F_LATERAL_KI; chassis.lateralPID.kD = F_LATERAL_KD;
-        chassis.angularPID.kP = F_ANGULAR_KP; chassis.angularPID.kI = F_ANGULAR_KI; chassis.angularPID.kD = F_ANGULAR_KD;
-        break;
-    case 3:
-        //precise
-        chassis.lateralPID.kP = P_LATERAL_KP; chassis.lateralPID.kI = P_LATERAL_KI; chassis.lateralPID.kD = P_LATERAL_KD;
-        chassis.angularPID.kP = P_ANGULAR_KP; chassis.angularPID.kI = P_ANGULAR_KI; chassis.angularPID.kD = P_ANGULAR_KD;
-        break;
-        }
+void chassisPID(double lat_kp, double lat_ki, double lat_kd, double ang_kp, double ang_ki, double ang_kd) {
+    // Set the lateral PID constants
+    chassis.lateralPID.kP = lat_kp; chassis.lateralPID.kI = lat_ki; chassis.lateralPID.kD = lat_kd;
+    // Set the angular PID constants
+    chassis.angularPID.kP = ang_kp; chassis.angularPID.kI = ang_ki; chassis.angularPID.kD = ang_kd;
 }
 
-void resetOdometry(int threshold) {
-    const double MM_IN = 0.03937; // Conversion factor from mm to inches
-    const int FIELD_SIZE = 70; // Size of the field in inches
-    // Get the chassis pose
-    const lemlib::Pose pose = chassis.getPose(true);
+struct SensorData {
+    double distance;
+    double offset;
+    char axis; // 'X' or 'Y'
+    // Optional: add a comparison operator to sort the struct directly
+    bool operator<(const SensorData& other) const {
+        return this->distance < other.distance;
+    }};
 
-    // Get sensor values
-    std::vector<std::tuple<double, double, std::string>> sensor_values = {
-        {frontDistance.get() * MM_IN, DS_FRONT_CENTER, "Y"}, {backDistance.get() * MM_IN, DS_BACK_CENTER, "Y"},
-        {leftDistance.get() * MM_IN, DS_LEFT_CENTER, "X"}, {rightDistance.get() * MM_IN, DS_RIGHT_CENTER, "X"}};
-    // Sort the sensor values
-    std::sort(sensor_values.begin(), sensor_values.end());
-    // Check if both sensors calculate same axis and if the first sensor is not too far away
-    if (std::get<2>(sensor_values[0]) == std::get<2>(sensor_values[1]) || std::get<0>(sensor_values[0]) > 10) return;
-    // Calculate the maximum theta for the pose
-    const double max_theta = std::max(std::abs(std::cos(pose.theta)), std::abs(std::sin(pose.theta)));
+void resetOdometry(double threshold) {
+    constexpr double MM_IN = 0.03937;
+    constexpr double FIELD_SIZE = 70.0; // Using double for consistency with other calculations
 
-    // Find total distances
-    const double distance1 = (std::get<0>(sensor_values[0]) * max_theta) + (std::get<1>(sensor_values[0]) * max_theta);
-    const double distance2 = (std::get<0>(sensor_values[1]) * max_theta) + (std::get<1>(sensor_values[1]) * max_theta);
-    double calculated_x, calculated_y;
+    // Store the pose once to avoid multiple calls and ensure consistency
+    const lemlib::Pose initial_pose = chassis.getPose(true);
 
-    // Check which distance is applied to which axis based on the angle
-    if ((0 <= pose.theta && pose.theta < M_PI_4) || (M_7PI_4 < pose.theta && pose.theta <= M_2_PI) || (M_3PI_4 < pose.theta && pose.theta < M_5PI_4)){
-        if (std::get<2>(sensor_values[0]) == "X"){
-        calculated_x = distance1; calculated_y = distance2;} else {calculated_x = distance2; calculated_y = distance1;}
-    } else { // Other angles
-        if (std::get<2>(sensor_values[0]) == "X"){
-        calculated_x = distance2; calculated_y = distance1;} else {calculated_x = distance1; calculated_y = distance2;}
+    // Populate a vector of structs for better readability than a tuple
+    std::vector<SensorData> sensor_readings = {
+        {frontDistance.get() * MM_IN, DS_FRONT_CENTER, 'Y'},
+        {backDistance.get() * MM_IN, DS_BACK_CENTER, 'Y'},
+        {leftDistance.get() * MM_IN, DS_LEFT_CENTER, 'X'},
+        {rightDistance.get() * MM_IN, DS_RIGHT_CENTER, 'X'}
+    };
+    // Sort the sensor readings based on distance
+    std::sort(sensor_readings.begin(), sensor_readings.end());
+
+    // Check if the two closest sensors are on the same axis or if the first sensor is too far
+    if (sensor_readings[0].axis == sensor_readings[1].axis || sensor_readings[0].distance > 10.0) {
+        return;
     }
 
-    // Check the quadrant
-    if (pose.x > 0) calculated_x = FIELD_SIZE - calculated_x; else calculated_x -= FIELD_SIZE;
-    if (pose.y > 0) calculated_y = FIELD_SIZE - calculated_y; else calculated_y -= FIELD_SIZE;
+    // Get the two closest sensors
+    const SensorData& sensor1 = sensor_readings[0];
+    const SensorData& sensor2 = sensor_readings[1];
 
-    // Set the pose
-    const double x_threshold = std::abs(calculated_x - pose.x), y_threshold = std::abs(calculated_y - pose.y);
-    if ((x_threshold < threshold) && y_threshold < threshold){
-        chassis.setPose(calculated_x, calculated_y, chassis.getPose().theta);
-    } else if (x_threshold < threshold){
-        chassis.setPose(calculated_x, pose.y, chassis.getPose().theta);
-    } else if (y_threshold < threshold){
-        chassis.setPose(pose.x, calculated_y, chassis.getPose().theta);
-    } else return;
+    // Calculate max_theta
+    const double max_theta = std::max(std::abs(std::cos(initial_pose.theta)), std::abs(std::sin(initial_pose.theta)));
+
+    // Calculate total distances
+    const double distance1 = (sensor1.distance * max_theta) + (sensor1.offset * max_theta);
+    const double distance2 = (sensor2.distance * max_theta) + (sensor2.offset * max_theta);
+
+    double calculated_x, calculated_y;
+    // Use an intuitive variable name for the condition
+    const bool is_near_vertical_axis = (0 <= initial_pose.theta && initial_pose.theta < M_PI_4) || 
+                                       (M_7PI_4 < initial_pose.theta && initial_pose.theta <= M_2_PI) ||
+                                       (M_3PI_4 < initial_pose.theta && initial_pose.theta < M_5PI_4);
+
+    if (is_near_vertical_axis) {
+        if (sensor1.axis == 'X') {
+            calculated_x = distance1; calculated_y = distance2;
+        } else {
+            calculated_x = distance2; calculated_y = distance1;
+        }
+    } else { // Other angles
+        if (sensor1.axis == 'X') {
+            calculated_x = distance2; calculated_y = distance1;
+        } else {
+            calculated_x = distance1; calculated_y = distance2;
+        }
+    }
+
+    // Simplify quadrant checks for calculated_x and calculated_y
+    if (initial_pose.x > 0) calculated_x = FIELD_SIZE - calculated_x;
+    if (initial_pose.x < 0) calculated_x -= FIELD_SIZE;
+
+    if (initial_pose.y > 0) calculated_y = FIELD_SIZE - calculated_y;
+    if (initial_pose.y < 0) calculated_y -= FIELD_SIZE;
+
+    // Set the pose if within threshold
+    const double x_threshold = std::abs(calculated_x - initial_pose.x);
+    const double y_threshold = std::abs(calculated_y - initial_pose.y);
+    const lemlib::Pose current_pose = chassis.getPose();
+
+    if ((x_threshold < threshold) && (y_threshold < threshold)) {
+        chassis.setPose(calculated_x, calculated_y, current_pose.theta);
+    } else if (x_threshold < threshold) {
+        chassis.setPose(calculated_x, current_pose.y, current_pose.theta);
+    } else if (y_threshold < threshold) {
+        chassis.setPose(current_pose.x, calculated_y, current_pose.theta);
+    }
 }
 
 void tunePID(){
@@ -106,9 +148,9 @@ void tunePID(){
 	const int initial_rot_kp_pos = rot_kp.get_position();
     const int initial_rot_ki_pos = rot_ki.get_position();
     const int initial_rot_kd_pos = rot_kd.get_position();
-	#define KP_SCALE_FACTOR 0.1f // Adjust Kp by 0.1 for every degree of rotation
-	#define KI_SCALE_FACTOR 0.01f // Adjust Ki
-	#define KD_SCALE_FACTOR 0.1f // Adjust Kd
+	constexpr float KP_SCALE_FACTOR = 0.1f; // Adjust Kp by 0.1 for every degree of rotation
+	constexpr float KI_SCALE_FACTOR = 0.01f; // Adjust Ki
+	constexpr float KD_SCALE_FACTOR = 0.1f; // Adjust Kd
 	while (true) {
 		double delta_kp = (rot_kp.get_position() - initial_rot_kp_pos) * KP_SCALE_FACTOR;
         double delta_ki = (rot_ki.get_position() - initial_rot_ki_pos) * KI_SCALE_FACTOR;
@@ -122,7 +164,6 @@ void tunePID(){
 		if (limit_switch.get_new_press()){
 			controller.rumble("-");
 			chassis.calibrate();
-			while (inertial.is_calibrating()) {pros::delay(10);} inertial.reset();
 			chassis.setPose(0, 0, 0);
 			pros::delay(100);
 			chassis.moveToPoint(0, 24, 10000); // Change based on movement

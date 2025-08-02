@@ -4,87 +4,86 @@
 // --- Motor Ports ---
 // Define motor port numbers for clarity and easy modification.
 // Negative numbers usually indicate a motor's direction needs to be reversed.
-#define PORT_RIGHT_MOTOR_1 11
-#define PORT_RIGHT_MOTOR_2 13
-#define PORT_RIGHT_MOTOR_3 12
-#define PORT_LEFT_MOTOR_1  -14
-#define PORT_LEFT_MOTOR_2  -15
-#define PORT_LEFT_MOTOR_3  -16
-#define PORT_LEFT_PTO      20 
-#define PORT_RIGHT_PTO     21
+inline constexpr int PORT_RIGHT_MOTOR_1 = 11;
+inline constexpr int PORT_RIGHT_MOTOR_2 = 13;
+inline constexpr int PORT_RIGHT_MOTOR_3 = 12;
+inline constexpr int PORT_LEFT_MOTOR_1  = -14;
+inline constexpr int PORT_LEFT_MOTOR_2  = -15;
+inline constexpr int PORT_LEFT_MOTOR_3  = -16;
+inline constexpr int PORT_LEFT_PTO      = 20;
+inline constexpr int PORT_RIGHT_PTO     = 21;
 
 // --- Sensor Ports ---
-#define PORT_IMU                 2  // Inertial Measurement Unit
-#define PORT_HORIZONTAL_ENCODER  -3 // Horizontal tracking wheel encoder (negative for reversed direction)
-#define PORT_VERTICAL_ENCODER    17 // Vertical tracking wheel encoder
-#define PORT_AUTON_SELECTOR_POT  6  // Potentiometer for autonomous routine selection
-#define PORT_TEAM_SELECTOR_POT   7  // Potentiometer used for team selection (treated as a switch)
-#define PORT_PTO_DIGITAL_OUT     8  // Digital output for PTO control
+inline constexpr int PORT_IMU                 = 2;  // Inertial Measurement Unit
+inline constexpr int PORT_HORIZONTAL_ENCODER  = -3; // Horizontal tracking wheel encoder (negative for reversed direction)
+inline constexpr int PORT_VERTICAL_ENCODER    = 17; // Vertical tracking wheel encoder
+inline constexpr int PORT_AUTON_SELECTOR_POT  = 6;  // Potentiometer for autonomous routine selection
+inline constexpr int PORT_TEAM_SELECTOR_POT   = 7;  // Potentiometer used for team selection (treated as a switch)
+inline constexpr int PORT_PTO_DIGITAL_OUT     = 8;  // Digital output for PTO control
 
 // Define distance sensor ports.
-#define PORT_DISTANCE_RIGHT      4
-#define PORT_DISTANCE_LEFT       18
-#define PORT_DISTANCE_FRONT      5
-#define PORT_DISTANCE_BACK       19
+inline constexpr int PORT_DISTANCE_RIGHT = 4;
+inline constexpr int PORT_DISTANCE_LEFT  = 18;
+inline constexpr int PORT_DISTANCE_FRONT = 5;
+inline constexpr int PORT_DISTANCE_BACK  = 19;
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
-#define TRACK_WIDTH 11.55        // Distance between the centers of the left and right wheels in inches
-#define WHEEL_DIAMETER 2.75      // Diameter of your drivetrain wheels (e.g., 2.75" Omniwheels)
-#define WHEEL_RPM 450            // Max effective RPM of your drivetrain motors (e.g., 600 RPM blue motors with 1.33:1 external gearing = 450 RPM)
-#define HORIZONTAL_DRIFT 2.0     // Horizontal drift in inches, used for odometry calculations
-#define IMU_SCALER 1.0           // Custom IMU scaling factor, adjust based on your IMU's calibration
+inline constexpr double TRACK_WIDTH      = 11.55; // Distance between the centers of the left and right wheels in inches
+inline constexpr double WHEEL_DIAMETER   = 2.75;  // Diameter of your drivetrain wheels (e.g., 2.75" Omniwheels)
+inline constexpr int    WHEEL_RPM        = 450;   // Max effective RPM of your drivetrain motors (e.g., 600 RPM blue motors with 1.33:1 external gearing = 450 RPM)
+inline constexpr double HORIZONTAL_DRIFT = 2.0;   // Horizontal drift in inches, used for odometry calculations
+inline constexpr double IMU_SCALER       = 1.0;   // Custom IMU scaling factor, adjust based on your IMU's calibration
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
 // Negative for horizontal means it's behind the center, or adjust sign based on orientation.
-#define HORIZONTAL_TRACKING_OFFSET 0
-#define VERTICAL_TRACKING_OFFSET 0
+inline constexpr double HORIZONTAL_TRACKING_OFFSET = 0.0;
+inline constexpr double VERTICAL_TRACKING_OFFSET   = 0.0;
 
 // --- PID Controller Settings for LemLib Chassis ---
-// These constants define how the robot's movement and turning are controlled.
+// These are good candidates for a struct to group them together
+// especially since you have multiple sets of constants (F_LATERAL, P_LATERAL).
+struct PIDConstants {
+    double kP;
+    double kI;
+    double kD;
+    int antiWindup;
+    int smallError;
+    int smallTimeout;
+    int largeError;
+    int largeTimeout;
+    int slew;
+};
 
-// Lateral PID (for straight movement and path following)
-#define LATERAL_KP 7.0           // Proportional constant
-#define LATERAL_KI 0.0           // Integral constant (often zero for simple control)
-#define LATERAL_KD 9.0           // Derivative constant
-#define LATERAL_ANTI_WINDUP 3    // Error threshold (in inches) to consider the robot settled
-#define LATERAL_SML_ERR 1        // Smallest error
-#define LATERAL_SML_TIMEOUT 100  // Smalles timeout in calculation
-#define LATERAL_LRG_ERR 2        // Largest error
-#define LATERAL_LRG_TIMEOUT 500  // Largest timeout in calculation
-#define LATERAL_SLEW 15          // Slew
-// Custom PIDs
-#define F_LATERAL_KP 7.0           // Proportional constant
-#define F_LATERAL_KI 0.0           // Integral constant (often zero for simple control)
-#define F_LATERAL_KD 9.0           // Derivative constant
-#define P_LATERAL_KP 7.0           // Proportional constant
-#define P_LATERAL_KI 0.0           // Integral constant (often zero for simple control)
-#define P_LATERAL_KD 9.0           // Derivative constant
+// Lateral PID
+inline constexpr PIDConstants LATERAL_PID {
+    7.0, 0.0, 9.0, 3, 1, 100, 2, 500, 15
+};
+// Custon Lateral PIDs
+inline constexpr PIDConstants F_LATERAL_PID {
+    7.0, 0.0, 9.0, 3, 1, 100, 2, 500, 15
+};
 
-// Angular PID (for turning)
-#define ANGULAR_KP 2.0           // Proportional constant
-#define ANGULAR_KI 0.0           // Integral constant
-#define ANGULAR_KD 16.0          // Derivative constant
-#define ANGULAR_ANTI_WINDUP 3    // Error threshold (in degrees) to consider the robot settled
-#define ANGULAR_SML_ERR 1        // Smallest error
-#define ANGULAR_SML_TIMEOUT 100  // Smalles timeout in calculation
-#define ANGULAR_LRG_ERR 2        // Largest error
-#define ANGULAR_LRG_TIMEOUT 500  // Largest timeout in calculation
-#define ANGULAR_SLEW 0           // Slew
-// Custom PIDs
-#define F_ANGULAR_KP 2.0           // Proportional constant
-#define F_ANGULAR_KI 0.0           // Integral constant
-#define F_ANGULAR_KD 16.0          // Derivative constant
-#define P_ANGULAR_KP 2.0           // Proportional constant
-#define P_ANGULAR_KI 0.0           // Integral constant
-#define P_ANGULAR_KD 16.0          // Derivative constant
+inline constexpr PIDConstants P_LATERAL_PID {
+    7.0, 0.0, 9.0, 3, 1, 100, 2, 500, 15
+};
+// Angular PID
+inline constexpr PIDConstants ANGULAR_PID {
+    2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
+};
+// Custom Angular PIDs
+inline constexpr PIDConstants F_ANGULAR_PID {
+    2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
+};
+inline constexpr PIDConstants P_ANGULAR_PID {
+    2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
+};
 
 // --- Distance Sensor Offsets ---
-// Distance from the actual distance sensor reading point to the closest physical edge of the robot
-// in that direction. E.g., if your front sensor is 1 inch behind the absolute front of the robot.
-#define DS_FRONT_CENTER 5.5
-#define DS_BACK_CENTER  1.375
-#define DS_LEFT_CENTER  1.75
-#define DS_RIGHT_CENTER 1.75
+// Distance from the actual distance sensor reading point to the center of the robot in inches.
+inline constexpr double DS_FRONT_CENTER = 5.5;
+inline constexpr double DS_BACK_CENTER  = 1.375;
+inline constexpr double DS_LEFT_CENTER  = 1.75;
+inline constexpr double DS_RIGHT_CENTER = 1.75;
 
 #endif
