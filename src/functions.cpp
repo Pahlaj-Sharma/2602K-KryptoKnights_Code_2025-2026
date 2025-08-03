@@ -86,9 +86,7 @@ void resetOdometry(double threshold) {
     std::sort(sensor_readings.begin(), sensor_readings.end());
 
     // Check if the two closest sensors are on the same axis or if the first sensor is too far
-    if (sensor_readings[0].axis == sensor_readings[1].axis || sensor_readings[0].distance > 10.0) {
-        return;
-    }
+    if (sensor_readings[0].axis == sensor_readings[1].axis || sensor_readings[0].distance > 10.0) return;
 
     // Get the two closest sensors
     const SensorData& sensor1 = sensor_readings[0];
@@ -103,11 +101,11 @@ void resetOdometry(double threshold) {
 
     double calculated_x, calculated_y;
     // Use an intuitive variable name for the condition
-    const bool is_near_vertical_axis = (0 <= initial_pose.theta && initial_pose.theta < M_PI_4) || 
+    const bool standard_angle_axis = (0 <= initial_pose.theta && initial_pose.theta < M_PI_4) || 
                                        (M_7PI_4 < initial_pose.theta && initial_pose.theta <= M_2_PI) ||
                                        (M_3PI_4 < initial_pose.theta && initial_pose.theta < M_5PI_4);
 
-    if (is_near_vertical_axis) {
+    if (standard_angle_axis) {
         if (sensor1.axis == 'X') {
             calculated_x = distance1; calculated_y = distance2;
         } else {

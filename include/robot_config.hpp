@@ -20,16 +20,13 @@ inline constexpr int PORT_VERTICAL_ENCODER    = 17; // Vertical tracking wheel e
 inline constexpr int PORT_AUTON_SELECTOR_POT  = 6;  // Potentiometer for autonomous routine selection
 inline constexpr int PORT_TEAM_SELECTOR_POT   = 7;  // Potentiometer used for team selection (treated as a switch)
 inline constexpr int PORT_PTO_DIGITAL_OUT     = 8;  // Digital output for PTO control
-
-// Define distance sensor ports.
-inline constexpr int PORT_DISTANCE_RIGHT = 4;
-inline constexpr int PORT_DISTANCE_LEFT  = 18;
-inline constexpr int PORT_DISTANCE_FRONT = 5;
-inline constexpr int PORT_DISTANCE_BACK  = 19;
+inline constexpr int PORT_DISTANCE_RIGHT      = 4;
+inline constexpr int PORT_DISTANCE_LEFT       = 18;
+inline constexpr int PORT_DISTANCE_FRONT      = 5;
+inline constexpr int PORT_DISTANCE_BACK       = 19;
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
 inline constexpr double TRACK_WIDTH      = 11.55; // Distance between the centers of the left and right wheels in inches
-inline constexpr double WHEEL_DIAMETER   = 2.75;  // Diameter of your drivetrain wheels (e.g., 2.75" Omniwheels)
 inline constexpr int    WHEEL_RPM        = 450;   // Max effective RPM of your drivetrain motors (e.g., 600 RPM blue motors with 1.33:1 external gearing = 450 RPM)
 inline constexpr double HORIZONTAL_DRIFT = 2.0;   // Horizontal drift in inches, used for odometry calculations
 inline constexpr double IMU_SCALER       = 1.0;   // Custom IMU scaling factor, adjust based on your IMU's calibration
