@@ -58,11 +58,11 @@ inline constexpr PIDConstants LATERAL_PID {
 };
 // Custon Lateral PIDs
 inline constexpr PIDConstants F_LATERAL_PID {
-    7.0, 0.0, 9.0, 3, 1, 100, 2, 500, 15
+    7.0, 0.0, 9.0
 };
 
 inline constexpr PIDConstants P_LATERAL_PID {
-    7.0, 0.0, 9.0, 3, 1, 100, 2, 500, 15
+    7.0, 0.0, 9.0
 };
 // Angular PID
 inline constexpr PIDConstants ANGULAR_PID {
@@ -70,10 +70,10 @@ inline constexpr PIDConstants ANGULAR_PID {
 };
 // Custom Angular PIDs
 inline constexpr PIDConstants F_ANGULAR_PID {
-    2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
+    2.0, 0.0, 16.0
 };
 inline constexpr PIDConstants P_ANGULAR_PID {
-    2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
+    2.0, 0.0, 16.0
 };
 
 // --- Distance Sensor Offsets ---

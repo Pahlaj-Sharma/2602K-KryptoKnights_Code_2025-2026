@@ -100,23 +100,22 @@ void initialize() {
     pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
     chassis.calibrate();     // Calibrate the odometry sensors (IMU, encoders)
     
-    // Create a task to continuously print robot pose (X, Y, Theta) to the brain screen
-    pros::Task update_odom([&]() {
+    // Create a task to continuously print robot pose, robot temp, battery, auton to the controller screen to the brain screen
+    pros::Task update_robot_info([&]() {
+        int count = 0;
         while (true) {
             // Print robot location to the brain screen
             pros::screen::print(pros::E_TEXT_MEDIUM, 0, "X: %f", chassis.getPose().x);      // X coordinate
             pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Y: %f", chassis.getPose().y);      // Y coordinate
             pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta); // Heading (angle)
+            if (count % 200 == 0) {
+                // Print Current Battery Level to controller
+                controller.print(0, 0, "Battery: %.1f", pros::battery::get_capacity());
+                // Print Avg temp of motors to controller
+                controller.print(1, 0, "DT Temp: %.1f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2));
+            }
+            count++;
             pros::delay(25); // Small delay to save resources and prevent blocking
-        }});
-    // Create a task to continuously print robot temp, battery, auton to the controller screen
-    pros::Task robot_info([&]() {
-        while (true) {
-            // Print Current Battery Level
-            controller.print(0, 0, "Battery: %.1f", pros::battery::get_capacity());
-            // Print Avg temp of motors
-            controller.print(1, 0, "DT Temp: %.1f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2)); 
-            pros::delay(5000); // Delay to save resources and prevent blocking
         }});
 }
 
@@ -180,6 +179,6 @@ void opcontrol() {
         if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) toggle_pto(!ptoState);
 
         // A small delay to yield control to other PROS tasks and reduce CPU usage.
-        pros::delay(25);
+        pros::delay(10);
     }
 }

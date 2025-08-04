@@ -50,6 +50,8 @@ void chassisPID(PIDPreset premade) {
             lateral_pid = LATERAL_PID;
             angular_pid = ANGULAR_PID;
             break;
+    chassis.lateralPID.kP = lateral_pid.kP; chassis.lateralPID.kI = lateral_pid.kI; chassis.lateralPID.kD = lateral_pid.kD;
+    chassis.angularPID.kP = angular_pid.kP; chassis.angularPID.kI = angular_pid.kI; chassis.angularPID.kD = angular_pid.kD;
     }}
 
 void chassisPID(double lat_kp, double lat_ki, double lat_kd, double ang_kp, double ang_ki, double ang_kd) {
