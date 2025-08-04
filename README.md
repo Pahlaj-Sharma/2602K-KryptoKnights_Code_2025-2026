@@ -2,7 +2,7 @@
 
 ## 🤖 Project Overview
 
-This repository contains the PROS C++ codebase for VEX V5 Robotics Team 2602K. Our robot, "[YOUR ROBOT'S NAME OR MONIKER]", is engineered to compete in the [CURRENT VEX GAME NAME] game. Our primary strategy focuses on [BRIEFLY DESCRIBE YOUR ROBOT'S KEY AUTONOMOUS STRATEGY, e.g., "achieving rapid high goal scoring and robust object manipulation during driver control" or "a defensive play style aimed at disrupting opponents and scoring low goals"].
+This repository contains the PROS C++ codebase for VEX V5 Robotics Team 2602K. Our robot is engineered to compete in the Push Back game. Our primary strategy focuses on creating a robust autonomous program.
 
 This project leverages the **PROS** (Purdue Robotics Operating System) framework for all robot low-level control, sensor integration, and motor management. For advanced autonomous movement and precise robot localization, we integrate the **LemLib** library, utilizing its robust odometry and motion control capabilities.
 
