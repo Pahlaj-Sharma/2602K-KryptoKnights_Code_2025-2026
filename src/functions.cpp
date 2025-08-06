@@ -102,8 +102,11 @@ void resetOdometry(double threshold) {
     const SensorData& sensor2 = sensor_readings[1];
 
     // Calculate the total distances from the wall
-    const double distance1 = sensor1.distance + sensor1.offset;
-    const double distance2 = sensor2.distance + sensor2.offset;
+    const double max_theta = std::max(std::abs(std::cos(initial_pose.theta)),
+                                      std::abs(std::sin(initial_pose.theta)));
+    
+    const double distance1 = sensor1.distance * max_theta + sensor1.offset * max_theta;
+    const double distance2 = sensor2.distance * max_theta + sensor2.offset * max_theta;
 
     double calculated_x, calculated_y;
 
