@@ -111,8 +111,8 @@ void resetOdometry(double threshold) {
     double calculated_x, calculated_y;
 
     // Use an intuitive variable name for the condition
-    const bool standard_angle_axis = (0 <= initial_pose.theta && initial_pose.theta < M_PI_4) ||
-                                     (M_7PI_4 < initial_pose.theta && initial_pose.theta <= M_2_PI) ||
+    const bool standard_angle_axis = (0.0 <= initial_pose.theta && initial_pose.theta < M_PI_4) ||
+                                     (M_7PI_4 < initial_pose.theta && initial_pose.theta <= M_TWOPI) ||
                                      (M_3PI_4 < initial_pose.theta && initial_pose.theta < M_5PI_4);
 
     if (standard_angle_axis) {
