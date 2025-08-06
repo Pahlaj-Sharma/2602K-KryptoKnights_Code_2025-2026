@@ -45,7 +45,7 @@ void chassisPID(PIDPreset premade);
  * @param ang_ki The kI constant for the angular controller.
  * @param ang_kd The kD constant for the angular controller.
  */
-void chassisPID(double lat_kp, double lat_ki, double lat_kd, double ang_kp, double ang_ki, double ang_kd);
+void chassisPID(float lat_kp, float lat_ki, float lat_kd, float ang_kp, float ang_ki, float ang_kd);
 
 /**
  * @brief Resets the odometry pose based on sensor readings from distance sensors.
