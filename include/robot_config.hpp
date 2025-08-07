@@ -4,6 +4,7 @@
 // --- Motor Ports ---
 // Define motor port numbers for clarity and easy modification.
 // A negative port number (e.g., -14) indicates that the motor's direction should be reversed.
+#include "lemlib/chassis/chassis.hpp"
 inline constexpr int PORT_RIGHT_MOTOR_1 = 11;
 inline constexpr int PORT_RIGHT_MOTOR_2 = 13;
 inline constexpr int PORT_RIGHT_MOTOR_3 = 12;
@@ -15,7 +16,7 @@ inline constexpr int PORT_RIGHT_PTO     = 21;
 
 // --- Sensor Ports ---
 inline constexpr int PORT_IMU                = 2;  // Inertial Measurement Unit
-inline constexpr int PORT_HORIZONTAL_ENCODER = -3; // Horizontal tracking wheel encoder (negative for reversed direction)
+inline constexpr int PORT_HORIZONTAL_ENCODER = 3;  // Horizontal tracking wheel encoder (negative for reversed direction)
 inline constexpr int PORT_VERTICAL_ENCODER   = 17; // Vertical tracking wheel encoder
 inline constexpr int PORT_AUTON_SELECTOR_POT = 6;  // Potentiometer for autonomous routine selection
 inline constexpr int PORT_TEAM_SELECTOR_POT  = 7;  // Potentiometer for team selection
@@ -56,7 +57,7 @@ inline constexpr PIDConstants LATERAL_PID {
 };
 // Custom "Fast" Lateral PID constants
 inline constexpr PIDConstants F_LATERAL_PID {
-    7.0, 0.0, 9.0, 3, 1, 100, 2, 500, 15
+    7.0, 0.0, 9.0, 3, 2, 100, 3, 500, 15
 };
 // Custom "Precise" Lateral PID constants
 inline constexpr PIDConstants P_LATERAL_PID {
@@ -64,16 +65,48 @@ inline constexpr PIDConstants P_LATERAL_PID {
 };
 // Default Angular PID constants
 inline constexpr PIDConstants ANGULAR_PID {
-    2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
+    2.0, 0.0, 16.0, 3, 1, 100, 3, 500, 0
 };
 // Custom "Fast" Angular PID constants
 inline constexpr PIDConstants F_ANGULAR_PID {
-    2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
+    2.0, 0.0, 16.0, 3, 2, 100, 4, 500, 0
 };
 // Custom "Precise" Angular PID constants
 inline constexpr PIDConstants P_ANGULAR_PID {
     2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
 };
+
+// Convert to LemLib ControllerSettings
+// Normal Lateral
+inline lemlib::ControllerSettings lateral_PID = {
+    LATERAL_PID.kP, LATERAL_PID.kI, LATERAL_PID.kD, LATERAL_PID.antiWindup, 
+    LATERAL_PID.smallError, LATERAL_PID.smallTimeout, LATERAL_PID.largeError, 
+    LATERAL_PID.largeTimeout, LATERAL_PID.slew};
+// Normal Angular
+inline lemlib::ControllerSettings angular_PID = {
+    ANGULAR_PID.kP, ANGULAR_PID.kI, ANGULAR_PID.kD, ANGULAR_PID.antiWindup, 
+    ANGULAR_PID.smallError, ANGULAR_PID.smallTimeout, ANGULAR_PID.largeError, 
+    ANGULAR_PID.largeTimeout, ANGULAR_PID.slew};
+// Fast Lateral
+inline lemlib::ControllerSettings F_lateral_PID = {
+    F_LATERAL_PID.kP, F_LATERAL_PID.kI, F_LATERAL_PID.kD, F_LATERAL_PID.antiWindup, 
+    F_LATERAL_PID.smallError, F_LATERAL_PID.smallTimeout, F_LATERAL_PID.largeError, 
+    F_LATERAL_PID.largeTimeout, F_LATERAL_PID.slew};
+// Fast Angular
+inline lemlib::ControllerSettings F_angular_PID = {
+    F_ANGULAR_PID.kP, F_ANGULAR_PID.kI, F_ANGULAR_PID.kD, F_ANGULAR_PID.antiWindup, 
+    F_ANGULAR_PID.smallError, F_ANGULAR_PID.smallTimeout, F_ANGULAR_PID.largeError, 
+    F_ANGULAR_PID.largeTimeout, F_ANGULAR_PID.slew};
+// Precise Lateral
+inline lemlib::ControllerSettings P_lateral_PID = {
+    P_LATERAL_PID.kP, P_LATERAL_PID.kI, P_LATERAL_PID.kD, P_LATERAL_PID.antiWindup, 
+    P_LATERAL_PID.smallError, P_LATERAL_PID.smallTimeout, P_LATERAL_PID.largeError, 
+    P_LATERAL_PID.largeTimeout, P_LATERAL_PID.slew};
+// Precise Angular
+inline lemlib::ControllerSettings P_angular_PID = {
+    P_ANGULAR_PID.kP, P_ANGULAR_PID.kI, P_ANGULAR_PID.kD, P_ANGULAR_PID.antiWindup, 
+    P_ANGULAR_PID.smallError, P_ANGULAR_PID.smallTimeout, P_ANGULAR_PID.largeError, 
+    P_ANGULAR_PID.largeTimeout, P_ANGULAR_PID.slew};
 
 // --- Distance Sensor Offsets ---
 // Distance from the actual sensor reading point to the center of the robot in inches.

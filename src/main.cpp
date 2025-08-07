@@ -2,8 +2,8 @@
  * Project: 2602K-RobotCode
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
- * Current Version: 2.12
- * Last Updated: Aug 5, 2025
+ * Current Version: 3.00
+ * Last Updated: Aug 7, 2025
  *
  * Copyright (c) 2025, Pahlaj Sharma.
  * All rights reserved.
@@ -12,7 +12,6 @@
 
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp"
-#include "pros/imu.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -85,38 +84,14 @@ lemlib::OdomSensors sensors(
     &inertial // inertial sensor
 );
 
-// PID Controller Settings, using constants from robot_config.hpp
-lemlib::ControllerSettings lateral_controller(
-    LATERAL_PID.kP, // kP
-    LATERAL_PID.kI, // kI
-    LATERAL_PID.kD, // kD
-    LATERAL_PID.antiWindup, // anti-windup
-    LATERAL_PID.smallError, // small error
-    LATERAL_PID.smallTimeout, // small timeout
-    LATERAL_PID.largeError, // large error
-    LATERAL_PID.largeTimeout, // large timeout
-    LATERAL_PID.slew // slew rate
-);
-lemlib::ControllerSettings angular_controller(
-    ANGULAR_PID.kP, // kP
-    ANGULAR_PID.kI, // kI
-    ANGULAR_PID.kD, // kD
-    ANGULAR_PID.antiWindup, // anti-windup
-    ANGULAR_PID.smallError, // small error
-    ANGULAR_PID.smallTimeout, // small timeout
-    ANGULAR_PID.largeError, // large error
-    ANGULAR_PID.largeTimeout, // large timeout
-    ANGULAR_PID.slew // slew rate
-);
-
 // Input Curve for throttle/steer input during driver control
 lemlib::ExpoDriveCurve drive_curve(5, 20, 1.02);
 
 // Chassis definition: Integrates all components
 lemlib::Chassis chassis(
     drivetrain, // drivetrain
-    lateral_controller, // lateral controller
-    angular_controller, // angular controller
+    lateral_PID, // lateral controller
+    angular_PID, // angular controller
     sensors, // odometry sensors
     &drive_curve, // throttle curve
     &drive_curve // steer curve
@@ -166,7 +141,7 @@ void initialize() {
             if (count % 200 == 0) {
                 // Print current battery level and motor temps to controller
                 controller.print(0, 0, "Battery: %.1f", pros::battery::get_capacity());
-                controller.print(1, 0, "DT Temp: %.1f", ((left_motors.get_temperature() + right_motors.get_temperature()) / 2));
+                controller.print(1, 0, "DT Temp: %.1f", std::max(left_front.get_temperature(), right_front.get_temperature()));
             }
             count++;
             pros::delay(25);

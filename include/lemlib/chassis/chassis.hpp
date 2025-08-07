@@ -300,6 +300,8 @@ struct MoveToPoseParams {
         /** distance between the robot and target point where the movement will exit. Only has an effect if minSpeed is
          * non-zero.*/
         float earlyExitRange = 0;
+        // Settle distance
+        float settleDist = 4;
 };
 
 /**
@@ -513,7 +515,7 @@ class Chassis {
          * chassis.turnToPoint(7.5, 7.5, 2000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void turnToPoint(float x, float y, int timeout, TurnToPointParams params = {}, bool async = true);
+        void turnToPoint(float x, float y, int timeout, TurnToPointParams params = {}, bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
         /**
          * @brief Turn the chassis so it is facing the target heading
          *
@@ -541,7 +543,7 @@ class Chassis {
          * chassis.turnToHeading(45, 2000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void turnToHeading(float theta, int timeout, TurnToHeadingParams params = {}, bool async = true);
+        void turnToHeading(float theta, int timeout, TurnToHeadingParams params = {}, bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
         /**
          * @brief Turn the chassis so it is facing the target heading, but only by moving one half of the drivetrain
          *
@@ -576,7 +578,7 @@ class Chassis {
          * @endcode
          */
         void swingToHeading(float theta, DriveSide lockedSide, int timeout, SwingToHeadingParams params = {},
-                            bool async = true);
+                            bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
         /**
          * @brief Turn the chassis so it is facing the target point, but only by moving one half of the drivetrain
          *
@@ -617,7 +619,7 @@ class Chassis {
          * @endcode
          */
         void swingToPoint(float x, float y, DriveSide lockedSide, int timeout, SwingToPointParams params = {},
-                          bool async = true);
+                          bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
         /**
          * @brief Move the chassis towards the target pose
          *
@@ -651,7 +653,7 @@ class Chassis {
          * chassis.moveToPose(0, 0, 0, 4000, {.lead = 0.3});
          * @endcode
          */
-        void moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params = {}, bool async = true);
+        void moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params = {}, bool async = true, float LkP = -1.0f, float LkI = -1.0f, float LkD = -1.0f, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
         /**
          * @brief Move the chassis towards a target point
          *
@@ -679,7 +681,7 @@ class Chassis {
          * chassis.moveToPoint(7.5, 7.5, 4000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void moveToPoint(float x, float y, int timeout, MoveToPointParams params = {}, bool async = true);
+        void moveToPoint(float x, float y, int timeout, MoveToPointParams params = {}, bool async = true, float LkP = -1.0f, float LkI = -1.0f, float LkD = -1.0f, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
         /**
          * @brief Move the chassis along a path
          *

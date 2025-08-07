@@ -5,14 +5,24 @@
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
 
-void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParams params, bool async) {
+void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParams params, bool async, float AkP, float AkI, float AkD) {
+    // Store original PID settings
+    lemlib::ControllerSettings originalAngular = this->angularSettings;
+
+    // Apply custom PID settings if they are provided
+    if (AkP != -1.0f) this->angularPID.kP = AkP;
+    if (AkI != -1.0f) this->angularPID.kI = AkI;
+    if (AkD != -1.0f) this->angularPID.kD = AkD;
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
     // were all motions cancelled?
-    if (!this->motionRunning) return;
+    if (!this->motionRunning) {
+        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
+        return;
+    }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { turnToHeading(theta, timeout, params, false); });
+        pros::Task task([&]() { turnToHeading(theta, timeout, params, false, AkP, AkI, AkD); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;

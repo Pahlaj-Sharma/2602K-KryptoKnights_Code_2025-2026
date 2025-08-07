@@ -5,14 +5,30 @@
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
 
-void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointParams params, bool async) {
+void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointParams params, bool async, float LkP, float LkI, float LkD, float AkP, float AkI, float AkD) {
+    // Store original PID settings
+    lemlib::ControllerSettings originalLateral = this->lateralSettings;
+    lemlib::ControllerSettings originalAngular = this->angularSettings;
+
+    // Apply custom PID settings if they are provided
+    if (LkP != -1.0f) this->lateralPID.kP = LkP;
+    if (LkI != -1.0f) this->lateralPID.kI = LkI;
+    if (LkD != -1.0f) this->lateralPID.kD = LkD;
+    if (AkP != -1.0f) this->angularPID.kP = AkP;
+    if (AkI != -1.0f) this->angularPID.kI = AkI;
+    if (AkD != -1.0f) this->angularPID.kD = AkD;
+
     params.earlyExitRange = fabs(params.earlyExitRange);
     this->requestMotionStart();
     // were all motions cancelled?
-    if (!this->motionRunning) return;
+    if (!this->motionRunning) {
+        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD};
+        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
+        return;
+    }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { moveToPoint(x, y, timeout, params, false); });
+        pros::Task task([&]() { moveToPoint(x, y, timeout, params, false, LkP, LkI, LkD, AkP, AkI, AkD); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;
@@ -52,7 +68,7 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         const float distTarget = pose.distance(target);
 
         // check if the robot is close enough to the target to start settling
-        if (distTarget < 7.5 && close == false) {
+        if (distTarget < 4 && close == false) {
             close = true;
             params.maxSpeed = fmax(fabs(prevLateralOut), 60);
         }

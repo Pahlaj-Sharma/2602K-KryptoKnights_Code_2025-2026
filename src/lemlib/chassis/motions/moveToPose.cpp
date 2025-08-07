@@ -5,14 +5,29 @@
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
 
-void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params, bool async) {
+void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params, bool async, float LkP, float LkI, float LkD, float AkP, float AkI, float AkD) {
+    // Store original PID settings
+    lemlib::ControllerSettings originalLateral = this->lateralSettings;
+    lemlib::ControllerSettings originalAngular = this->angularSettings;
+
+    // Apply custom PID settings if they are provided
+    if (LkP != -1.0f) this->lateralPID.kP = LkP;
+    if (LkI != -1.0f) this->lateralPID.kI = LkI;
+    if (LkD != -1.0f) this->lateralPID.kD = LkD;
+    if (AkP != -1.0f) this->angularPID.kP = AkP;
+    if (AkI != -1.0f) this->angularPID.kI = AkI;
+    if (AkD != -1.0f) this->angularPID.kD = AkD;
     // take the mutex
     this->requestMotionStart();
     // were all motions cancelled?
-    if (!this->motionRunning) return;
+    if (!this->motionRunning) {
+        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD};
+        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
+        return;
+    }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { moveToPose(x, y, theta, timeout, params, false); });
+        pros::Task task([&]() { moveToPose(x, y, theta, timeout, params, false, LkP, LkI, LkD, AkP, AkI, AkD); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;
@@ -59,7 +74,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         const float distTarget = pose.distance(target);
 
         // check if the robot is close enough to the target to start settling
-        if (distTarget < 7.5 && close == false) {
+        if (distTarget < 4 && close == false) {
             close = true;
             params.maxSpeed = fmax(fabs(prevLateralOut), 60);
         }
@@ -78,7 +93,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
                                 (carrot.x - target.x) * cos(target.theta) + params.earlyExitRange;
         const bool sameSide = robotSide == carrotSide;
         // exit if close
-        if (!sameSide && prevSameSide && close && params.minSpeed != 0) break;
+        if (!sameSide && prevSameSide && close && params.minSpeed != -1.0f) break;
         prevSameSide = sameSide;
 
         // calculate error
@@ -101,6 +116,11 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         // get output from PIDs
         float lateralOut = lateralPID.update(lateralError);
         float angularOut = angularPID.update(radToDeg(angularError));
+
+        if (distTarget < params.settleDist) {
+            // The scaling factor will be between 0 and 1, getting smaller as distTarget approaches 0.
+            angularOut *= tanh(distTarget / params.settleDist);
+        }
 
         // apply restrictions on angular speed
         angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);
@@ -157,5 +177,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
+    this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD};
+    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
     this->endMotion();
 }

@@ -81,6 +81,12 @@ void opcontrol(void);
 #include "lemlib/api.hpp"
 extern lemlib::Chassis chassis;
 extern pros::Controller controller;
+extern pros::Motor left_front;
+extern pros::Motor left_middle;
+extern pros::Motor left_back;
+extern pros::Motor right_front;
+extern pros::Motor right_middle;
+extern pros::Motor right_back;
 extern pros::MotorGroup right_motors;
 extern pros::MotorGroup left_motors;
 extern pros::Motor left_pto;

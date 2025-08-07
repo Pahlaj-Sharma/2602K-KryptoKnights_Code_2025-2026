@@ -205,6 +205,6 @@ void tunePID() {
         }
 
         // Small delay to prevent a task overflow
-        pros::delay(100);
+        pros::delay(80);
     }
 }
