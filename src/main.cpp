@@ -156,7 +156,6 @@ void disabled() {
 
 void competition_initialize() {
     pros::screen::erase(); // Clear the screen initially for a clean display
-
     while (pros::competition::is_disabled()) {
         // Read potentiometer values to determine selection
         double potValue = autonSelector.get_angle();

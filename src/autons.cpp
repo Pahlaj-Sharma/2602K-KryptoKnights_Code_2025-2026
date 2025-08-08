@@ -4,8 +4,6 @@
 #include "robot_config.hpp"
 #include "functions.hpp"
 
-ASSET(path_jerryio_txt);
-
 void auton1() {
     if (teamType == "RED") {
         chassis.setPose(0, 0, 0);
