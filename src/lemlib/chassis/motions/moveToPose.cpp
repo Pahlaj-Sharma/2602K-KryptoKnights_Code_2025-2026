@@ -5,7 +5,7 @@
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
 
-void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params, bool async, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains) {
+void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     lemlib::ControllerSettings originalLateral = this->lateralSettings;
     lemlib::ControllerSettings originalAngular = this->angularSettings;
@@ -32,7 +32,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
     }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { moveToPose(x, y, theta, timeout, params, false, lateralGains, angularGains); });
+        pros::Task task([&]() { moveToPose(x, y, theta, timeout, params, lateralGains, angularGains, false); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;
@@ -48,7 +48,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
 
     // calculate target pose in standard form
     Pose target(x, y, M_PI_2 - degToRad(theta));
-    if (!params.forwards) target.theta = fmod(target.theta + M_PI, 2 * M_PI); // backwards movement
+    if (!params.forwards) target.theta = std::fmod(target.theta + M_PI, M_TWOPI); // backwards movement
 
     // use global horizontalDrift is horizontalDrift is 0
     if (params.horizontalDrift == 0) params.horizontalDrift = drivetrain.horizontalDrift;
@@ -81,7 +81,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         // check if the robot is close enough to the target to start settling
         if (distTarget < 4 && close == false) {
             close = true;
-            params.maxSpeed = fmax(fabs(prevLateralOut), 60);
+            params.maxSpeed = fmax(std::fabs(prevLateralOut), 60);
         }
 
         // check if the lateral controller has settled
@@ -138,11 +138,11 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
 
         // constrain lateral output by the max speed it can travel at without
         // slipping
-        const float radius = 1 / fabs(getCurvature(pose, carrot));
+        const float radius = 1 / std::fabs(getCurvature(pose, carrot));
         const float maxSlipSpeed(sqrt(params.horizontalDrift * radius * 9.8));
         lateralOut = std::clamp(lateralOut, -maxSlipSpeed, maxSlipSpeed);
         // prioritize angular movement over lateral movement
-        const float overturn = fabs(angularOut) + fabs(lateralOut) - params.maxSpeed;
+        const float overturn = std::fabs(angularOut) + std::fabs(lateralOut) - params.maxSpeed;
         if (overturn > 0) lateralOut -= lateralOut > 0 ? overturn : -overturn;
 
         // prevent moving in the wrong direction
@@ -150,9 +150,9 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         else if (!params.forwards && !close) lateralOut = std::fmin(lateralOut, 0);
 
         // constrain lateral output by the minimum speed
-        if (params.forwards && lateralOut < fabs(params.minSpeed) && lateralOut > 0) lateralOut = fabs(params.minSpeed);
-        if (!params.forwards && -lateralOut < fabs(params.minSpeed) && lateralOut < 0)
-            lateralOut = -fabs(params.minSpeed);
+        if (params.forwards && lateralOut < std::fabs(params.minSpeed) && lateralOut > 0) lateralOut = std::fabs(params.minSpeed);
+        if (!params.forwards && -lateralOut < std::fabs(params.minSpeed) && lateralOut < 0)
+            lateralOut = -std::fabs(params.minSpeed);
 
         // update previous output
         prevAngularOut = angularOut;

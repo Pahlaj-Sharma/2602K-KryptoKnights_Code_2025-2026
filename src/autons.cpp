@@ -11,7 +11,7 @@ void auton1() {
         chassisPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
         moveLinear(12);
         resetOdometry();
-        chassis.moveToPose(14, 14, 90, 3000, {}, 1, {{2, 0, 16}}, {{2, 0, 16}});
+        chassis.moveToPose(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
     } else {
         chassis.setPose(0, 0, 0);
         chassisPID(PIDPreset::normal);

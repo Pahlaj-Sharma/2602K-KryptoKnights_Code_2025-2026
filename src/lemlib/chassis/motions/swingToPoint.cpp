@@ -6,7 +6,7 @@
 #include "pros/misc.hpp"
 
 void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int timeout, SwingToPointParams params,
-                                   bool async, std::optional<PIDGains> angularGains) {
+                                   std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     lemlib::ControllerSettings originalAngular = this->angularSettings;
 
@@ -17,7 +17,7 @@ void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int t
         this->angularPID.kD = angularGains->kD;
     }
 
-    params.minSpeed = fabs(params.minSpeed);
+    params.minSpeed = std::fabs(params.minSpeed);
     this->requestMotionStart();
     // were all motions cancelled?
     if (!this->motionRunning) {
@@ -26,7 +26,7 @@ void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int t
     }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { swingToPoint(x, y, lockedSide, timeout, params, false, angularGains); });
+        pros::Task task([&]() { swingToPoint(x, y, lockedSide, timeout, params, angularGains, false); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;
@@ -57,14 +57,14 @@ void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int t
     while (!timer.isDone() && !angularLargeExit.getExit() && !angularSmallExit.getExit() && this->motionRunning) {
         // update variables
         Pose pose = getPose();
-        pose.theta = (params.forwards) ? fmod(pose.theta, 360) : fmod(pose.theta - 180, 360);
+        pose.theta = (params.forwards) ? std::fmod(pose.theta, 360) : std::fmod(pose.theta - 180, 360);
 
         // update completion vars
-        distTraveled = fabs(angleError(pose.theta, startTheta, false));
+        distTraveled = std::fabs(angleError(pose.theta, startTheta, false));
 
         deltaX = x - pose.x;
         deltaY = y - pose.y;
-        targetTheta = fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)), 360);
+        targetTheta = std::fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)), 360);
 
         // check if settling
         const float rawDeltaTheta = angleError(targetTheta, pose.theta, false);
@@ -78,7 +78,7 @@ void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int t
         if (prevDeltaTheta == std::nullopt) prevDeltaTheta = deltaTheta;
 
         // motion chaining
-        if (params.minSpeed != 0 && fabs(deltaTheta) < params.earlyExitRange) break;
+        if (params.minSpeed != 0 && std::fabs(deltaTheta) < params.earlyExitRange) break;
         if (params.minSpeed != 0 && sgn(deltaTheta) != sgn(prevDeltaTheta)) break;
 
         // calculate the speed
@@ -89,7 +89,7 @@ void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int t
         // cap the speed
         if (motorPower > params.maxSpeed) motorPower = params.maxSpeed;
         else if (motorPower < -params.maxSpeed) motorPower = -params.maxSpeed;
-        if (fabs(deltaTheta) > 20) motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
+        if (std::fabs(deltaTheta) > 20) motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
         if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
         else if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
         prevMotorPower = motorPower;

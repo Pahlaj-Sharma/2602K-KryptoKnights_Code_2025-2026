@@ -5,7 +5,7 @@
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
 
-void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParams params, bool async, std::optional<PIDGains> angularGains) {
+void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParams params, std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     lemlib::ControllerSettings originalAngular = this->angularSettings;
 
@@ -25,7 +25,7 @@ void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParam
     }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { turnToHeading(theta, timeout, params, false, angularGains); });
+        pros::Task task([&]() { turnToHeading(theta, timeout, params, angularGains, false); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;
@@ -51,7 +51,7 @@ void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParam
         Pose pose = getPose();
 
         // update completion vars
-        distTraveled = fabs(angleError(pose.theta, startTheta, false));
+        distTraveled = std::fabs(angleError(pose.theta, startTheta, false));
 
         targetTheta = theta;
 
@@ -67,7 +67,7 @@ void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParam
         if (prevDeltaTheta == std::nullopt) prevDeltaTheta = deltaTheta;
 
         // motion chaining
-        if (params.minSpeed != 0 && fabs(deltaTheta) < params.earlyExitRange) break;
+        if (params.minSpeed != 0 && std::fabs(deltaTheta) < params.earlyExitRange) break;
         if (params.minSpeed != 0 && sgn(deltaTheta) != sgn(prevDeltaTheta)) break;
 
         // calculate the speed
@@ -78,7 +78,7 @@ void lemlib::Chassis::turnToHeading(float theta, int timeout, TurnToHeadingParam
         // cap the speed
         if (motorPower > params.maxSpeed) motorPower = params.maxSpeed;
         else if (motorPower < -params.maxSpeed) motorPower = -params.maxSpeed;
-        if (fabs(deltaTheta) > 20) motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
+        if (std::fabs(deltaTheta) > 20) motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
         if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
         else if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
         prevMotorPower = motorPower;

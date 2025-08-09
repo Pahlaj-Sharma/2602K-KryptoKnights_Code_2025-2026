@@ -9,9 +9,9 @@ ExpoDriveCurve::ExpoDriveCurve(float deadband, float minOutput, float curve)
 
 float ExpoDriveCurve::curve(float input) {
     // return 0 if input is within deadzone
-    if (fabs(input) <= deadband) return 0;
+    if (std::fabs(input) <= deadband) return 0;
     // g is the output of g(x) as defined in the Desmos graph
-    const float g = fabs(input) - deadband;
+    const float g = std::fabs(input) - deadband;
     // g127 is the output of g(127) as defined in the Desmos graph
     const float g127 = 127 - deadband;
     // i is the output of i(x) as defined in the Desmos graph

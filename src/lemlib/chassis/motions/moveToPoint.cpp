@@ -6,7 +6,7 @@
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
 
-void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointParams params, bool async, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains) {
+void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointParams params, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     lemlib::ControllerSettings originalLateral = this->lateralSettings;
     lemlib::ControllerSettings originalAngular = this->angularSettings;
@@ -23,7 +23,7 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         this->angularPID.kD = angularGains->kD;
     }
 
-    params.earlyExitRange = fabs(params.earlyExitRange);
+    params.earlyExitRange = std::fabs(params.earlyExitRange);
     this->requestMotionStart();
     // were all motions cancelled?
     if (!this->motionRunning) {
@@ -33,7 +33,7 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
     }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { moveToPoint(x, y, timeout, params, false, lateralGains, angularGains); });
+        pros::Task task([&]() { moveToPoint(x, y, timeout, params, lateralGains, angularGains, false); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;
@@ -75,7 +75,7 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         // check if the robot is close enough to the target to start settling
         if (distTarget < 4 && close == false) {
             close = true;
-            params.maxSpeed = fmax(fabs(prevLateralOut), 60);
+            params.maxSpeed = fmax(std::fabs(prevLateralOut), 60);
         }
 
         // motion chaining
@@ -116,9 +116,9 @@ void lemlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         else if (!params.forwards && !close) lateralOut = std::fmin(lateralOut, 0);
 
         // constrain lateral output by the minimum speed
-        if (params.forwards && lateralOut < fabs(params.minSpeed) && lateralOut > 0) lateralOut = fabs(params.minSpeed);
-        if (!params.forwards && -lateralOut < fabs(params.minSpeed) && lateralOut < 0)
-            lateralOut = -fabs(params.minSpeed);
+        if (params.forwards && lateralOut < std::fabs(params.minSpeed) && lateralOut > 0) lateralOut = std::fabs(params.minSpeed);
+        if (!params.forwards && -lateralOut < std::fabs(params.minSpeed) && lateralOut < 0)
+            lateralOut = -std::fabs(params.minSpeed);
 
         // update previous output
         prevAngularOut = angularOut;
