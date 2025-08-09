@@ -1,5 +1,5 @@
 ---
-Language:        Cpp
+Language:        cpp
 AccessModifierOffset: 0
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: None

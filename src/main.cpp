@@ -21,7 +21,7 @@
 #include <string>
 
 // --- Controller Definition ---
-// Initializes the primary VEX V5 controller connected to the robot
+// Initializes the primary controller connected to the robot
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // --- Motor Definitions ---

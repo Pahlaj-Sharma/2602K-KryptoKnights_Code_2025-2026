@@ -8,6 +8,7 @@
 #include "lemlib/pid.hpp"
 #include "lemlib/exitcondition.hpp"
 #include "lemlib/driveCurve.hpp"
+#include <optional>
 
 namespace lemlib {
 
@@ -515,7 +516,15 @@ class Chassis {
          * chassis.turnToPoint(7.5, 7.5, 2000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void turnToPoint(float x, float y, int timeout, TurnToPointParams params = {}, bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
+        
+        // Create a PIDGains struct to hold the PID gains for movements
+        struct PIDGains {
+        float kP;
+        float kI;
+        float kD;
+        };
+
+        void turnToPoint(float x, float y, int timeout, TurnToPointParams params = {}, bool async = true, std::optional<PIDGains> angularGains = std::nullopt);
         /**
          * @brief Turn the chassis so it is facing the target heading
          *
@@ -543,7 +552,7 @@ class Chassis {
          * chassis.turnToHeading(45, 2000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void turnToHeading(float theta, int timeout, TurnToHeadingParams params = {}, bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
+        void turnToHeading(float theta, int timeout, TurnToHeadingParams params = {}, bool async = true, std::optional<PIDGains> angularGains = std::nullopt);
         /**
          * @brief Turn the chassis so it is facing the target heading, but only by moving one half of the drivetrain
          *
@@ -578,7 +587,7 @@ class Chassis {
          * @endcode
          */
         void swingToHeading(float theta, DriveSide lockedSide, int timeout, SwingToHeadingParams params = {},
-                            bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
+                            bool async = true, std::optional<PIDGains> angularGains = std::nullopt);
         /**
          * @brief Turn the chassis so it is facing the target point, but only by moving one half of the drivetrain
          *
@@ -619,7 +628,7 @@ class Chassis {
          * @endcode
          */
         void swingToPoint(float x, float y, DriveSide lockedSide, int timeout, SwingToPointParams params = {},
-                          bool async = true, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
+                          bool async = true, std::optional<PIDGains> angularGains = std::nullopt);
         /**
          * @brief Move the chassis towards the target pose
          *
@@ -653,7 +662,7 @@ class Chassis {
          * chassis.moveToPose(0, 0, 0, 4000, {.lead = 0.3});
          * @endcode
          */
-        void moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params = {}, bool async = true, float LkP = -1.0f, float LkI = -1.0f, float LkD = -1.0f, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
+        void moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params = {}, bool async = true, std::optional<PIDGains> lateralGains = std::nullopt, std::optional<PIDGains> angularGains = std::nullopt);
         /**
          * @brief Move the chassis towards a target point
          *
@@ -681,7 +690,7 @@ class Chassis {
          * chassis.moveToPoint(7.5, 7.5, 4000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void moveToPoint(float x, float y, int timeout, MoveToPointParams params = {}, bool async = true, float LkP = -1.0f, float LkI = -1.0f, float LkD = -1.0f, float AkP = -1.0f, float AkI = -1.0f, float AkD = -1.0f);
+        void moveToPoint(float x, float y, int timeout, MoveToPointParams params = {}, bool async = true, std::optional<PIDGains> lateralGains = std::nullopt, std::optional<PIDGains> angularGains = std::nullopt);
         /**
          * @brief Move the chassis along a path
          *

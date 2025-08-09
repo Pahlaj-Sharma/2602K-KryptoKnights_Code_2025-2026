@@ -5,18 +5,23 @@
 #include "lemlib/util.hpp"
 #include "pros/misc.hpp"
 
-void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params, bool async, float LkP, float LkI, float LkD, float AkP, float AkI, float AkD) {
+void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params, bool async, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains) {
     // Store original PID settings
     lemlib::ControllerSettings originalLateral = this->lateralSettings;
     lemlib::ControllerSettings originalAngular = this->angularSettings;
 
     // Apply custom PID settings if they are provided
-    if (LkP != -1.0f) this->lateralPID.kP = LkP;
-    if (LkI != -1.0f) this->lateralPID.kI = LkI;
-    if (LkD != -1.0f) this->lateralPID.kD = LkD;
-    if (AkP != -1.0f) this->angularPID.kP = AkP;
-    if (AkI != -1.0f) this->angularPID.kI = AkI;
-    if (AkD != -1.0f) this->angularPID.kD = AkD;
+    if (lateralGains) {
+        this->lateralPID.kP = lateralGains->kP;
+        this->lateralPID.kI = lateralGains->kI;
+        this->lateralPID.kD = lateralGains->kD;
+    }
+    if (angularGains) {
+        this->angularPID.kP = angularGains->kP;
+        this->angularPID.kI = angularGains->kI;
+        this->angularPID.kD = angularGains->kD;
+    }
+
     // take the mutex
     this->requestMotionStart();
     // were all motions cancelled?
@@ -27,7 +32,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
     }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { moveToPose(x, y, theta, timeout, params, false, LkP, LkI, LkD, AkP, AkI, AkD); });
+        pros::Task task([&]() { moveToPose(x, y, theta, timeout, params, false, lateralGains, angularGains); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;

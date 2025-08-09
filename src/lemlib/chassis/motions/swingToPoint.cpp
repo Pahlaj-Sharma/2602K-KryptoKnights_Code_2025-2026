@@ -6,14 +6,17 @@
 #include "pros/misc.hpp"
 
 void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int timeout, SwingToPointParams params,
-                                   bool async, float AkP, float AkI, float AkD) {
+                                   bool async, std::optional<PIDGains> angularGains) {
     // Store original PID settings
     lemlib::ControllerSettings originalAngular = this->angularSettings;
 
     // Apply custom PID settings if they are provided
-    if (AkP != -1.0f) this->angularPID.kP = AkP;
-    if (AkI != -1.0f) this->angularPID.kI = AkI;
-    if (AkD != -1.0f) this->angularPID.kD = AkD;
+    if (angularGains) {
+        this->angularPID.kP = angularGains->kP;
+        this->angularPID.kI = angularGains->kI;
+        this->angularPID.kD = angularGains->kD;
+    }
+
     params.minSpeed = fabs(params.minSpeed);
     this->requestMotionStart();
     // were all motions cancelled?
@@ -23,7 +26,7 @@ void lemlib::Chassis::swingToPoint(float x, float y, DriveSide lockedSide, int t
     }
     // if the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { swingToPoint(x, y, lockedSide, timeout, params, false, AkP, AkI, AkD); });
+        pros::Task task([&]() { swingToPoint(x, y, lockedSide, timeout, params, false, angularGains); });
         this->endMotion();
         pros::delay(10); // delay to give the task time to start
         return;
