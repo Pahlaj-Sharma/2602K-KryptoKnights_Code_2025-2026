@@ -17,4 +17,4 @@ This project leverages the **PROS** (Purdue Robotics Operating System) framework
 **Project Lead:** Pahlaj Sharma
 **Team:** 2602K
 **Last Updated:** July 27, 2025
-**Current Software Version:** 1.81
+**Current Software Version:** 3.01
