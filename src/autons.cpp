@@ -25,7 +25,13 @@ void auton1() {
 }
 
 void auton2() {
-    
+    chassis.setPose(0, 0, 0);
+    chassisPID(PIDPreset::normal);
+    chassis.moveToPoint(7.778, -26.45, 5000);
+    chassis.moveToPoint(31.927, -2.549, 5000);
+    chassis.moveToPoint(35.662, 22.596, 5000);
+    chassis.moveToPoint(17.487, 55.459, 5000);
+
 }
 
 void auton3() {

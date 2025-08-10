@@ -111,6 +111,7 @@ std::map<int, std::pair<std::string, std::function<void()>>> autons = {
     {9, {"name", auton9}},
     {10, {"name", auton10}}
 };
+
 int selectedAuton = 1;
 std::string teamType = "RED";
 bool ptoState = false; // PTO state: true = intake, false = drivetrain
@@ -157,20 +158,16 @@ void disabled() {
 void competition_initialize() {
     pros::screen::erase(); // Clear the screen initially for a clean display
     while (pros::competition::is_disabled()) {
-        // Read potentiometer values to determine selection
-        double potValue = autonSelector.get_angle();
         // Determine selected autonomous routine
-        selectedAuton = static_cast<int>(std::fmod(potValue, 330 / autons.size()));
+        selectedAuton = static_cast<int>(autonSelector.get_angle() / (330.0 / autons.size()));
         // Determine team type based on teamSelector potentiometer's angle
-        teamType = (teamSelector.get_angle() >= 0 && teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
+        teamType = (teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
+        std::string autonName = autons.at(selectedAuton).first;
 
-        if (autons.count(selectedAuton)) {
-            std::string autonName = autons.at(selectedAuton).first;
-            pros::screen::print(pros::E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
-            controller.print(2, 0, "%s :: %s", teamType.c_str(), autonName.c_str());
-        }
-
+        pros::screen::print(pros::E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
         pros::screen::print(pros::E_TEXT_MEDIUM, 4, "Team: %s", teamType.c_str());
+        controller.print(2, 0, "%s :: %s", teamType.c_str(), autonName.c_str());
+
         pros::delay(200);
     }
 }
