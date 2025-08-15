@@ -124,7 +124,7 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
 
         if (distTarget < params.settleDist) {
             // The scaling factor will be between 0 and 1, getting smaller as distTarget approaches 0.
-            angularOut *= tanh(distTarget / params.settleDist);
+            angularOut *= std::tanh(distTarget / params.settleDist);
         }
 
         // apply restrictions on angular speed

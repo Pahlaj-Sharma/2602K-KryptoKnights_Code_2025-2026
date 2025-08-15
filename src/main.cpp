@@ -2,7 +2,7 @@
  * Project: 2602K-RobotCode
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
- * Current Version: 3.00
+ * Current Version: 3.01
  * Last Updated: Aug 7, 2025
  *
  * Copyright (c) 2025, Pahlaj Sharma.
@@ -175,8 +175,8 @@ void competition_initialize() {
 void autonomous() {
     horizontal_encoder.reset_position();
     vertical_encoder.reset_position();
-    left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
-    right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_BRAKE);
+    right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_BRAKE);
 
     // Select and run the chosen autonomous routine based on 'selectedAuton' variable.
     if (autons.count(selectedAuton)) {

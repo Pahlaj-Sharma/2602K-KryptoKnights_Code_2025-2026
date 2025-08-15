@@ -26,7 +26,7 @@ enum class PIDPreset {
  * @param maxspeed The maximum speed of the chassis. Defaults to 70.
  * @param minspeed The minimum speed of the chassis. Defaults to 40.
  */
-void moveLinear(double inches, int timeout = 2000, float lead = 0.2, float maxspeed = 70, float minspeed = 40);
+void moveLinear(float inches, int timeout = 2000, float lead = 0.1, float maxspeed = 70, float minspeed = 40);
 
 /**
  * @brief Sets the chassis PID constants using a predefined preset.
@@ -51,7 +51,9 @@ void chassisPID(float lat_kp, float lat_ki, float lat_kd, float ang_kp, float an
  * @brief Resets the odometry pose based on sensor readings from distance sensors.
  *
  * @param threshold The maximum allowed difference (in inches) between the calculated and current pose. Defaults to 5.0.
+ *
+ * @param async Whether to run the reset operation asynchronously. Defaults to false.
  */
-void resetOdometry(double threshold = 5.0);
+void resetOdometry(float threshold = 5.0);
 
 #endif

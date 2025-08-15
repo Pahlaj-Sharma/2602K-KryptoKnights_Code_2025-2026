@@ -4,7 +4,7 @@
 #include "robot_config.hpp"
 #include "functions.hpp"
 
-const asset path_jerryio_txt {};
+constexpr asset path_jerryio_txt {};
 
 void auton1() {
     if (teamType == "RED") {
