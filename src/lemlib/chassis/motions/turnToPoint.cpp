@@ -74,7 +74,7 @@ void lemlib::Chassis::turnToPoint(float x, float y, int timeout, TurnToPointPara
         if (params.minSpeed != 0 && sgn(deltaTheta) != sgn(prevDeltaTheta)) break;
 
         // calculate the speed
-        motorPower = angularPID.update(deltaTheta, 10);
+        motorPower = angularPID.update(deltaTheta);
         angularLargeExit.update(deltaTheta);
         angularSmallExit.update(deltaTheta);
 
