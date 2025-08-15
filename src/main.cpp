@@ -15,10 +15,7 @@
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
-#include "functions.hpp"
-#include <cmath>
 #include <map>
-#include <string>
 
 // --- Controller Definition ---
 // Initializes the primary controller connected to the robot

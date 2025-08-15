@@ -9,14 +9,14 @@ PID::PID(float kP, float kI, float kD, float windupRange, bool signFlipReset)
       windupRange(windupRange),
       signFlipReset(signFlipReset) {}
 
-float PID::update(const float error) {
+float PID::update(const float error, const int dt) {
     // calculate integral
-    integral += error;
+    integral += error * dt; 
     if (sgn(error) != sgn((prevError)) && signFlipReset) integral = 0;
     if (std::fabs(error) > windupRange && windupRange != 0) integral = 0;
 
     // calculate derivative
-    const float derivative = error - prevError;
+    const float derivative = (error - prevError) / dt;
     prevError = error;
 
     // calculate output

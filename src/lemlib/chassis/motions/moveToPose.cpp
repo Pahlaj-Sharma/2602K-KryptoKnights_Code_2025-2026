@@ -119,8 +119,8 @@ void lemlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         angularLargeExit.update(radToDeg(angularError));
 
         // get output from PIDs
-        float lateralOut = lateralPID.update(lateralError);
-        float angularOut = angularPID.update(radToDeg(angularError));
+        float lateralOut = lateralPID.update(lateralError, 10);
+        float angularOut = angularPID.update(radToDeg(angularError), 10);
 
         if (distTarget < params.settleDist) {
             // The scaling factor will be between 0 and 1, getting smaller as distTarget approaches 0.

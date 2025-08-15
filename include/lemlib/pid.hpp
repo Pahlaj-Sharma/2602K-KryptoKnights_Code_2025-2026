@@ -4,7 +4,7 @@ namespace lemlib {
 class PID {
     public:
         /**
-         * @brief Construct a new PID
+         * @brief Construct a new PID, it must have an update value of 10 MSEC everytime the PID is updated
          *
          * @param kP proportional gain
          * @param kI integral gain
@@ -41,7 +41,7 @@ class PID {
          * }
          * @endcode
          */
-        float update(float error);
+        float update(float error, int dt);
 
         /**
          * @brief reset integral, derivative, and prevTime

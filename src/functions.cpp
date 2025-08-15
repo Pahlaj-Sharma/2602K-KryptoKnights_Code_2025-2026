@@ -1,11 +1,7 @@
-#include "lemlib/util.hpp"
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "robot_config.hpp"
 #include "functions.hpp"
-#include <cmath>
-#include <tuple>
-#include <vector>
 
 // --- PID Tuning Components ---
 // These components are for live PID tuning and should be removed once tuning is complete.
