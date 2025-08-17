@@ -2,7 +2,7 @@
  * Project: 2602K-RobotCode
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
- * Current Version: 3.01
+ * Current Version: 3.10
  * Last Updated: Aug 7, 2025
  *
  * Copyright (c) 2025, Pahlaj Sharma.
@@ -12,6 +12,7 @@
 
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp"
+#include "pros/misc.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -132,10 +133,12 @@ void initialize() {
         int count = 0;
         while (true) {
             // Print robot location to the brain screen
-            pros::screen::print(pros::E_TEXT_MEDIUM, 0, "X: %f", chassis.getPose().x);
-            pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Y: %f", chassis.getPose().y);
-            pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta);
-
+            if (pros::competition::is_autonomous()){
+                // Print current pose only in autonomous mode
+                pros::screen::print(pros::E_TEXT_MEDIUM, 0, "X: %f", chassis.getPose().x);
+                pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Y: %f", chassis.getPose().y);
+                pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta);
+            }
             if (count % 200 == 0) {
                 // Print current battery level and motor temps to controller
                 controller.print(0, 0, "Battery: %.1f", pros::battery::get_capacity());
@@ -161,8 +164,9 @@ void competition_initialize() {
         teamType = (teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
         std::string autonName = autons.at(selectedAuton).first;
 
-        pros::screen::print(pros::E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
-        pros::screen::print(pros::E_TEXT_MEDIUM, 4, "Team: %s", teamType.c_str());
+        // Chaneg to line 1 and 2 after remove printing current pose
+        pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Auton: %s", autonName.c_str());
+        pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Team: %s", teamType.c_str());
         controller.print(2, 0, "%s :: %s", teamType.c_str(), autonName.c_str());
 
         pros::delay(200);

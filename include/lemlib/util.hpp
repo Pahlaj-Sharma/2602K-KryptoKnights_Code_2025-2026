@@ -163,4 +163,46 @@ float ema(float current, float previous, float smooth);
  * @endcode
  */
 float getCurvature(Pose pose, Pose other);
+
 } // namespace lemlib
+/**
+ * @brief Get the data from a file in the format of a vector of poses
+ *
+ * @param path the path to the file
+ * @return std::vector<lemlib::Pose> - the vector of poses
+ *
+ * @b Example
+ * @code {.cpp}
+ * asset path = "path/to/file.txt";
+ * std::vector<lemlib::Pose> poses = getData(path);
+ * @endcode
+ */
+std::vector<lemlib::Pose> getData(const asset& path);
+/**
+ * @brief Convert a string to a hex string
+ *
+ * @param input the input string
+ * @return std::string - the hex string
+ *
+ * @b Example
+ * @code {.cpp}
+ * std::string hex = stringToHex("Hello");
+ * // hex == "48656C6C6F"
+ * @endcode
+ */
+std::string stringToHexRamsete(const std::string& input);
+/**
+ * @brief Read a string and split it by a delimiter
+ *
+ * @param input the input string
+ * @param delimiter the delimiter to split by
+ * @return std::vector<std::string> - the vector of strings
+ *
+ * @b Example
+ * @code {.cpp}
+ * std::string input = "Hello, World, How, Are, You";
+ * std::vector<std::string> output = readElement(input, ", ");
+ * // output == {"Hello", "World", "How", "Are", "You"}
+ * @endcode
+ */
+std::vector<std::string> readElement(const std::string& input, const std::string& delimiter);

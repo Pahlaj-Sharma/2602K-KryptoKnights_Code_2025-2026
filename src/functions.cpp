@@ -141,7 +141,6 @@ void resetOdometry(float threshold) {
 
 void tunePID() {
     // Store initial PID and rotation sensor values
-    const float initial_kp = chassis.lateralPID.kP, initial_ki = chassis.lateralPID.kI, initial_kd = chassis.lateralPID.kD;
     const int initial_rot_kp_pos = rot_kp.get_position();
     const int initial_rot_ki_pos = rot_ki.get_position();
     const int initial_rot_kd_pos = rot_kd.get_position();
@@ -156,10 +155,9 @@ void tunePID() {
         const float delta_kd = (rot_kd.get_position() - initial_rot_kd_pos) * KD_SCALE_FACTOR;
 
         // Apply the changes to the lateral PID constants
-        // This can be swapped for angularPID to tune turning
-        chassis.lateralPID.kP = initial_kp + delta_kp;
-        chassis.lateralPID.kI = initial_ki + delta_ki;
-        chassis.lateralPID.kD = initial_kd + delta_kd;
+        chassis.lateralPID.kP += delta_kp;
+        chassis.lateralPID.kI += delta_ki;
+        chassis.lateralPID.kD += delta_kd;
 
         // Print the current PID values to the controller screen
         controller.print(0, 0, "kP: %f", chassis.lateralPID.kP);
@@ -177,8 +175,6 @@ void tunePID() {
             controller.rumble(".");
             controller.clear();
         }
-
-        // Small delay to prevent a task overflow
         pros::delay(50);
     }
 }
