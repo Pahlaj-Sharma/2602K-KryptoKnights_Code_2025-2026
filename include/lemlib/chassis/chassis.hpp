@@ -751,6 +751,8 @@ class Chassis {
          * @endcode
          */
         void ramsete(const asset& path, float beta, float zeta, int timeout, bool forwards = true, bool async = true);
+        void stanley(const asset& path, float lookahead, int timeout, bool forwards, bool async,
+                           float stanleyGain, float headingFF);
         /**
          * @brief Control the robot during the driver using the tank drive control scheme. In this control scheme one
          * joystick axis controls the left motors' forward and backwards movement of the robot, while the other joystick
