@@ -109,8 +109,8 @@ PursuitError calculateErrors(const lemlib::Pose& pose, const std::vector<lemlib:
     return {crossTrackError, currentHeadingError, futureHeadingError};
 }
 
-void lemlib::Chassis::stanley(const asset& path, float lookahead, int timeout, bool forwards, bool async,
-                           float stanleyGain, float headingFF) {
+void lemlib::Chassis::stanley(const asset& path, float lookahead, float stanleyGain, float headingFF, int timeout, 
+                              bool forwards, bool async) {
     this->requestMotionStart();
     if (!this->motionRunning) return;
 

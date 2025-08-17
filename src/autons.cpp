@@ -21,7 +21,8 @@ void auton1() {
         chassisPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
         moveLinear(12);
         resetOdometry();
-        chassis.ramsete(path_jerryio_txt, 2, 0.7, 3000);
+        chassis.ramsete(path_jerryio_txt, 2, 0.7, 10000);
+        chassis.stanley(path_jerryio_txt, 7, 1, 0.5, 10000);
     }
 }
 
