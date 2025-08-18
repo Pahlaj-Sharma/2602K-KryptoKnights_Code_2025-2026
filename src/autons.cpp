@@ -1,15 +1,16 @@
-#include "lemlib/asset.hpp"
 #include "main.h"
-#include "lemlib/api.hpp"
+#include "pahlib/api.hpp"
 #include "autons.hpp"
 #include "robot_config.hpp"
+
+using namespace pahlib;
 
 ASSET(path_txt);
 ASSET(path2_txt);
 
 void auton1() {
     chassis.setPose(0, 0, 0);
-    chassis.setPID(lemlib::Chassis::PIDPreset::normal);
+    chassis.setPID(Chassis::PIDPreset::normal);
     chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();
@@ -19,7 +20,7 @@ void auton1() {
 
 void auton2() {
     chassis.setPose(0, 0, 0);
-    chassis.setPID(lemlib::Chassis::PIDPreset::normal);
+    chassis.setPID(Chassis::PIDPreset::normal);
     chassis.moveToPoint(7.778, -26.45, 5000);
     chassis.moveToPoint(31.927, -2.549, 5000);
     chassis.moveToPoint(35.662, 22.596, 5000);
@@ -29,7 +30,7 @@ void auton2() {
 
 void auton3() {
     chassis.setPose(0, 0, 0);
-    chassis.setPID(lemlib::Chassis::PIDPreset::normal);
+    chassis.setPID(Chassis::PIDPreset::normal);
     chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();

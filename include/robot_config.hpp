@@ -4,7 +4,7 @@
 // --- Motor Ports ---
 // Define motor port numbers for clarity and easy modification.
 // A negative port number (e.g., -14) indicates that the motor's direction should be reversed.
-#include "lemlib/chassis/chassis.hpp"
+#include "pahlib/chassis/chassis.hpp"
 
 inline constexpr int PORT_RIGHT_MOTOR_1 = 11;
 inline constexpr int PORT_RIGHT_MOTOR_2 = 13;
@@ -38,7 +38,7 @@ inline constexpr float IMU_SCALER       = 1.0;   // Custom IMU scaling factor, a
 inline constexpr float HORIZONTAL_TRACKING_OFFSET = 0.0;
 inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0;
 
-// --- PID Controller Settings for LemLib Chassis ---
+// --- PID Controller Settings for pahlib Chassis ---
 // A struct to hold all the PID constants for clarity and easy management.
 struct PIDConstants {
     float kP;
@@ -77,34 +77,34 @@ inline constexpr PIDConstants P_ANGULAR_PID {
     2.0, 0.0, 16.0, 3, 1, 100, 2, 500, 0
 };
 
-// Convert to LemLib ControllerSettings
+// Convert to pahlib ControllerSettings
 // Normal Lateral
-inline const lemlib::ControllerSettings lateral_PID = {
+inline const pahlib::ControllerSettings lateral_PID = {
     LATERAL_PID.kP, LATERAL_PID.kI, LATERAL_PID.kD, LATERAL_PID.antiWindup, 
     LATERAL_PID.smallError, LATERAL_PID.smallTimeout, LATERAL_PID.largeError, 
     LATERAL_PID.largeTimeout, LATERAL_PID.slew};
 // Normal Angular
-inline const lemlib::ControllerSettings angular_PID = {
+inline const pahlib::ControllerSettings angular_PID = {
     ANGULAR_PID.kP, ANGULAR_PID.kI, ANGULAR_PID.kD, ANGULAR_PID.antiWindup, 
     ANGULAR_PID.smallError, ANGULAR_PID.smallTimeout, ANGULAR_PID.largeError, 
     ANGULAR_PID.largeTimeout, ANGULAR_PID.slew};
 // Fast Lateral
-inline const lemlib::ControllerSettings F_lateral_PID = {
+inline const pahlib::ControllerSettings F_lateral_PID = {
     F_LATERAL_PID.kP, F_LATERAL_PID.kI, F_LATERAL_PID.kD, F_LATERAL_PID.antiWindup, 
     F_LATERAL_PID.smallError, F_LATERAL_PID.smallTimeout, F_LATERAL_PID.largeError, 
     F_LATERAL_PID.largeTimeout, F_LATERAL_PID.slew};
 // Fast Angular
-inline const lemlib::ControllerSettings F_angular_PID = {
+inline const pahlib::ControllerSettings F_angular_PID = {
     F_ANGULAR_PID.kP, F_ANGULAR_PID.kI, F_ANGULAR_PID.kD, F_ANGULAR_PID.antiWindup, 
     F_ANGULAR_PID.smallError, F_ANGULAR_PID.smallTimeout, F_ANGULAR_PID.largeError, 
     F_ANGULAR_PID.largeTimeout, F_ANGULAR_PID.slew};
 // Precise Lateral
-inline const lemlib::ControllerSettings P_lateral_PID = {
+inline const pahlib::ControllerSettings P_lateral_PID = {
     P_LATERAL_PID.kP, P_LATERAL_PID.kI, P_LATERAL_PID.kD, P_LATERAL_PID.antiWindup, 
     P_LATERAL_PID.smallError, P_LATERAL_PID.smallTimeout, P_LATERAL_PID.largeError, 
     P_LATERAL_PID.largeTimeout, P_LATERAL_PID.slew};
 // Precise Angular
-inline const lemlib::ControllerSettings P_angular_PID = {
+inline const pahlib::ControllerSettings P_angular_PID = {
     P_ANGULAR_PID.kP, P_ANGULAR_PID.kI, P_ANGULAR_PID.kD, P_ANGULAR_PID.antiWindup, 
     P_ANGULAR_PID.smallError, P_ANGULAR_PID.smallTimeout, P_ANGULAR_PID.largeError, 
     P_ANGULAR_PID.largeTimeout, P_ANGULAR_PID.slew};

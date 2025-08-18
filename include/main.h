@@ -24,7 +24,7 @@
  * E_CONTROLLER_MASTER is pedantically correct within the PROS styleguide, but
  * not convenient for most student programmers.
  */
-#include "lemlib/chassis/chassis.hpp"
+#include "pahlib/chassis/chassis.hpp"
 #include "pros/adi.hpp"
 #include "pros/imu.hpp"
 #define PROS_USE_SIMPLE_NAMES
@@ -78,8 +78,8 @@ void opcontrol(void);
  * You can add C++-only headers here
  */
 //#include <iostream>
-#include "lemlib/api.hpp"
-extern lemlib::Chassis chassis;
+#include "pahlib/api.hpp"
+extern pahlib::Chassis chassis;
 extern pros::Controller controller;
 extern pros::MotorGroup right_motors;
 extern pros::MotorGroup left_motors;
@@ -91,7 +91,7 @@ extern pros::Distance frontDistance;
 extern pros::Distance backDistance;
 extern pros::adi::DigitalOut pto;
 extern int selectedAuton;
-extern bool ptoState; // PTO state, true = drivetrain, false = intake
+extern bool ptoState; // PTO state, false = drivetrain, true = intake
 
 class ScalarIMU : public pros::IMU {
 public:
