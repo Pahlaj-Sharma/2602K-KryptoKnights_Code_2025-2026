@@ -1,28 +1,19 @@
+#include "lemlib/asset.hpp"
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "autons.hpp"
 #include "robot_config.hpp"
 
-constexpr asset path_jerryio_txt {};
+constexpr static asset path_jerryio_txt{};
 
 void auton1() {
-    if (teamType == "RED") {
-        chassis.setPose(0, 0, 0);
-        chassis.setPID(lemlib::Chassis::PIDPreset::normal);
-        chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
-        chassis.moveLinear(12);
-        chassis.resetOdometry();
-        chassis.follow(path_jerryio_txt, 2, 10000);
-        chassis.moveToPose(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
-    } else {
-        chassis.setPose(0, 0, 0);
-        chassis.setPID(lemlib::Chassis::PIDPreset::normal);
-        chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
-        chassis.moveLinear(12);
-        chassis.resetOdometry();
-        chassis.ramsete(path_jerryio_txt, 2, 0.7, 10000);
-        chassis.stanley(path_jerryio_txt, 7, 1, 0.5, 10000);
-    }
+    chassis.setPose(0, 0, 0);
+    chassis.setPID(lemlib::Chassis::PIDPreset::normal);
+    chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
+    chassis.moveLinear(12);
+    chassis.resetOdometry();
+    chassis.follow(path_jerryio_txt, 2, 10000);
+    chassis.moveToPose(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
 }
 
 void auton2() {
@@ -36,7 +27,13 @@ void auton2() {
 }
 
 void auton3() {
-    
+    chassis.setPose(0, 0, 0);
+    chassis.setPID(lemlib::Chassis::PIDPreset::normal);
+    chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
+    chassis.moveLinear(12);
+    chassis.resetOdometry();
+    chassis.ramsete(path_jerryio_txt, 2, 0.7, 10000);
+    chassis.stanley(path_jerryio_txt, 7, 1, 0.5, 10000);
 }
 
 void auton4() {

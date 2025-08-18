@@ -4,7 +4,7 @@
 
 This repository contains the C++ codebase for VEX V5 Robotics Team 2602K. Our robot is engineered to compete in the Push Back game. Our primary strategy focuses on creating a robust autonomous program.
 
-This project leverages the **PROS** (Purdue Robotics Operating System) framework for all robot low-level control, sensor integration, and motor management. For advanced autonomous movement and precise robot localization, we integrate the **LemLib** library, utilizing its robust odometry and motion control capabilities.
+This project leverages the **PROS** framework for all robot low-level control, sensor integration, and motor management. For advanced autonomous movement and precise robot localization.
 
 
 ## 📜 Copyright and License

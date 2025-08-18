@@ -41,7 +41,6 @@ pros::MotorGroup right_motors({right_front});
 pros::Rotation horizontal_encoder(PORT_HORIZONTAL_ENCODER);
 pros::Rotation vertical_encoder(PORT_VERTICAL_ENCODER);
 pros::adi::Potentiometer autonSelector(PORT_AUTON_SELECTOR_POT);
-pros::adi::Potentiometer teamSelector(PORT_TEAM_SELECTOR_POT);
 pros::Distance rightDistance(PORT_DISTANCE_RIGHT);
 pros::Distance leftDistance(PORT_DISTANCE_LEFT);
 pros::Distance frontDistance(PORT_DISTANCE_FRONT);
@@ -110,7 +109,6 @@ std::map<int, std::pair<std::string, std::function<void()>>> autons = {
 };
 
 int selectedAuton = 1;
-std::string teamType = "RED";
 bool ptoState = false; // PTO state: true = intake, false = drivetrain
 
 void initialize() {
@@ -159,14 +157,11 @@ void competition_initialize() {
     while (pros::competition::is_disabled()) {
         // Determine selected autonomous routine
         selectedAuton = static_cast<int>(autonSelector.get_angle() / (330.0 / autons.size()));
-        // Determine team type based on teamSelector potentiometer's angle
-        teamType = (teamSelector.get_angle() <= 165) ? "RED" : "BLUE";
         std::string autonName = autons.at(selectedAuton).first;
 
         // Chaneg to line 1 and 2 after remove printing current pose
         pros::screen::print(pros::E_TEXT_MEDIUM, 1, "Auton: %s", autonName.c_str());
-        pros::screen::print(pros::E_TEXT_MEDIUM, 2, "Team: %s", teamType.c_str());
-        controller.print(2, 0, "%s :: %s", teamType.c_str(), autonName.c_str());
+        controller.print(2, 0, "%s", autonName.c_str());
 
         pros::delay(200);
     }
