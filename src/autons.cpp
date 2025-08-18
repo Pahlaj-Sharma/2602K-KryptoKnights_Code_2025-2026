@@ -1,9 +1,11 @@
+#include "lemlib/asset.hpp"
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "autons.hpp"
 #include "robot_config.hpp"
 
-asset path_jerryio_txt{};
+ASSET(path_txt);
+ASSET(path2_txt);
 
 void auton1() {
     chassis.setPose(0, 0, 0);
@@ -11,7 +13,7 @@ void auton1() {
     chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();
-    chassis.follow(path_jerryio_txt, 2, 10000);
+    chassis.follow(path_txt, 2, 10000);
     chassis.moveToPose(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
 }
 
@@ -31,8 +33,8 @@ void auton3() {
     chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();
-    chassis.ramsete(path_jerryio_txt, 2, 0.7, 10000);
-    chassis.stanley(path_jerryio_txt, 7, 1, 0.5, 10000);
+    chassis.ramsete(path2_txt, 2, 0.7, 10000);
+    chassis.stanley(path_txt, 7, 1, 0.5, 10000);
 }
 
 void auton4() {

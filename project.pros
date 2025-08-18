@@ -64,6 +64,8 @@
           "include/pros/distance.hpp",
           "include/pros/apix.h",
           "firmware/libm.a",
+	  "firmware/hot-cold-asset.mk",
+	  "static/path.jerryio.txt",
           "include/pros/optical.hpp",
           "include/pros/version.h"
         ],
