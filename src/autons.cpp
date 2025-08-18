@@ -1,10 +1,9 @@
-#include "lemlib/asset.hpp"
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "autons.hpp"
 #include "robot_config.hpp"
 
-constexpr static asset path_jerryio_txt{};
+asset path_jerryio_txt{};
 
 void auton1() {
     chassis.setPose(0, 0, 0);
