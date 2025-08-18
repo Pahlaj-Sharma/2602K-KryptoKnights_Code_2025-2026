@@ -1,4 +1,5 @@
 #include <math.h>
+#include "main.h"
 #include "pros/imu.hpp"
 #include "pros/motors.h"
 #include "pros/rtos.h"
@@ -8,6 +9,7 @@
 #include "lemlib/chassis/odom.hpp"
 #include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/rtos.hpp"
+#include "robot_config.hpp"
 
 lemlib::OdomSensors::OdomSensors(TrackingWheel* vertical1, TrackingWheel* vertical2, TrackingWheel* horizontal1,
                                  TrackingWheel* horizontal2, pros::Imu* imu)
@@ -158,4 +160,62 @@ void lemlib::Chassis::resetLocalPosition() {
 void lemlib::Chassis::setBrakeMode(pros::motor_brake_mode_e mode) {
     drivetrain.leftMotors->set_brake_mode_all(mode);
     drivetrain.rightMotors->set_brake_mode_all(mode);
+}
+
+void lemlib::Chassis::moveLinear(float inches, int timeout, float lead, float maxspeed, float minspeed) {
+    // Get the robot's current position and orientation
+    const lemlib::Pose currentPose = this->getPose(true);
+
+    // Calculate the target position based on the current pose and distance
+    const float targetX = currentPose.x + (inches * std::cos(currentPose.theta));
+    const float targetY = currentPose.y + (inches * std::sin(currentPose.theta));
+
+    // Set the chassis to move to the calculated target position
+    this->moveToPose(targetX, targetY, lemlib::radToDeg(currentPose.theta), timeout, {
+        .lead = lead,
+        .maxSpeed = maxspeed,
+        .minSpeed = minspeed
+    });
+}
+
+void lemlib::Chassis::setPID(PIDPreset premade) {
+    PIDConstants lateral_pid;
+    PIDConstants angular_pid;
+
+    switch (premade) {
+        case PIDPreset::normal:
+            lateral_pid = LATERAL_PID;
+            angular_pid = ANGULAR_PID;
+            break;
+        case PIDPreset::fast:
+            lateral_pid = F_LATERAL_PID;
+            angular_pid = F_ANGULAR_PID;
+            break;
+        case PIDPreset::precise:
+            lateral_pid = P_LATERAL_PID;
+            angular_pid = P_ANGULAR_PID;
+            break;
+        default:
+            lateral_pid = LATERAL_PID;
+            angular_pid = ANGULAR_PID;
+            break;
+    }
+
+    this->lateralPID = {lateral_pid.kP, lateral_pid.kI, lateral_pid.kD};
+    this->angularPID = {angular_pid.kP, angular_pid.kI, angular_pid.kD};
+}
+
+void lemlib::Chassis::setPID(
+    float lateral_kP, float lateral_kI, float lateral_kD,
+    float angular_kP, float angular_kI, float angular_kD
+) {
+    // Set the lateral PID constants
+    this->lateralPID.kP = lateral_kP;
+    this->lateralPID.kI = lateral_kI;
+    this->lateralPID.kD = lateral_kD;
+
+    // Set the angular PID constants
+    this->angularPID.kP = angular_kP;
+    this->angularPID.kI = angular_kI;
+    this->angularPID.kD = angular_kD;
 }

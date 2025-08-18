@@ -751,10 +751,82 @@ class Chassis {
          * @endcode
          */
         void ramsete(const asset& path, float beta, float zeta, int timeout, bool forwards = true, bool async = true);
-
-        // Stanley controller
+        /**
+        * @brief Follows a predefined path using a Stanley controller.
+        *
+        * This function uses a Stanley path-tracking algorithm to guide the robot along a series of waypoints.
+        * It is a core component for advanced autonomous routines.
+        *
+        * @param path The path asset to follow. This is a file containing the path's waypoints.
+        * @param lookahead The lookahead distance in inches. A higher value results in smoother path-following.
+        * @param stanleyGain The gain constant for the Stanley controller. Controls the aggressiveness of cross-track error correction.
+        * @param headingFF The feedforward value for the heading. Helps the robot anticipate turns.
+        * @param timeout The maximum time in milliseconds to complete the path.
+        * @param forwards If true, the robot moves forward along the path; otherwise, it moves backward.
+        * @param async If true, the function runs asynchronously (non-blocking); otherwise, it is a blocking call.
+        */
         void stanley(const asset& path, float lookahead, float stanleyGain, float headingFF, int timeout,
-                     bool forwards = true, bool async = true);
+                bool forwards = true, bool async = true);
+        /**
+        * @brief Moves the chassis a specified distance in a straight line.
+        *
+        * This function uses a PID loop to accurately drive the robot a set number of inches.
+        *
+        * @param inches The distance in inches to move. A positive value moves the robot forward, a negative value moves it backward.
+        * @param timeout The maximum time in milliseconds the movement is allowed to take. Defaults to 2000ms.
+        * @param lead The lead constant for the movement. Adjusts the behavior of the PID controller.
+        * @param maxspeed The maximum speed the robot is allowed to travel at during the movement. Defaults to 70.
+        * @param minspeed The minimum speed the robot must travel at. Defaults to 40.
+        */
+        void moveLinear(float inches, int timeout = 2000, float lead = 0.1, float maxspeed = 70, float minspeed = 40);
+        /**
+        * @brief Predefined presets for PID constants.
+        *
+        * These presets allow for quickly switching between different tuning profiles
+        * for various movement types.
+        */
+        enum class PIDPreset {
+            normal,  // Standard PID constants for general movement.
+            fast,    // PID constants optimized for high-speed, less precise movements.
+            precise  // PID constants optimized for slow, highly precise movements.
+        };
+
+        /**
+        * @brief Sets the PID constants for the chassis using a predefined preset.
+        *
+        * @param premade The preset to use.
+        */
+        void setPID(PIDPreset premade);
+
+        /**
+        * @brief Manually sets the PID constants for the chassis.
+        *
+        * This function provides granular control over the Proportional, Integral, and Derivative constants
+        * for both lateral and angular movement.
+        *
+        * @param lat_kp The proportional constant for lateral (forward/backward) movement.
+        * @param lat_ki The integral constant for lateral movement.
+        * @param lat_kd The derivative constant for lateral movement.
+        * @param ang_kp The proportional constant for angular (turning) movement.
+        * @param ang_ki The integral constant for angular movement.
+        * @param ang_kd The derivative constant for angular movement.
+        */
+        void setPID(float lat_kp, float lat_ki, float lat_kd, float ang_kp, float ang_ki, float ang_kd);
+        /** * @brief Reset the odometry of the chassis
+         * @param threshold the threshold in inches to reset the odometry. If the robot has moved more than
+         * this distance, the odometry will be reset. If the robot has not moved more than this distance,
+         * the odometry will not be reset. This is useful for preventing the odometry from being reset
+         * when the robot is not moving, which can cause issues with the odometry
+         * @b Example
+         * @code {.cpp}
+         * // reset the odometry of the chassis if the robot has moved more than 5 inches
+         * chassis.resetOdometry(5);
+         * // reset the odometry of the chassis if the robot has moved more than 10 inches
+         * // and disable the drive curve
+         * chassis.resetOdometry(10, true);
+         * @endcode
+         */
+        void resetOdometry(float threshold = 5);
         /**
          * @brief Control the robot during the driver using the tank drive control scheme. In this control scheme one
          * joystick axis controls the left motors' forward and backwards movement of the robot, while the other joystick

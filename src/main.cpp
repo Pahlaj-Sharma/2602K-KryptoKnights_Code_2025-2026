@@ -12,7 +12,6 @@
 
 #include "main.h" // PROS main header
 #include "lemlib/api.hpp"
-#include "pros/misc.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -125,7 +124,7 @@ void initialize() {
     horizontal_encoder.reset_position();
     vertical_encoder.reset_position();
 
-    pros::lcd::initialize(); // Initialize the VEX LCD (for basic prints)
+    pros::lcd::initialize(); // Initialize the VEX LCD
     chassis.calibrate();     // Calibrate the odometry sensors (IMU, encoders)
 
     // Create a task to continuously print robot pose, robot temp, battery, auton to the brain screen
@@ -206,5 +205,54 @@ void opcontrol() {
         }
 
         pros::delay(10);
+    }
+}
+
+// REMOVE WHEN DONE TUNING
+// --- PID Tuning Components ---
+// These components are for live PID tuning and should be removed once tuning is complete.
+pros::Rotation rot_kp(1);
+pros::Rotation rot_ki(2);
+pros::Rotation rot_kd(3);
+
+void tunePID() {
+    // Store initial PID and rotation sensor values
+    const int initial_rot_kp_pos = rot_kp.get_position();
+    const int initial_rot_ki_pos = rot_ki.get_position();
+    const int initial_rot_kd_pos = rot_kd.get_position();
+
+    // Scaling factors for PID tuning
+    constexpr float KP_SCALE = 0.1f;
+    constexpr float KI_SCALE = 0.01f;
+    constexpr float KD_SCALE = 0.1f;
+
+    while (true) {
+        // Calculate deltas from rotation sensors
+        float delta_kp = (rot_kp.get_position() - initial_rot_kp_pos) * KP_SCALE;
+        float delta_ki = (rot_ki.get_position() - initial_rot_ki_pos) * KI_SCALE;
+        float delta_kd = (rot_kd.get_position() - initial_rot_kd_pos) * KD_SCALE;
+
+        // Update lateral PID values
+        chassis.lateralPID.kP += delta_kp;
+        chassis.lateralPID.kI += delta_ki;
+        chassis.lateralPID.kD += delta_kd;
+
+        // Display PID values on controller
+        controller.print(0, 0, "kP: %.3f", chassis.lateralPID.kP);
+        controller.print(1, 0, "kI: %.3f", chassis.lateralPID.kI);
+        controller.print(2, 0, "kD: %.3f", chassis.lateralPID.kD);
+
+        // Run test movement if button A is pressed
+        if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+            controller.rumble("-");
+            chassis.calibrate();
+            chassis.setPose(0, 0, 0);
+            pros::delay(100);
+            chassis.moveToPoint(0, 24, 10000); // Example test movement
+            chassis.waitUntilDone();
+            controller.rumble(".");
+            controller.clear();
+        }
+        pros::delay(50);
     }
 }
