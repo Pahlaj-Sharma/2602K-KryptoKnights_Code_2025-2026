@@ -16,19 +16,21 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         this->lateralPID.kP = lateralGains->kP;
         this->lateralPID.kI = lateralGains->kI;
         this->lateralPID.kD = lateralGains->kD;
+        this->lateralPID.kF = lateralGains->kF;
     }
     if (angularGains) {
         this->angularPID.kP = angularGains->kP;
         this->angularPID.kI = angularGains->kI;
         this->angularPID.kD = angularGains->kD;
+        this->angularPID.kF = angularGains->kF;
     }
 
     params.earlyExitRange = std::fabs(params.earlyExitRange);
     this->requestMotionStart();
     // were all motions cancelled?
     if (!this->motionRunning) {
-        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD};
-        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
+        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
+        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
         return;
     }
     // if the function is async, run it in a new task
@@ -58,6 +60,9 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
     // calculate target pose in standard form
     Pose target(x, y);
     target.theta = lastPose.angle(target);
+
+    this->setMotionProfile(target.distance(getPose()), params.maxSpeed / 2.54,
+                           params.maxAcceleration);
 
     // main loop
     while (!timer.isDone() && ((!lateralSmallExit.getExit() && !lateralLargeExit.getExit()) || !close) &&
@@ -97,7 +102,7 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         lateralLargeExit.update(lateralError);
 
         // get output from PIDs
-        float lateralOut = lateralPID.update(lateralError);
+        float lateralOut = lateralPID.update(lateralError, this->getTargetVelocity(timer.getTimePassed() / 1000.0));
         float angularOut = angularPID.update(radToDeg(angularError));
         if (close) angularOut = 0;
 
@@ -148,5 +153,7 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
+    this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
+    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
     this->endMotion();
 }

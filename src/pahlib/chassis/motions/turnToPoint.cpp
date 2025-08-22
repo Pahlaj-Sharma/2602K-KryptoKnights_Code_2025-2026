@@ -14,13 +14,14 @@ void pahlib::Chassis::turnToPoint(float x, float y, int timeout, TurnToPointPara
         this->angularPID.kP = angularGains->kP;
         this->angularPID.kI = angularGains->kI;
         this->angularPID.kD = angularGains->kD;
+        this->angularPID.kF = angularGains->kF;
     }
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
     // were all motions cancelled?
     if (!this->motionRunning) {
-        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
+        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
         return;
     }
     // if the function is async, run it in a new task
@@ -100,5 +101,6 @@ void pahlib::Chassis::turnToPoint(float x, float y, int timeout, TurnToPointPara
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
+    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
     this->endMotion();
 }

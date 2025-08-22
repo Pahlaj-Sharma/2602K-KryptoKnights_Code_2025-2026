@@ -1,6 +1,4 @@
 #include "main.h"
-#include "pahlib/pose.hpp"
-#include "pahlib/chassis/chassis.hpp"
 #include "robot_config.hpp"
 
 struct SensorData {
@@ -18,7 +16,7 @@ void pahlib::Chassis::resetOdometry(float threshold) {
     constexpr float FIELD_SIZE_IN = 70.0f;
 
     // Get the robot's current pose
-    const pahlib::Pose pose = chassis.getPose(true);
+    const pahlib::Pose pose = this->getPose(true);
 
     // Gather sensor readings (distance in inches, offset, axis)
     std::vector<SensorData> sensors = {
@@ -34,7 +32,7 @@ void pahlib::Chassis::resetOdometry(float threshold) {
     // Abort if the two closest sensors are on the same axis, too far, or robot is moving
     if (sensors[0].axis == sensors[1].axis ||
         sensors[0].distance > 8.0f ||
-        chassis.isInMotion()) {
+        this->isInMotion()) {
         return;
     }
 
@@ -46,8 +44,8 @@ void pahlib::Chassis::resetOdometry(float threshold) {
     const float orientation_scale = std::max(std::abs(std::cos(pose.theta)), std::abs(std::sin(pose.theta)));
 
     // Compute wall distances for both sensors
-    const float dist1 = s1.distance * orientation_scale + s1.offset * orientation_scale;
-    const float dist2 = s2.distance * orientation_scale + s2.offset * orientation_scale;
+    const float dist1 = (s1.distance + s1.offset) * orientation_scale;
+    const float dist2 = (s2.distance + s2.offset) * orientation_scale;
 
     float calc_x = 0, calc_y = 0;
 
@@ -87,11 +85,11 @@ void pahlib::Chassis::resetOdometry(float threshold) {
     const float y_diff = std::abs(calc_y - pose.y);
 
     // Set the new pose if within threshold
-    if (x_diff < threshold && y_diff < threshold) {
-        chassis.setPose(calc_x, calc_y, pose.theta);
-    } else if (x_diff < threshold) {
-        chassis.setPose(calc_x, pose.y, pose.theta);
-    } else if (y_diff < threshold) {
-        chassis.setPose(pose.x, calc_y, pose.theta);
-    } else return;
+    if (x_diff < threshold && y_diff < threshold) 
+        this->setPose(calc_x, calc_y, pose.theta);
+    else if (x_diff < threshold) 
+        this->setPose(calc_x, pose.y, pose.theta);
+    else if (y_diff < threshold) 
+        this->setPose(pose.x, calc_y, pose.theta);
+    else return;
 }

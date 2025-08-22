@@ -15,19 +15,21 @@ void pahlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         this->lateralPID.kP = lateralGains->kP;
         this->lateralPID.kI = lateralGains->kI;
         this->lateralPID.kD = lateralGains->kD;
+        this->lateralPID.kF = lateralGains->kF;
     }
     if (angularGains) {
         this->angularPID.kP = angularGains->kP;
         this->angularPID.kI = angularGains->kI;
         this->angularPID.kD = angularGains->kD;
+        this->angularPID.kF = angularGains->kF;
     }
 
     // take the mutex
     this->requestMotionStart();
     // were all motions cancelled?
     if (!this->motionRunning) {
-        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD};
-        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
+        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
+        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
         return;
     }
     // if the function is async, run it in a new task
@@ -63,6 +65,9 @@ void pahlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
     float prevLateralOut = 0; // previous lateral power
     float prevAngularOut = 0; // previous angular power
     const int compState = pros::competition::get_status();
+
+    this->setMotionProfile(target.distance(getPose()), params.maxSpeed / 2.54,
+                           params.maxAcceleration);
 
     // main loop
     while (!timer.isDone() &&
@@ -119,7 +124,7 @@ void pahlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
         angularLargeExit.update(radToDeg(angularError));
 
         // get output from PIDs
-        float lateralOut = lateralPID.update(lateralError);
+        float lateralOut = lateralPID.update(lateralError, this->getTargetVelocity(timer.getTimePassed() / 1000.0));
         float angularOut = angularPID.update(radToDeg(angularError));
 
         if (distTarget < params.settleDist) {
@@ -182,7 +187,7 @@ void pahlib::Chassis::moveToPose(float x, float y, float theta, int timeout, Mov
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
-    this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD};
-    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD};
+    this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
+    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
     this->endMotion();
 }

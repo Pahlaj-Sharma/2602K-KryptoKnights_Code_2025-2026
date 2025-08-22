@@ -1,14 +1,9 @@
-#include <math.h>
 #include "main.h"
-#include "pros/imu.hpp"
-#include "pros/motors.h"
-#include "pros/rtos.h"
 #include "pahlib/logger/logger.hpp"
 #include "pahlib/util.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/chassis/odom.hpp"
 #include "pahlib/chassis/trackingWheel.hpp"
-#include "pros/rtos.hpp"
 #include "robot_config.hpp"
 
 pahlib::OdomSensors::OdomSensors(TrackingWheel* vertical1, TrackingWheel* vertical2, TrackingWheel* horizontal1,
@@ -36,8 +31,8 @@ pahlib::Chassis::Chassis(Drivetrain drivetrain, ControllerSettings linearSetting
       sensors(sensors),
       throttleCurve(throttleCurve),
       steerCurve(steerCurve),
-      lateralPID(linearSettings.kP, linearSettings.kI, linearSettings.kD, linearSettings.windupRange, true),
-      angularPID(angularSettings.kP, angularSettings.kI, angularSettings.kD, angularSettings.windupRange, true),
+      lateralPID(linearSettings.kP, linearSettings.kI, linearSettings.kD, linearSettings.kF, linearSettings.windupRange, true),
+      angularPID(angularSettings.kP, angularSettings.kI, angularSettings.kD, angularSettings.kF, angularSettings.windupRange, true),
       lateralLargeExit(lateralSettings.largeError, lateralSettings.largeErrorTimeout),
       lateralSmallExit(lateralSettings.smallError, lateralSettings.smallErrorTimeout),
       angularLargeExit(angularSettings.largeError, angularSettings.largeErrorTimeout),
@@ -58,7 +53,7 @@ void calibrateIMU(pahlib::OdomSensors& sensors) {
         do pros::delay(10);
         while (sensors.imu->get_status() != pros::ImuStatus::error && sensors.imu->is_calibrating());
         // exit if imu has been calibrated
-        if (!isnanf(sensors.imu->get_heading()) && !isinf(sensors.imu->get_heading())) {
+        if (!isnanf(sensors.imu->get_heading()) && !std::isinf(sensors.imu->get_heading())) {
             calibrated = true;
             break;
         }
@@ -201,21 +196,77 @@ void pahlib::Chassis::setPID(PIDPreset premade) {
             break;
     }
 
-    this->lateralPID = {lateral_pid.kP, lateral_pid.kI, lateral_pid.kD};
-    this->angularPID = {angular_pid.kP, angular_pid.kI, angular_pid.kD};
+    this->lateralPID = {lateral_pid.kP, lateral_pid.kI, lateral_pid.kD, lateral_pid.kF};
+    this->angularPID = {angular_pid.kP, angular_pid.kI, angular_pid.kD, angular_pid.kF};
 }
 
 void pahlib::Chassis::setPID(
-    float lateral_kP, float lateral_kI, float lateral_kD,
-    float angular_kP, float angular_kI, float angular_kD
+    float lateral_kP, float lateral_kI, float lateral_kD, float lateral_kF,
+    float angular_kP, float angular_kI, float angular_kD, float angular_kF
 ) {
     // Set the lateral PID constants
     this->lateralPID.kP = lateral_kP;
     this->lateralPID.kI = lateral_kI;
     this->lateralPID.kD = lateral_kD;
+    this->lateralPID.kF = lateral_kF;
 
     // Set the angular PID constants
     this->angularPID.kP = angular_kP;
     this->angularPID.kI = angular_kI;
     this->angularPID.kD = angular_kD;
+    this->angularPID.kF = angular_kF;
+}
+
+// --- Motion Profile Variables ---
+// Store the calculated time segments of the motion profile
+float g_target_distance;
+float g_max_velocity;
+float g_max_acceleration;
+float g_time_total = 0;
+float g_time_accel = 0;
+float g_time_cruise = 0;
+
+void pahlib::Chassis::setMotionProfile(float target_distance, float max_velocity, float max_acceleration) {
+    // Ensure positive values
+    target_distance = std::fabs(target_distance);
+    g_max_velocity = std::fabs(max_velocity);
+    g_max_acceleration = std::fabs(max_acceleration);
+    g_target_distance = target_distance;
+
+    // Calculate time and distance to accelerate to max velocity
+    g_time_accel = g_max_velocity / g_max_acceleration;
+    float d_accel = 0.5 * g_max_acceleration * pow(g_time_accel, 2);
+
+    // Check if the profile is triangular (if we can't reach max velocity)
+    if (target_distance < 2 * d_accel) {
+        // Recalculate max velocity and acceleration time for a triangular profile
+        g_max_velocity = std::sqrt(g_max_acceleration * g_target_distance);
+        g_time_accel = g_max_velocity / g_max_acceleration;
+        g_time_cruise = 0;
+    } else {
+        // Calculate the time spent at constant velocity for a trapezoidal profile
+        g_time_cruise = (g_target_distance - (2 * d_accel)) / g_max_velocity;
+    }
+
+    // Calculate the total time for the motion
+    g_time_total = (2 * g_time_accel) + g_time_cruise;
+}
+
+float pahlib::Chassis::getTargetVelocity(float elapsed_time) {
+    // Return 0 if time is invalid
+    if (elapsed_time < 0 || elapsed_time >= g_time_total) return 0;
+    
+    // Acceleration phase 
+    if (elapsed_time < g_time_accel) {
+        return elapsed_time * g_max_acceleration;
+    }
+    // Constant velocity (cruise) phase
+    else if (elapsed_time < g_time_accel + g_time_cruise) {
+        return g_max_velocity;
+    }
+    // Deceleration phase
+    else {
+        float time_into_decel = elapsed_time - (g_time_accel + g_time_cruise);
+        return g_max_velocity - (time_into_decel * g_max_acceleration);
+    }
 }

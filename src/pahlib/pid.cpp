@@ -2,14 +2,15 @@
 #include "pahlib/util.hpp"
 
 namespace pahlib {
-PID::PID(float kP, float kI, float kD, float windupRange, bool signFlipReset)
+PID::PID(float kP, float kI, float kD, float kF, float windupRange, bool signFlipReset)
     : kP(kP),
       kI(kI),
       kD(kD),
+      kF(kF),
       windupRange(windupRange),
       signFlipReset(signFlipReset) {}
 
-float PID::update(const float error) {
+float PID::update(const float error, const float feedforward) {
     // calculate integral
     integral += error;
     if (sgn(error) != sgn((prevError)) && signFlipReset) integral = 0;
@@ -20,7 +21,7 @@ float PID::update(const float error) {
     prevError = error;
 
     // calculate output
-    return error * kP + integral * kI + derivative * kD;
+    return error * kP + integral * kI + derivative * kD + feedforward * kF;
 }
 
 void PID::reset() {

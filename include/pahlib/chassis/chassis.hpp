@@ -64,6 +64,7 @@ class ControllerSettings {
          * @param kP proportional gain
          * @param kI integral gain
          * @param kD derivative gain
+         * @param kF feedforward gain
          * @param antiWindup integral anti windup range. If error is within this range, integral is set to 0
          * @param smallError range of error at which the chassis controller will exit if the error is within this range
          * for an amount of time determined by smallErrorTimeout
@@ -88,11 +89,12 @@ class ControllerSettings {
          *                                            5); // maximum acceleration (slew)
          * @endcode
          */
-        ControllerSettings(float kP, float kI, float kD, float windupRange, float smallError, float smallErrorTimeout,
+        ControllerSettings(float kP, float kI, float kD, float kF, float windupRange, float smallError, float smallErrorTimeout,
                            float largeError, float largeErrorTimeout, float slew)
             : kP(kP),
               kI(kI),
               kD(kD),
+              kF(kF),
               windupRange(windupRange),
               smallError(smallError),
               smallErrorTimeout(smallErrorTimeout),
@@ -103,6 +105,7 @@ class ControllerSettings {
         float kP;
         float kI;
         float kD;
+        float kF;
         float windupRange;
         float smallError;
         float smallErrorTimeout;
@@ -197,6 +200,9 @@ struct TurnToPointParams {
         /** angle between the robot and target point where the movement will exit. Only has an effect if minSpeed is
          * non-zero.*/
         float earlyExitRange = 0;
+        /** maximum acceleration 
+         */
+        float maxAcceleration = 60;
 };
 
 /**
@@ -218,6 +224,9 @@ struct TurnToHeadingParams {
         /** angle between the robot and target point where the movement will exit. Only has an effect if minSpeed is
          * non-zero.*/
         float earlyExitRange = 0;
+        /** maximum acceleration 
+         */
+        float maxAcceleration = 60;
 };
 
 /**
@@ -254,6 +263,9 @@ struct SwingToPointParams {
         /** angle between the robot and target heading where the movement will exit. Only has an effect if minSpeed is
          * non-zero.*/
         float earlyExitRange = 0;
+        /** maximum acceleration 
+         */
+        float maxAcceleration = 60;
 };
 
 /**
@@ -275,6 +287,9 @@ struct SwingToHeadingParams {
         /** angle between the robot and target heading where the movement will exit. Only has an effect if minSpeed is
          * non-zero.*/
         float earlyExitRange = 0;
+        /** maximum acceleration 
+         */
+        float maxAcceleration = 60;
 };
 
 /**
@@ -303,6 +318,9 @@ struct MoveToPoseParams {
         float earlyExitRange = 0;
         // Settle distance
         float settleDist = 4;
+        /** maximum acceleration 
+         */
+        float maxAcceleration = 60;
 };
 
 /**
@@ -324,6 +342,9 @@ struct MoveToPointParams {
         /** distance between the robot and target point where the movement will exit. Only has an effect if minSpeed is
          * non-zero.*/
         float earlyExitRange = 0;
+        /** maximum acceleration 
+         */
+        float maxAcceleration = 60;
 };
 
 // default drive curve
@@ -522,6 +543,7 @@ class Chassis {
         float kP;
         float kI;
         float kD;
+        float kF;
         };
 
         void turnToPoint(float x, float y, int timeout, TurnToPointParams params = {}, std::optional<PIDGains> angularGains = std::nullopt, bool async = true);
@@ -807,11 +829,13 @@ class Chassis {
         * @param lat_kp The proportional constant for lateral (forward/backward) movement.
         * @param lat_ki The integral constant for lateral movement.
         * @param lat_kd The derivative constant for lateral movement.
+        * @param lat_kf The feedforward constant for lateral movement.
         * @param ang_kp The proportional constant for angular (turning) movement.
         * @param ang_ki The integral constant for angular movement.
         * @param ang_kd The derivative constant for angular movement.
+        * @param ang_kf The feedforward constant for angular movement.
         */
-        void setPID(float lat_kp, float lat_ki, float lat_kd, float ang_kp, float ang_ki, float ang_kd);
+        void setPID(float lat_kp, float lat_ki, float lat_kd, float lat_kf, float ang_kp, float ang_ki, float ang_kd, float ang_kf);
         /** * @brief Reset the odometry of the chassis
          * @param threshold the threshold in inches to reset the odometry. If the robot has moved more than
          * this distance, the odometry will be reset. If the robot has not moved more than this distance,
@@ -1029,6 +1053,14 @@ class Chassis {
          */
         PID angularPID;
     protected:
+        /**
+         * @brief Sets the motion profile for this motion
+         */
+        void setMotionProfile(float target_distance, float max_velocity, float max_acceleration);
+        /**
+         * @brief Updates the target velocity for this motion
+         */
+        float getTargetVelocity(float elapsed_time);
         /**
          * @brief Indicates that this motion is queued and blocks current task until this motion reaches front of queue
          */

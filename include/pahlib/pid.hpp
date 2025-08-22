@@ -9,6 +9,7 @@ class PID {
          * @param kP proportional gain
          * @param kI integral gain
          * @param kD derivative gain
+         * @param kF feedforward gain
          * @param windupRange integral anti windup range
          * @param signFlipReset whether to reset integral when sign of error flips
          *
@@ -22,7 +23,7 @@ class PID {
          *         false); // don't reset integral when sign of error flips
          * @endcode
          */
-        PID(float kP, float kI, float kD, float windupRange = 0, bool signFlipReset = false);
+        PID(float kP, float kI, float kD, float kF, float windupRange = 0, bool signFlipReset = false);
 
         /**
          * @brief Update the PID
@@ -41,7 +42,7 @@ class PID {
          * }
          * @endcode
          */
-        float update(float error);
+        float update(const float error, const float feedforward = 0);
 
         /**
          * @brief reset integral, derivative, and prevTime
@@ -65,6 +66,7 @@ class PID {
         float kP;
         float kI;
         float kD;
+        float kF;
 
         // optimizations
         float windupRange;

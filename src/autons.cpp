@@ -11,7 +11,7 @@ ASSET(path2_txt);
 void auton1() {
     chassis.setPose(0, 0, 0);
     chassis.setPID(Chassis::PIDPreset::normal);
-    chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
+    chassis.setPID(2.0, 0.0, 16.0, 0.0, 2.0, 0.0, 16.0, 0.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();
     chassis.follow(path_txt, 2, 10000);
@@ -31,7 +31,7 @@ void auton2() {
 void auton3() {
     chassis.setPose(0, 0, 0);
     chassis.setPID(Chassis::PIDPreset::normal);
-    chassis.setPID(2.0, 0.0, 16.0, 2.0, 0.0, 16.0); // Custom PID values for this auton
+    chassis.setPID(2.0, 0.0, 16.0, 0.0, 2.0, 0.0, 16.0, 0.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();
     chassis.ramsete(path2_txt, 2, 0.7, 10000);

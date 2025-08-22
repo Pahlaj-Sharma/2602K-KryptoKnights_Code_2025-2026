@@ -100,7 +100,7 @@ public:
      * @param port The V5 port the IMU is connected to.
      * @param scalar A scalar value to apply to the rotation reading.
      */
-    ScalarIMU(int port, double scalar)
+    ScalarIMU(int port, float scalar)
     : pros::IMU(port),
     m_port(port),
     m_scalar(scalar) {}
