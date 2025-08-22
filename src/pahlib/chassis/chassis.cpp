@@ -217,15 +217,6 @@ void pahlib::Chassis::setPID(
     this->angularPID.kF = angular_kF;
 }
 
-// --- Motion Profile Variables ---
-// Store the calculated time segments of the motion profile
-float g_target_distance;
-float g_max_velocity;
-float g_max_acceleration;
-float g_time_total = 0;
-float g_time_accel = 0;
-float g_time_cruise = 0;
-
 void pahlib::Chassis::setMotionProfile(float target_distance, float max_velocity, float max_acceleration) {
     // Ensure positive values
     target_distance = std::fabs(target_distance);

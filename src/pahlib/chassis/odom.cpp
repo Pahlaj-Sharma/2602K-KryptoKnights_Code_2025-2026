@@ -4,6 +4,7 @@
 // http://thepilons.ca/wp-content/uploads/2018/10/Tracking.pdf
 
 #include <math.h>
+#include <sys/_stdint.h>
 #include "pros/rtos.hpp"
 #include "pahlib/util.hpp"
 #include "pahlib/chassis/odom.hpp"
@@ -73,7 +74,6 @@ pahlib::Pose pahlib::estimatePose(float time, bool radians) {
 }
 
 void pahlib::update() {
-    // TODO: add particle filter
     // get the current sensor values
     float vertical1Raw = 0;
     float vertical2Raw = 0;

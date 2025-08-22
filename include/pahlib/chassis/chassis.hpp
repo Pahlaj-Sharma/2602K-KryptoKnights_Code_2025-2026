@@ -1086,7 +1086,18 @@ class Chassis {
         ExitCondition lateralSmallExit;
         ExitCondition angularLargeExit;
         ExitCondition angularSmallExit;
+        
     private:
         pros::Mutex mutex;
+        
+        // --- Motion Profile Variables ---
+        // Store the calculated time segments of the motion profile
+        float g_target_distance;
+        float g_max_velocity;
+        float g_max_acceleration;
+        float g_time_total = 0;
+        float g_time_accel = 0;
+        float g_time_cruise = 0;
+
 };
 } // namespace pahlib
