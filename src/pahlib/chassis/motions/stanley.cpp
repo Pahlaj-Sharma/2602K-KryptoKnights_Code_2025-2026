@@ -1,7 +1,3 @@
-#include <cmath>
-#include <vector>
-#include <string>
-#include "pros/misc.hpp"
 #include "pahlib/logger/logger.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"

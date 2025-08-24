@@ -7,6 +7,7 @@ using namespace pahlib;
 
 ASSET(path_txt);
 ASSET(path2_txt);
+ASSET(ramsete_txt);
 
 void auton1() {
     chassis.setPose(0, 0, 0);
@@ -34,7 +35,7 @@ void auton3() {
     chassis.setPID(2.0, 0.0, 16.0, 0.0, 2.0, 0.0, 16.0, 0.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();
-    chassis.ramsete(path2_txt, 2, 0.7, 10000);
+    chassis.ramsete(ramsete_txt, 2, 0.7, 10000);
     chassis.stanley(path_txt, 7, 1, 0.5, 10000);
 }
 

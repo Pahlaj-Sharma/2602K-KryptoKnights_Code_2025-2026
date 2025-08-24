@@ -17,4 +17,4 @@ This project leverages the **PROS** framework for all robot low-level control, s
 **Project Lead:** Pahlaj Sharma
 **Team:** 2602K
 **Last Updated:** Aug 22, 2025
-**Current Software Version:** 3.21
+**Current Software Version:** 3.31

@@ -1,4 +1,3 @@
-#include <vector>
 #include "pahlib/pose.hpp"
 #include "pahlib/util.hpp"
 

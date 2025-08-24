@@ -772,7 +772,7 @@ class Chassis {
          * }
          * @endcode
          */
-        void ramsete(const asset& path, float beta, float zeta, int timeout, bool forwards = true, bool async = true);
+        void ramsete(const asset& path, float beta, float zeta, int timeout, bool async = true);
         /**
         * @brief Follows a predefined path using a Stanley controller.
         *
@@ -789,6 +789,32 @@ class Chassis {
         */
         void stanley(const asset& path, float lookahead, float stanleyGain, float headingFF, int timeout,
                 bool forwards = true, bool async = true);
+        /**
+        * @brief Follows a predefined path using the Pahlaj controller.
+        * This function uses a Pahlaj path-tracking algorithm to guide the robot along a series of waypoints.
+        * It is a core component for advanced autonomous routines.
+        * @param path The path asset to follow. This is a file containing the path's waypoints.
+        * @param lookahead The lookahead distance in inches. A higher value results in smoother path-following.
+        * @param timeout The maximum time in milliseconds to complete the path.
+        * @param forwards If true, the robot moves forward along the path; otherwise, it moves backward.
+        * @param async If true, the function runs asynchronously (non-blocking); otherwise, it is a blocking call.
+        * @b Example
+        * @code {.cpp}
+        * // load "myPath.txt"
+        * // the file should be in the "static" folder in the project root directory
+        * // this should also be done outside of any functions, otherwise it won't compile
+        * ASSET(myPath_txt); // we replace "." with "_" to make the asset name valid
+        * // autonomous function in your project. The function that runs during the autonomous period
+        * void autonomous() {
+        *     // follow the path in "myPath.txt" with a lookahead of 10 inches and a timeout of 4000ms
+        *     chassis.pahlaj(myPath_txt, 10, 4000);
+        *     // follow the path in "myPath.txt" with a lookahead of 10 inches and a timeout of 4000ms
+        *     // but follow the path backwards
+        *     chassis.pahlaj(myPath_txt, 10, 4000, false);
+        * }
+        * @endcode
+        */
+        void pahlaj(const asset& path, float agg, float multipler, int timeout, bool async = true);
         /**
         * @brief Moves the chassis a specified distance in a straight line.
         *

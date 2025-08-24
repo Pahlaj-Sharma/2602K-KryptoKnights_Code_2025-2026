@@ -2,7 +2,7 @@
  * Project: 2602K-RobotCode
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
- * Current Version: 3.21
+ * Current Version: 3.31
  * Last Updated: Aug 22, 2025
  *
  * Copyright (c) 2025, Pahlaj Sharma.
@@ -11,8 +11,7 @@
  **/
 
 #include "main.h" // PROS main header
-#include "pahlib/api.hpp" 
-#include "pahlib/chassis/trackingWheel.hpp"
+#include "pahlib/api.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -94,7 +93,6 @@ void initialize() {
     lcd::initialize();
     chassis.calibrate();
     controller.clear();
-    inertial.get_heading();
 
     // Background task to update robot info on screen and controller
     Task update_robot_info([&]() {

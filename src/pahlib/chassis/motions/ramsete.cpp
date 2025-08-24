@@ -87,12 +87,12 @@ std::vector<RamsetePathPoint> getRamsetePathData(const asset& path) {
     return robotPath;
 }
 
-void Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bool forwards, bool async) {
+void Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bool async) {
     this->requestMotionStart();
     if (!this->motionRunning) return;
     
     if (async) {
-        pros::Task task([&]() { ramsete(path, beta, zeta, timeout, forwards, false); });
+        pros::Task task([&]() { ramsete(path, beta, zeta, timeout, false); });
         this->endMotion();
         pros::delay(10);
         return;
@@ -164,21 +164,12 @@ void Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bo
         float vd = targetPoint.velocity * velocityScale;
         float wd = 0; // Path doesn't specify angular velocity
         
-        // Handle backwards driving by negating the reference velocity
-        if (!forwards) {
-            vd = -vd;
-        }
-        
         // Calculate pose error in global frame
         float error_x_global = targetPoint.x - pose.x;
         float error_y_global = targetPoint.y - pose.y;
         
         // Target heading in radians
         float targetHeading = degToRad(targetPoint.theta);
-        if (!forwards) {
-            // For backwards driving, flip the target heading
-            targetHeading = std::fmod(std::fmod(targetHeading + M_PI, M_TWOPI) + M_TWOPI, M_TWOPI);
-        }
         
         float e_theta = angleError(targetHeading, pose.theta, true);
 
