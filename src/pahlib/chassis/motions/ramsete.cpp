@@ -1,17 +1,96 @@
-#include <cmath>
-#include <vector>
-#include <string>
-#include "pros/misc.hpp"
 #include "pahlib/logger/logger.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 
-// Does not work
+using namespace pahlib;
 
-void pahlib::Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bool forwards, bool async) {
+// A custom struct to hold all four values from the path file
+struct RamsetePathPoint {
+    double x;
+    double y;
+    double theta;
+    double velocity;
+};
 
+/**
+ * @brief Parses a VEX Path-Generator asset file into a vector of RamsetePathPoints.
+ * Simplified parser for the double pathPoints[][] = {{x,y,theta,vel}, ...} format.
+ */
+std::vector<RamsetePathPoint> getRamsetePathData(const asset& path) {
+    std::vector<RamsetePathPoint> robotPath;
+
+    // Read the entire asset into a single string
+    const std::string data(reinterpret_cast<char*>(path.buf), path.size);
+    
+    // Find the opening brace of the array data
+    size_t start_pos = data.find("{{");
+    if (start_pos == std::string::npos) {
+        infoSink()->error("Path Parse Error: Could not find array start '{{'");
+        return robotPath;
+    }
+    
+    // Find the closing brace of the array data
+    size_t end_pos = data.rfind("}}");
+    if (end_pos == std::string::npos) {
+        infoSink()->error("Path Parse Error: Could not find array end '}}'");
+        return robotPath;
+    }
+    
+    // Extract just the data between the braces
+    std::string array_data = data.substr(start_pos + 1, end_pos - start_pos);
+    
+    size_t pos = 0;
+    while (pos < array_data.length()) {
+        // Find the next point (enclosed in {})
+        size_t point_start = array_data.find('{', pos);
+        if (point_start == std::string::npos) break;
+        
+        size_t point_end = array_data.find('}', point_start);
+        if (point_end == std::string::npos) break;
+        
+        // Extract the point data
+        std::string point_str = array_data.substr(point_start + 1, point_end - point_start - 1);
+        
+        // Parse the four comma-separated values
+        std::vector<double> values;
+        std::stringstream ss(point_str);
+        std::string token;
+        
+        while (std::getline(ss, token, ',')) {
+            // Remove whitespace
+            token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());
+            if (!token.empty()) {
+                try {
+                    values.push_back(std::stod(token));
+                } catch (const std::exception& e) {
+                    infoSink()->error("Path Parse Error: Invalid number '%s'", token.c_str());
+                    return std::vector<RamsetePathPoint>(); // Return empty on error
+                }
+            }
+        }
+        
+        if (values.size() == 4) {
+            RamsetePathPoint point;
+            point.x = values[0];
+            point.y = values[1];
+            point.theta = values[2];
+            point.velocity = values[3];
+            robotPath.push_back(point);
+        } else {
+            infoSink()->warn("Path Parse Warning: Point has %d values instead of 4", values.size());
+        }
+        
+        pos = point_end + 1;
+    }
+    
+    infoSink()->info("Parsed %d path points", robotPath.size());
+    return robotPath;
+}
+
+void Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bool forwards, bool async) {
     this->requestMotionStart();
     if (!this->motionRunning) return;
+    
     if (async) {
         pros::Task task([&]() { ramsete(path, beta, zeta, timeout, forwards, false); });
         this->endMotion();
@@ -19,121 +98,132 @@ void pahlib::Chassis::ramsete(const asset& path, float beta, float zeta, int tim
         return;
     }
 
-    std::vector<pahlib::Pose> pathPoints = getData(path);
-    if (pathPoints.size() == 0) {
-        pahlib::infoSink()->error("No points in path! Do you have the right format? Skipping motion");
+    // Parse the path data
+    std::vector<RamsetePathPoint> pathPoints = getRamsetePathData(path);
+    if (pathPoints.empty()) {
+        infoSink()->error("No points in path! Skipping motion");
         distTraveled = -1;
         this->endMotion();
         return;
     }
      
-    pahlib::Pose pose = this->getPose(true);
-    pahlib::Pose lastPose = pose;
+    Pose pose = this->getPose(true);
+    Pose lastPose = pose;
     int compState = pros::competition::get_status();
     distTraveled = 0;
      
     float prevLeftVel = 0;
     float prevRightVel = 0;
+    int currentTargetIndex = 0; // Track which point we're following
+    
+    // Velocity scaling factor - adjust based on your units
+    // If path velocities are in different units than motor commands, scale here
+    const float velocityScale = 1.0f; // Adjust this if needed
 
     for (int i = 0; i < timeout / 10 && pros::competition::get_status() == compState && this->motionRunning; i++) {
         pose = this->getPose(true);
-        // If driving backwards, flip the robot's perceived heading by 180 degrees
-        if (!forwards) pose.theta -= M_PI;
-
+        
         distTraveled += pose.distance(lastPose);
         lastPose = pose;
-         
-        // Find the closest point on the path to the robot
-        int closestPointIndex = 0;
-        float closestDist = infinity();
-        for (int j = 0; j < pathPoints.size(); j++) {
-            const float dist = pose.distance(pathPoints.at(j));
-            if (dist < closestDist) {
-                closestDist = dist;
-                closestPointIndex = j;
+        
+        // Find the target point (look ahead from current target, don't go backwards)
+        float minDistance = INFINITY;
+        int bestIndex = currentTargetIndex;
+        
+        // Look for the closest point ahead of our current target
+        for (int j = currentTargetIndex; j < pathPoints.size(); j++) {
+            Pose targetPose(pathPoints[j].x, pathPoints[j].y);
+            float dist = pose.distance(targetPose);
+            
+            if (dist < minDistance) {
+                minDistance = dist;
+                bestIndex = j;
             }
-        }
-         
-        // Check if the robot has reached the end of the path
-        if (closestPointIndex >= pathPoints.size() - 1 && pose.distance(pathPoints.back()) < 0.1) {
-            break;
-        }
-
-        pahlib::Pose desiredPose = pathPoints.at(closestPointIndex);
-
-        float vd = desiredPose.theta;
-        float wd = 0; // Desired angular velocity (rad/s)
-
-        // Calculate desired angular velocity from the path's curvature
-        if (closestPointIndex < pathPoints.size() - 1) {
-            pahlib::Pose nextPose = pathPoints.at(closestPointIndex + 1);
-            float segmentLength = desiredPose.distance(nextPose);
-            if (std::abs(segmentLength) > 1e-6) {
-                float headingChange = pahlib::angleError(nextPose.theta, desiredPose.theta, true);
-                float curvature = headingChange / segmentLength;
-                wd = vd * curvature;
+            
+            // If we're close enough to this point, we can advance our target
+            if (dist < 3.0 && j > currentTargetIndex) { // 3 inch lookahead
+                currentTargetIndex = j;
             }
         }
         
-        // Compute error in the global coordinate frame
-        float error_x_global = desiredPose.x - pose.x;
-        float error_y_global = desiredPose.y - pose.y;
-        float e_theta = pahlib::angleError(desiredPose.theta, pose.theta, true);
-
-        // Transform global error to the robot's local frame
-        float cos_theta_actual = std::cos(pose.theta);
-        float sin_theta_actual = std::sin(pose.theta);
-        float e_x = error_x_global * cos_theta_actual + error_y_global * sin_theta_actual;
-        float e_y = -error_x_global * sin_theta_actual + error_y_global * cos_theta_actual;
-
-        // Compute the controller gain 'k' using the formula from the documentation
-        // Formula: k = 2 * ζ * sqrt(ωd^2 + b * vd^2)
-        float k = 2.0 * zeta * std::sqrt(std::pow(wd, 2) + beta * std::pow(vd, 2));
-
-        // 5. Compute the required linear (v) and angular (ω) velocities
-        // Formula for linear velocity: v = vd * cos(eθ) + k * ex
-        float v_out = vd * std::cos(e_theta) + k * e_x;
-
-        // Formula for angular velocity: ω = ωd + k*eθ + (b*vd*sinc(eθ)*ey)
-        float sinc_val = 1.0f;
-        if (std::abs(e_theta) > 1e-6) { // Use sinc(x) = sin(x)/x to avoid division by zero
-            sinc_val = std::sin(e_theta) / e_theta;
+        // Use the best point we found
+        currentTargetIndex = bestIndex;
+        
+        // Check if we've reached the end
+        if (currentTargetIndex >= pathPoints.size() - 1) {
+            Pose endPose(pathPoints.back().x, pathPoints.back().y);
+            if (pose.distance(endPose) < 2.0) { // 2 inch tolerance
+                infoSink()->info("Reached end of path");
+                break;
+            }
         }
-        float w_out = wd + k * e_theta + (beta * vd * sinc_val * e_y);
-    
-        // 6. Convert chassis velocities to left and right wheel velocities
-        // NOTE: This assumes vd, wd were in units compatible with motor commands.
+
+        const RamsetePathPoint& targetPoint = pathPoints[currentTargetIndex];
+
+        // Desired velocities from the path
+        float vd = targetPoint.velocity * velocityScale;
+        float wd = 0; // Path doesn't specify angular velocity
+        
+        // Handle backwards driving by negating the reference velocity
+        if (!forwards) {
+            vd = -vd;
+        }
+        
+        // Calculate pose error in global frame
+        float error_x_global = targetPoint.x - pose.x;
+        float error_y_global = targetPoint.y - pose.y;
+        
+        // Target heading in radians
+        float targetHeading = degToRad(targetPoint.theta);
+        if (!forwards) {
+            // For backwards driving, flip the target heading
+            targetHeading = std::fmod(std::fmod(targetHeading + M_PI, M_TWOPI) + M_TWOPI, M_TWOPI);
+        }
+        
+        float e_theta = angleError(targetHeading, pose.theta, true);
+
+        // Transform error to robot's local coordinate frame
+        float cos_theta = std::cos(pose.theta);
+        float sin_theta = std::sin(pose.theta);
+        float e_x = error_x_global * cos_theta + error_y_global * sin_theta;
+        float e_y = -error_x_global * sin_theta + error_y_global * cos_theta;
+
+        // Ramsete controller calculations
+        float k = 2.0f * zeta * std::sqrt(wd * wd + beta * vd * vd);
+        
+        // Linear velocity command
+        float v_cmd = vd * std::cos(e_theta) + k * e_x;
+        
+        // Angular velocity command with sinc function
+        float sinc_e_theta = (std::abs(e_theta) < 1e-6) ? 1.0f : std::sin(e_theta) / e_theta;
+        float w_cmd = wd + k * e_theta + beta * vd * sinc_e_theta * e_y;
+        
+        // Convert to wheel velocities
         float trackWidth = drivetrain.trackWidth;
-        float targetLeftVel = v_out - (w_out * trackWidth / 2.0);
-        float targetRightVel = v_out + (w_out * trackWidth / 2.0);
-
-        // 7. Normalize wheel velocities to fit within the motor's command range [-127, 127]
-        float max_abs_vel = std::max(std::abs(targetLeftVel), std::abs(targetRightVel));
-        if (max_abs_vel > 127.0) {
-            targetLeftVel = (targetLeftVel / max_abs_vel) * 127.0;
-            targetRightVel = (targetRightVel / max_abs_vel) * 127.0;
+        float leftVel = v_cmd - (w_cmd * trackWidth / 2.0f);
+        float rightVel = v_cmd + (w_cmd * trackWidth / 2.0f);
+        
+        // Scale velocities to motor command range [-127, 127]
+        float maxVel = std::max(std::abs(leftVel), std::abs(rightVel));
+        if (maxVel > 127.0f) {
+            leftVel = (leftVel / maxVel) * 127.0f;
+            rightVel = (rightVel / maxVel) * 127.0f;
         }
-
-        // 8. Apply slew rate control to smooth out acceleration
-        targetLeftVel = slew(targetLeftVel, prevLeftVel, lateralSettings.slew);
-        targetRightVel = slew(targetRightVel, prevRightVel, lateralSettings.slew);
-        prevLeftVel = targetLeftVel;
-        prevRightVel = targetRightVel;
-         
-        // 9. Send final commands to the motors
-        if (forwards) {
-            drivetrain.leftMotors->move(targetLeftVel);
-            drivetrain.rightMotors->move(targetRightVel);
-        } else {
-            // For backwards motion, swap and negate motor commands
-            drivetrain.leftMotors->move(-targetRightVel);
-            drivetrain.rightMotors->move(-targetLeftVel);
-        }
+        
+        // Apply slew rate limiting
+        leftVel = slew(leftVel, prevLeftVel, lateralSettings.slew);
+        rightVel = slew(rightVel, prevRightVel, lateralSettings.slew);
+        prevLeftVel = leftVel;
+        prevRightVel = rightVel;
+        
+        // Send commands to motors
+        drivetrain.leftMotors->move(static_cast<int>(leftVel));
+        drivetrain.rightMotors->move(static_cast<int>(rightVel));
 
         pros::delay(10);
     }
      
-    // Stop the robot at the end of the motion
+    // Stop the robot
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
     distTraveled = -1;

@@ -12,6 +12,7 @@
 
 #include "main.h" // PROS main header
 #include "pahlib/api.hpp" 
+#include "pahlib/chassis/trackingWheel.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
@@ -38,7 +39,7 @@ MotorGroup left_motors({left_front});
 MotorGroup right_motors({right_front});
 
 // --- Sensors ---
-Rotation vertical_encoder(-PORT_VERTICAL_ENCODER);
+Rotation vertical_encoder(PORT_VERTICAL_ENCODER);
 adi::Potentiometer autonSelector(PORT_AUTON_SELECTOR_POT);
 Distance rightDistance(PORT_DISTANCE_RIGHT);
 Distance leftDistance(PORT_DISTANCE_LEFT);
@@ -50,7 +51,7 @@ ScalarIMU inertial(PORT_IMU, IMU_SCALER);
 // --- Drivetrain Setup ---
 Drivetrain drivetrain(
     &left_motors, &right_motors, TRACK_WIDTH,
-    Omniwheel::NEW_275, WHEEL_RPM, HORIZONTAL_DRIFT
+    Omniwheel::NEW_2, WHEEL_RPM, HORIZONTAL_DRIFT
 );
 
 TrackingWheel vertical_tracking_wheel(
@@ -92,6 +93,8 @@ void initialize() {
 
     lcd::initialize();
     chassis.calibrate();
+    controller.clear();
+    inertial.get_heading();
 
     // Background task to update robot info on screen and controller
     Task update_robot_info([&]() {
@@ -120,14 +123,17 @@ void disabled() {
 
 void competition_initialize() {
     screen::erase();
+    controller.clear();
     // Select auton using potentiometer before match starts
     while (competition::is_disabled()) {
         // Read the potentiometer value to select auton
         selectedAuton = static_cast<int>(autonSelector.get_angle() / (330.0 / autons.size()));
-        std::string autonName = autons.at(selectedAuton).first;
-        // Update screen and controller with selected auton name
-        screen::print(E_TEXT_MEDIUM, 1, "Auton: %s", autonName.c_str());
-        controller.print(2, 0, "%s", autonName.c_str());
+        // Print the selected auton on the screen and controller
+        if (autons.count(selectedAuton)) {
+            std::string autonName = autons.at(selectedAuton).first;
+            screen::print(E_TEXT_MEDIUM, 1, "Auton: %s", autonName.c_str());
+            controller.print(2, 0, "%s", autonName.c_str());
+        }
         delay(200);
     }
 }

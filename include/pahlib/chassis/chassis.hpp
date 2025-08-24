@@ -819,7 +819,12 @@ class Chassis {
         * @param premade The preset to use.
         */
         void setPID(PIDPreset premade);
-
+        /**
+        * @brief Automatically tunes the PID constants for the chassis.
+        * This function runs a series of tests to determine the optimal PID constants
+        * for the current chassis configuration.
+        */
+        std::vector<float> autoTunePID();
         /**
         * @brief Manually sets the PID constants for the chassis.
         *

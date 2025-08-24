@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>2602K Path Creator</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            gap: 30px;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            min-width: 1000px;
+            padding: 20px;
+        }
+        h1 {
+            color: #64b5f6;
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        canvas {
+            border: 2px solid #444;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            background-color: #2c2c2c;
+            border-radius: 8px;
+        }
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .control-button {
+            background-color: #4a4a4a;
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+        }
+        .control-button:hover {
+            background-color: #5a5a5a;
+            transform: translateY(-2px);
+        }
+        #output {
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            color: #a0a0a0;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+        .control-section {
+            background: linear-gradient(145deg, #2c2c2c, #1f1f1f);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            width: 250px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+        }
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #fff;
+        }
+        .control-header span {
+            transform: rotate(180deg);
+            transition: transform 0.3s;
+        }
+        .control-header.collapsed span {
+            transform: rotate(0deg);
+        }
+        .control-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .control-content.hidden {
+            display: none;
+        }
+        .control-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .control-field label {
+            font-size: 0.9em;
+            color: #bbb;
+        }
+        .control-field input {
+            background-color: #3b3b3b;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .control-field input:focus {
+            outline: none;
+            border-color: #64b5f6;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        .action-buttons button {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        .action-buttons .update-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+        .action-buttons .update-btn:hover {
+            background-color: #45a049;
+        }
+        .action-buttons .delete-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+        }
+        .action-buttons .delete-btn:hover {
+            background-color: #da190b;
+        }
+        .action-buttons .rotate-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            flex-grow: 0;
+            width: 40px;
+        }
+        .action-buttons .rotate-btn:hover {
+            background-color: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <h1>2602K Path Creator</h1>
+    <canvas id="pathCanvas"></canvas>
+    <div id="controls">
+        <button class="control-button" onclick="clearCanvas()">Clear Path</button>
+        <input type="file" id="fileInput" accept=".txt" style="display: none;" onchange="loadPathFile(event)">
+        <button class="control-button" onclick="document.getElementById('fileInput').click()">Load Path File</button>
+        <button class="control-button" onclick="generateData()">Generate Path Data</button>
+        <pre id="output"></pre>
+        <div id="controlPanel" class="control-section">
+            <div class="control-header">
+                Control <span>&#9660;</span>
+            </div>
+            <div class="control-content">
+                <div class="control-field">
+                    <label>X</label>
+                    <input type="number" id="xInput" step="0.01">
+                </div>
+                <div class="control-field">
+                    <label>Y</label>
+                    <input type="number" id="yInput" step="0.01">
+                </div>
+                <div class="control-field">
+                    <label>Heading</label>
+                    <input type="number" id="headingInput" step="1">
+                </div>
+                <div class="action-buttons">
+                    <button class="update-btn" onclick="updatePoint()">Update</button>
+                    <button class="delete-btn" onclick="deletePoint()">Delete</button>
+                    <button class="rotate-btn" onclick="rotateHeading(-90)">&#x21BA;</button>
+                    <button class="rotate-btn" onclick="rotateHeading(90)">&#x21BB;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pathCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 600;
+
+        const FIELD_SIZE = 144; // inches
+        const PIXEL_TO_INCH = canvas.width / FIELD_SIZE;
+
+        const fieldImagePath = 'field.png';
+        const fieldImage = new Image();
+        fieldImage.src = fieldImagePath;
+
+        fieldImage.onload = () => {
+            draw();
+        };
+
+        let points = [];
+        let segments = [];
+        const pointRadius = 5;
+        let isDragging = false;
+        let selectedPoint = null;
+
+        const controlPanel = document.getElementById('controlPanel');
+        const xInput = document.getElementById('xInput');
+        const yInput = document.getElementById('yInput');
+        const headingInput = document.getElementById('headingInput');
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (fieldImage.complete) {
+                ctx.drawImage(fieldImage, 0, 0, canvas.width, canvas.height);
+            }
+
+            if (points.length >= 2) {
+                const generatedPoints = generatePathPoints(points, 100);
+                
+                for (let i = 0; i < segments.length; i++) {
+                    const startIdx = i * 100;
+                    const endIdx = (i + 1) * 100;
+                    if (generatedPoints.length > endIdx) {
+                        ctx.strokeStyle = segments[i].reverse ? 'red' : 'green';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(generatedPoints[startIdx].x, generatedPoints[startIdx].y);
+                        for (let j = startIdx + 1; j <= endIdx; j++) {
+                            ctx.lineTo(generatedPoints[j].x, generatedPoints[j].y);
+                        }
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, point === selectedPoint ? pointRadius + 3 : pointRadius, 0, 2 * Math.PI);
+                
+                if (i === 0 && points.length > 1) {
+                    ctx.fillStyle = 'green';
+                } else if (i === points.length - 1 && points.length > 1) {
+                    ctx.fillStyle = 'red';
+                } else {
+                    ctx.fillStyle = 'blue';
+                }
+                ctx.fill();
+                ctx.stroke();
+
+                let theta = point.heading;
+                if (theta === undefined || theta === null) {
+                    if (i < points.length - 1) {
+                        theta = getThetaFromPoints(points[i], points[i+1]);
+                    } else if (i > 0) {
+                        theta = getThetaFromPoints(points[i-1], points[i]);
+                    } else {
+                        theta = 0; // Default forward direction (north) for first point
+                    }
+                    point.heading = theta; // Set the calculated heading as default
+                }
+                drawHeadingArrow(point.x, point.y, theta);
+            }
+        }
+        
+        function getThetaFromPoints(p1, p2) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            let theta = Math.atan2(dx, -dy);
+            return (theta * 180 / Math.PI + 360) % 360;
+        }
+        
+        function lerpAngle(a, b, t) {
+            let diff = b - a;
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+            return (a + diff * t + 360) % 360;
+        }
+
+        function drawHeadingArrow(x, y, heading) {
+            const arrowLength = 15;
+            const angleRad = (heading) * Math.PI / 180;
+            
+            const dx = Math.sin(angleRad) * arrowLength;
+            const dy = -Math.cos(angleRad) * arrowLength;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + dx, y + dy);
+            ctx.strokeStyle = 'cyan';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            const arrowHeadAngle = Math.PI / 6;
+            ctx.beginPath();
+            ctx.moveTo(x + dx, y + dy);
+            ctx.lineTo(x + dx - arrowLength * 0.3 * Math.sin(angleRad - arrowHeadAngle), y + dy + arrowLength * 0.3 * Math.cos(angleRad - arrowHeadAngle));
+            ctx.moveTo(x + dx, y + dy);
+            ctx.lineTo(x + dx - arrowLength * 0.3 * Math.sin(angleRad + arrowHeadAngle), y + dy + arrowLength * 0.3 * Math.cos(angleRad + arrowHeadAngle));
+            ctx.strokeStyle = 'cyan';
+            ctx.stroke();
+        }
+
+        function isNearPoint(x, y) {
+            for (const point of points) {
+                const dx = x - point.x;
+                const dy = y - point.y;
+                if (Math.hypot(dx, dy) < 15) {
+                    return point;
+                }
+            }
+            return null;
+        }
+
+        function isNearPath(x, y) {
+            if (points.length < 2) return null;
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const dist = pointToLineSegmentDistance(x, y, p1.x, p1.y, p2.x, p2.y);
+                if (dist < 10) {
+                    return i;
+                }
+            }
+            return null;
+        }
+
+        function pointToLineSegmentDistance(px, py, x1, y1, x2, y2) {
+            const l2 = Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
+            if (l2 === 0) return Math.hypot(px - x1, py - y1);
+            let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            const projectionX = x1 + t * (x2 - x1);
+            const projectionY = y1 + t * (y2 - y1);
+            return Math.hypot(px - projectionX, py - projectionY);
+        }
+
+        canvas.addEventListener('mousedown', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            const clickedPoint = isNearPoint(x, y);
+            
+            if (clickedPoint) {
+                selectedPoint = clickedPoint;
+                isDragging = true;
+                updateControlPanel();
+            } else {
+                const clickedSegment = isNearPath(x, y);
+                if (clickedSegment !== null) {
+                    segments[clickedSegment].reverse = !segments[clickedSegment].reverse;
+                    draw();
+                } else {
+                    // Calculate default heading based on position
+                    let defaultHeading = 0; // Default to forward (north)
+                    if (points.length > 0) {
+                        defaultHeading = getThetaFromPoints(points[points.length - 1], {x, y});
+                    }
+                    
+                    const newPoint = { x, y, heading: defaultHeading };
+                    points.push(newPoint);
+                    
+                    // Update the previous point's heading to point toward this new point
+                    if (points.length > 1) {
+                        const prevPoint = points[points.length - 2];
+                        if (prevPoint.heading === undefined || prevPoint.heading === null || !prevPoint.manuallySet) {
+                            prevPoint.heading = getThetaFromPoints(prevPoint, newPoint);
+                            prevPoint.manuallySet = false; // Mark as auto-calculated
+                        }
+                        segments.push({ reverse: false });
+                    }
+                    
+                    selectedPoint = newPoint;
+                    updateControlPanel();
+                    draw();
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (!isDragging || !selectedPoint) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            selectedPoint.x = x;
+            selectedPoint.y = y;
+            draw();
+            updateControlPanel();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        function updateControlPanel() {
+            if (selectedPoint) {
+                const vexX = (selectedPoint.x - canvas.width / 2) / PIXEL_TO_INCH;
+                const vexY = (canvas.height / 2 - selectedPoint.y) / PIXEL_TO_INCH;
+                
+                xInput.value = vexX.toFixed(2);
+                yInput.value = vexY.toFixed(2);
+                headingInput.value = selectedPoint.heading.toFixed(2);
+                controlPanel.style.display = 'block';
+            } else {
+                controlPanel.style.display = 'none';
+            }
+        }
+
+        function updatePoint() {
+            if (!selectedPoint) return;
+            
+            const newVexX = parseFloat(xInput.value);
+            const newVexY = parseFloat(yInput.value);
+            
+            selectedPoint.x = newVexX * PIXEL_TO_INCH + canvas.width / 2;
+            selectedPoint.y = canvas.height / 2 - newVexY * PIXEL_TO_INCH;
+            selectedPoint.heading = parseFloat(headingInput.value);
+            selectedPoint.manuallySet = true; // Mark as manually set
+            
+            draw();
+        }
+
+        function rotateHeading(angle) {
+            if (!selectedPoint) return;
+            
+            let currentHeading = parseFloat(headingInput.value);
+            currentHeading += angle;
+            currentHeading = (currentHeading % 360 + 360) % 360;
+            
+            headingInput.value = currentHeading.toFixed(2);
+            selectedPoint.manuallySet = true; // Mark as manually set
+            updatePoint();
+        }
+
+        function deletePoint() {
+            if (!selectedPoint) return;
+            
+            const index = points.indexOf(selectedPoint);
+            if (index > -1) {
+                points.splice(index, 1);
+                if (index > 0 && segments.length > index - 1) {
+                    segments.splice(index - 1, 1);
+                }
+            }
+            selectedPoint = null;
+            draw();
+            updateControlPanel();
+        }
+        
+        function getCatmullRomPoint(p0, p1, p2, p3, t) {
+            const t2 = t * t;
+            const t3 = t2 * t;
+            
+            const a = 2 * p1.x;
+            const b = (p2.x - p0.x);
+            const c = (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x);
+            const d = (-p0.x + 3 * p1.x - 3 * p2.x + p3.x);
+
+            const x = 0.5 * (a + b * t + c * t2 + d * t3);
+
+            const e = 2 * p1.y;
+            const f = (p2.y - p0.y);
+            const g = (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y);
+            const h = (-p0.y + 3 * p1.y - 3 * p2.y + p3.y);
+
+            const y = 0.5 * (e + f * t + g * t2 + h * t3);
+            
+            return { x, y };
+        }
+
+        function getCatmullRomDerivative(p0, p1, p2, p3, t) {
+            const t2 = t * t;
+            
+            const dx = 0.5 * ((p2.x - p0.x) + (2 * (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x)) * t + (3 * (-p0.x + 3 * p1.x - 3 * p2.x + p3.x)) * t2);
+            const dy = 0.5 * ((p2.y - p0.y) + (2 * (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y)) * t + (3 * (-p0.y + 3 * p1.y - 3 * p2.y + p3.y)) * t2);
+
+            return { dx, dy };
+        }
+
+        function generatePathPoints(controlPoints, numSteps) {
+            if (controlPoints.length < 2) return [];
+
+            const pathPoints = [];
+            let tempPoints = [];
+
+            // Add virtual control points to handle start and end headings
+            const startDx = Math.sin(controlPoints[0].heading * Math.PI / 180) * 10;
+            const startDy = -Math.cos(controlPoints[0].heading * Math.PI / 180) * 10;
+            const startVirtual = { x: controlPoints[0].x - startDx, y: controlPoints[0].y - startDy, heading: controlPoints[0].heading };
+            
+            const endDx = Math.sin(controlPoints[controlPoints.length - 1].heading * Math.PI / 180) * 10;
+            const endDy = -Math.cos(controlPoints[controlPoints.length - 1].heading * Math.PI / 180) * 10;
+            const endVirtual = { x: controlPoints[controlPoints.length - 1].x + endDx, y: controlPoints[controlPoints.length - 1].y + endDy, heading: controlPoints[controlPoints.length - 1].heading };
+
+            tempPoints = [
+                startVirtual,
+                ...controlPoints,
+                endVirtual
+            ];
+
+            for (let i = 0; i < tempPoints.length - 3; i++) {
+                const p0 = tempPoints[i];
+                const p1 = tempPoints[i + 1];
+                const p2 = tempPoints[i + 2];
+                const p3 = tempPoints[i + 3];
+
+                for (let j = 0; j < numSteps; j++) {
+                    const t = j / numSteps;
+                    const point = getCatmullRomPoint(p0, p1, p2, p3, t);
+                    pathPoints.push(point);
+                }
+            }
+            pathPoints.push(tempPoints[tempPoints.length - 2]);
+            return pathPoints;
+        }
+        
+        function calculateCurvature(p1, p2, p3) {
+            const a = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+            const b = Math.hypot(p3.x - p2.x, p3.y - p2.y);
+            const c = Math.hypot(p3.x - p1.x, p3.y - p1.y);
+            
+            if (a === 0 || b === 0 || c === 0 || (a + b) < c || c === 0) return 0;
+
+            const s = (a + b + c) / 2;
+            const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+            const R = (a * b * c) / (4 * area);
+            return 1 / R;
+        }
+
+        function generateData() {
+            const outputDiv = document.getElementById('output');
+            
+            if (points.length < 2) {
+                outputDiv.textContent = "Please create a path with at least 2 points.";
+                return;
+            }
+
+            const pathData = [];
+            const numSteps = 100;
+            const maxVelocity = 115;
+            const accelDistance = 200;
+            const curvatureFactor = 15;
+            const minVelocity = 25;
+            const reverseTransitionDistance = 50; // Distance for velocity transition when reversing
+
+            const generatedPoints = generatePathPoints(points, numSteps);
+
+            let currentDistance = 0;
+            let totalPathLength = 0;
+            
+            // Calculate total path length
+            for (let i = 1; i < generatedPoints.length; i++) {
+                const p1 = generatedPoints[i - 1];
+                const p2 = generatedPoints[i];
+                totalPathLength += Math.hypot(p2.x - p1.x, p2.y - p1.y);
+            }
+
+            // Pre-calculate which segments are reversed
+            const segmentReversals = [];
+            for (let i = 0; i < generatedPoints.length; i++) {
+                const waypointIndex = Math.floor(i / numSteps);
+                const segmentReverse = segments[Math.min(waypointIndex, segments.length-1)].reverse;
+                segmentReversals.push(segmentReverse);
+            }
+
+            // Find transition points where direction changes
+            const transitionPoints = [];
+            for (let i = 1; i < segmentReversals.length; i++) {
+                if (segmentReversals[i] !== segmentReversals[i-1]) {
+                    transitionPoints.push(i);
+                }
+            }
+
+            for (let i = 0; i < generatedPoints.length; i++) {
+                const currentPoint = generatedPoints[i];
+                let prevPoint = i > 0 ? generatedPoints[i-1] : currentPoint;
+                
+                const segmentLength = Math.hypot(currentPoint.x - prevPoint.x, currentPoint.y - prevPoint.y);
+                currentDistance += segmentLength;
+
+                // Calculate heading with interpolation between control points
+                let theta = 0;
+                let waypointIndex = Math.floor(i / numSteps);
+                let t = (i % numSteps) / numSteps;
+                
+                if (waypointIndex < points.length - 1) {
+                    // Interpolate between control point headings
+                    const currentControlPoint = points[waypointIndex];
+                    const nextControlPoint = points[waypointIndex + 1];
+                    
+                    // Use manual headings if they exist, otherwise calculate from curve tangent
+                    let currentHeading = currentControlPoint.heading;
+                    let nextHeading = nextControlPoint.heading;
+                    
+                    // If headings weren't manually set, calculate from tangent
+                    if (currentHeading === undefined || currentHeading === null || !currentControlPoint.manuallySet) {
+                        const p0Index = Math.max(0, waypointIndex - 1);
+                        const p1Index = waypointIndex;
+                        const p2Index = waypointIndex + 1;
+                        const p3Index = Math.min(points.length - 1, waypointIndex + 2);
+                        
+                        const tangent = getCatmullRomDerivative(
+                            points[p0Index],
+                            points[p1Index], 
+                            points[p2Index],
+                            points[p3Index],
+                            0 // At start of segment
+                        );
+                        currentHeading = (Math.atan2(tangent.dx, -tangent.dy) * 180 / Math.PI + 360) % 360;
+                    }
+                    
+                    if (nextHeading === undefined || nextHeading === null || !nextControlPoint.manuallySet) {
+                        const p0Index = Math.max(0, waypointIndex);
+                        const p1Index = waypointIndex + 1;
+                        const p2Index = Math.min(points.length - 1, waypointIndex + 2);
+                        const p3Index = Math.min(points.length - 1, waypointIndex + 3);
+                        
+                        const tangent = getCatmullRomDerivative(
+                            points[p0Index],
+                            points[p1Index], 
+                            points[p2Index],
+                            points[p3Index],
+                            0 // At start of next segment
+                        );
+                        nextHeading = (Math.atan2(tangent.dx, -tangent.dy) * 180 / Math.PI + 360) % 360;
+                    }
+                    
+                    // Smooth interpolation between headings
+                    theta = lerpAngle(currentHeading, nextHeading, t);
+                } else {
+                    // Use the last waypoint's heading
+                    theta = points[points.length-1].heading;
+                    if (theta === undefined || theta === null) {
+                        theta = 0; // Default forward
+                    }
+                }
+                
+                let velocity = maxVelocity;
+
+                // Apply curvature-based velocity reduction
+                if (i > 0 && i < generatedPoints.length - 1) {
+                    const p1 = generatedPoints[i - 1];
+                    const p2 = generatedPoints[i];
+                    const p3 = generatedPoints[i + 1];
+                    const curvature = calculateCurvature(p1, p2, p3);
+                    velocity = Math.min(velocity, maxVelocity / (1 + curvatureFactor * curvature));
+                }
+                
+                const segmentReverse = segmentReversals[i];
+
+                // Calculate distance to nearest transition point
+                let distanceToTransition = Infinity;
+                for (const transitionPoint of transitionPoints) {
+                    distanceToTransition = Math.min(distanceToTransition, Math.abs(i - transitionPoint));
+                }
+
+                // Apply transition velocity reduction near direction changes
+                if (distanceToTransition < reverseTransitionDistance) {
+                    const transitionFactor = distanceToTransition / reverseTransitionDistance;
+                    velocity *= Math.max(0.3, transitionFactor); // Reduce to 30% minimum near transitions
+                }
+
+                // Handle velocity and heading for reverse paths
+                if (segmentReverse) {
+                    theta = (theta + 180) % 360; // Turn around for reverse motion
+                    velocity = -velocity; // Make velocity negative
+                }
+
+                // Apply acceleration/deceleration at path start/end
+                const accelDecelFactor = Math.min(1, currentDistance / accelDistance, (totalPathLength - currentDistance) / accelDistance);
+
+                // Apply minimum velocity constraint
+                if (Math.abs(velocity) < minVelocity) {
+                    velocity = velocity < 0 ? -minVelocity : minVelocity;
+                }
+                
+                velocity *= accelDecelFactor;
+                
+                // Apply maximum velocity constraint
+                if (Math.abs(velocity) > maxVelocity) {
+                    velocity = velocity < 0 ? -maxVelocity : maxVelocity;
+                }
+                
+                pathData.push({ x: currentPoint.x, y: currentPoint.y, theta, velocity });
+            }
+
+            let outputString = "double pathPoints[][] = {\n";
+            pathData.forEach((point, index) => {
+                const x = (point.x - canvas.width / 2) / PIXEL_TO_INCH;
+                const y = (canvas.height / 2 - point.y) / PIXEL_TO_INCH;
+                const comma = index < pathData.length - 1 ? "," : "";
+                outputString += `    {${x.toFixed(2)}, ${y.toFixed(2)}, ${point.theta.toFixed(2)}, ${point.velocity.toFixed(2)}}${comma}\n`;
+            });
+            outputString += "};";
+            
+            const blob = new Blob([outputString], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'path.txt';
+            
+            document.body.appendChild(link);
+            link.click();
+            
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            outputDiv.textContent = "File 'path.txt' has been downloaded.";
+        }
+
+        function loadPathFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                try {
+                    parsePathData(content);
+                    document.getElementById('output').textContent = "Path file loaded successfully!";
+                } catch (error) {
+                    document.getElementById('output').textContent = "Error loading path file: " + error.message;
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parsePathData(content) {
+            // Clear existing data
+            points = [];
+            segments = [];
+            selectedPoint = null;
+            
+            // Extract the array data from the C++ format
+            const arrayMatch = content.match(/double\s+pathPoints\s*\[\s*\]\s*\[\s*\]\s*=\s*\{\s*([\s\S]*?)\s*\};/);
+            if (!arrayMatch) {
+                throw new Error("Invalid path file format. Expected C++ array format.");
+            }
+            
+            const arrayContent = arrayMatch[1];
+            
+            // Parse each line of data
+            const lines = arrayContent.split('\n');
+            const pathPoints = [];
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine === '' || trimmedLine.startsWith('//')) continue;
+                
+                // Extract numbers from format: {x, y, theta, velocity}
+                const numberMatch = trimmedLine.match(/\{\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\}/);
+                if (numberMatch) {
+                    const x = parseFloat(numberMatch[1]);
+                    const y = parseFloat(numberMatch[2]);
+                    const theta = parseFloat(numberMatch[3]);
+                    const velocity = parseFloat(numberMatch[4]);
+                    
+                    pathPoints.push({ x, y, theta, velocity });
+                }
+            }
+            
+            if (pathPoints.length === 0) {
+                throw new Error("No valid path points found in file.");
+            }
+            
+            // Convert path points back to control points
+            // We'll sample every Nth point to create control points
+            const sampleRate = Math.max(1, Math.floor(pathPoints.length / 10)); // Aim for ~10 control points
+            
+            for (let i = 0; i < pathPoints.length; i += sampleRate) {
+                const pathPoint = pathPoints[i];
+                
+                // Convert from VEX coordinates to canvas coordinates
+                const canvasX = pathPoint.x * PIXEL_TO_INCH + canvas.width / 2;
+                const canvasY = canvas.height / 2 - pathPoint.y * PIXEL_TO_INCH;
+                
+                const controlPoint = {
+                    x: canvasX,
+                    y: canvasY,
+                    heading: pathPoint.theta,
+                    manuallySet: true // Mark as manually set since it came from file
+                };
+                
+                points.push(controlPoint);
+            }
+            
+            // Ensure we get the last point
+            if (pathPoints.length > 1) {
+                const lastPoint = pathPoints[pathPoints.length - 1];
+                const lastCanvasX = lastPoint.x * PIXEL_TO_INCH + canvas.width / 2;
+                const lastCanvasY = canvas.height / 2 - lastPoint.y * PIXEL_TO_INCH;
+                
+                // Only add if it's different from the last added point
+                const lastAddedPoint = points[points.length - 1];
+                const distance = Math.hypot(lastCanvasX - lastAddedPoint.x, lastCanvasY - lastAddedPoint.y);
+                if (distance > 10) { // Minimum distance threshold
+                    points.push({
+                        x: lastCanvasX,
+                        y: lastCanvasY,
+                        heading: lastPoint.theta,
+                        manuallySet: true
+                    });
+                }
+            }
+            
+            // Create segments (all forward by default)
+            for (let i = 0; i < points.length - 1; i++) {
+                segments.push({ reverse: false });
+            }
+            
+            // Redraw the canvas
+            draw();
+            updateControlPanel();
+        }
+
+        function clearCanvas() {
+            points = [];
+            segments = [];
+            selectedPoint = null;
+            draw();
+            updateControlPanel();
+            document.getElementById('output').textContent = '';
+        }
+
+        draw();
+        updateControlPanel();
+    </script>
+</body>
+</html>

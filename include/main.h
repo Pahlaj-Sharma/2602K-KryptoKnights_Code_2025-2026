@@ -112,13 +112,20 @@ public:
     virtual double get_rotation() const {
         return pros::c::imu_get_rotation(m_port) * m_scalar;
     }
+    /**
+     * @brief Gets the scaled heading of the IMU.
+     * @return The heading value multiplied by the scalar.
+     */
+    virtual double get_heading() const {
+        return fmod(pros::c::imu_get_heading(m_port) * m_scalar, 360.0);
+    }
 
 private:
     const int m_port;
     const double m_scalar;
 };
 
-// Declare the global instance of your CustomIMU
+// Declare the global instance of the CustomIMU
 // This tells other files that 'inertial' exists and will be defined elsewhere.
 extern ScalarIMU inertial;
 
