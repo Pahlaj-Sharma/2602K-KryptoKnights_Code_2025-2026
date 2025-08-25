@@ -15,7 +15,9 @@
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
+#include <algorithm>
 #include <map>
+#include <vector>
 
 using namespace pahlib;
 using namespace pros;
@@ -34,8 +36,8 @@ Motor right_back(PORT_RIGHT_MOTOR_BACK, v5::MotorGears::blue);
 Motor left_pto(PORT_LEFT_PTO, v5::MotorGears::blue);
 Motor right_pto(PORT_RIGHT_PTO, v5::MotorGears::blue);
 
-MotorGroup left_motors({left_front});
-MotorGroup right_motors({right_front});
+MotorGroup left_motors(left_front);
+MotorGroup right_motors(right_front);
 
 // --- Sensors ---
 Rotation vertical_encoder(PORT_VERTICAL_ENCODER);
@@ -112,6 +114,26 @@ void initialize() {
             delay(25);
         }
     });
+
+    std::vector<bool> devices_connected = {
+    inertial.is_installed(), rightDistance.is_installed(), leftDistance.is_installed(), frontDistance.is_installed(),
+    backDistance.is_installed(), left_front.is_installed(), left_middle.is_installed(), left_back.is_installed(),
+    right_front.is_installed(), right_middle.is_installed(), right_back.is_installed(), left_pto.is_installed(),
+    right_pto.is_installed(), vertical_encoder.is_installed()
+    };
+    std::vector<std::string> device_names = {
+        "IMU", "R_Dist", "L_Dist", "F_Dist", "B_Dist", "L_Front", "L_Middle", "L_Back",
+        "R_Front", "R_Middle", "R_Back", "L_PTO", "R_PTO", "Tracker"
+    };
+    if (!std::all_of(devices_connected.begin(), devices_connected.end(), [](bool v) { return v; })) {
+        int line = 4;
+        for (size_t i = 0; i < devices_connected.size(); i++) {
+            if (!devices_connected[i]) {
+                screen::print(E_TEXT_MEDIUM, line, "%s is not connected", device_names[i].c_str());
+                line++;
+            }
+        }
+    }
 }
 
 void disabled() {
@@ -129,7 +151,7 @@ void competition_initialize() {
         // Print the selected auton on the screen and controller
         if (autons.count(selectedAuton)) {
             std::string autonName = autons.at(selectedAuton).first;
-            screen::print(E_TEXT_MEDIUM, 1, "Auton: %s", autonName.c_str());
+            screen::print(E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
             controller.print(2, 0, "%s", autonName.c_str());
         }
         delay(200);
