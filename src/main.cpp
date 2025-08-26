@@ -15,9 +15,7 @@
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
-#include <algorithm>
 #include <map>
-#include <vector>
 
 using namespace pahlib;
 using namespace pros;
@@ -47,7 +45,8 @@ Distance leftDistance(PORT_DISTANCE_LEFT);
 Distance frontDistance(PORT_DISTANCE_FRONT);
 Distance backDistance(PORT_DISTANCE_BACK);
 adi::DigitalOut pto(PORT_PTO_DIGITAL_OUT);
-ScalarIMU inertial(PORT_IMU, IMU_SCALER);
+ScalarIMU inertial1(PORT_IMU_1, IMU_SCALER_1);
+ScalarIMU inertial2(PORT_IMU_2, IMU_SCALER_2);
 
 // --- Drivetrain Setup ---
 Drivetrain drivetrain(
@@ -62,7 +61,7 @@ TrackingWheel vertical_tracking_wheel(
 OdomSensors sensors(
     &vertical_tracking_wheel, nullptr,
     nullptr, nullptr,
-    &inertial
+    &inertial1, &inertial2
 );
 
 ExpoDriveCurve drive_curve(5, 20, 1.02);
@@ -116,14 +115,14 @@ void initialize() {
     });
 
     std::vector<bool> devices_connected = {
-    inertial.is_installed(), rightDistance.is_installed(), leftDistance.is_installed(), frontDistance.is_installed(),
-    backDistance.is_installed(), left_front.is_installed(), left_middle.is_installed(), left_back.is_installed(),
-    right_front.is_installed(), right_middle.is_installed(), right_back.is_installed(), left_pto.is_installed(),
-    right_pto.is_installed(), vertical_encoder.is_installed()
+        inertial1.is_installed(), rightDistance.is_installed(), leftDistance.is_installed(), frontDistance.is_installed(),
+        backDistance.is_installed(), left_front.is_installed(), left_middle.is_installed(), left_back.is_installed(),
+        right_front.is_installed(), right_middle.is_installed(), right_back.is_installed(), left_pto.is_installed(),
+        right_pto.is_installed(), vertical_encoder.is_installed()
     };
     std::vector<std::string> device_names = {
-        "IMU", "R_Dist", "L_Dist", "F_Dist", "B_Dist", "L_Front", "L_Middle", "L_Back",
-        "R_Front", "R_Middle", "R_Back", "L_PTO", "R_PTO", "Tracker"
+        "IMU", "R_Dist", "L_Dist", "F_Dist", "B_Dist", "L_Front", "L_Middle",
+        "L_Back", "R_Front", "R_Middle", "R_Back", "L_PTO", "R_PTO", "Tracker"
     };
     if (!std::all_of(devices_connected.begin(), devices_connected.end(), [](bool v) { return v; })) {
         int line = 4;

@@ -7,12 +7,13 @@
 #include "robot_config.hpp"
 
 pahlib::OdomSensors::OdomSensors(TrackingWheel* vertical1, TrackingWheel* vertical2, TrackingWheel* horizontal1,
-                                 TrackingWheel* horizontal2, pros::Imu* imu)
+                                 TrackingWheel* horizontal2, pros::Imu* imu1, pros::Imu* imu2)
     : vertical1(vertical1),
       vertical2(vertical2),
       horizontal1(horizontal1),
       horizontal2(horizontal2),
-      imu(imu) {}
+      imu1(imu1),
+      imu2(imu2) {}
 
 pahlib::Drivetrain::Drivetrain(pros::MotorGroup* leftMotors, pros::MotorGroup* rightMotors, float trackWidth,
                                float wheelDiameter, float rpm, float horizontalDrift)
@@ -48,12 +49,14 @@ void calibrateIMU(pahlib::OdomSensors& sensors) {
     bool calibrated = false;
     // calibrate inertial, and if calibration fails, then repeat 5 times or until successful
     while (attempt <= 5) {
-        sensors.imu->reset();
+        sensors.imu1->reset();
+        sensors.imu2->reset();
         // wait until IMU is calibrated
         do pros::delay(10);
-        while (sensors.imu->get_status() != pros::ImuStatus::error && sensors.imu->is_calibrating());
+        while (sensors.imu1->get_status() != pros::ImuStatus::error && sensors.imu1->is_calibrating());
         // exit if imu has been calibrated
-        if (!isnanf(sensors.imu->get_heading()) && !std::isinf(sensors.imu->get_heading())) {
+        if ((!isnanf(sensors.imu1->get_heading()) && !std::isinf(sensors.imu1->get_heading())) && 
+            (!isnanf(sensors.imu2->get_heading()) && !std::isinf(sensors.imu2->get_heading()))) {
             calibrated = true;
             break;
         }
@@ -64,14 +67,15 @@ void calibrateIMU(pahlib::OdomSensors& sensors) {
     }
     // check if calibration attempts were successful
     if (attempt > 5) {
-        sensors.imu = nullptr;
+        sensors.imu1 = nullptr;
+        sensors.imu2 = nullptr;
         pahlib::infoSink()->error("IMU calibration failed, defaulting to tracking wheels / motor encoders");
     }
 }
 
 void pahlib::Chassis::calibrate(bool calibrateImu) {
     // calibrate the IMU if it exists and the user doesn't specify otherwise
-    if (sensors.imu != nullptr && calibrateImu) calibrateIMU(sensors);
+    if (sensors.imu1 != nullptr && calibrateImu) calibrateIMU(sensors);
     // initialize odom
     if (sensors.vertical1 == nullptr)
         sensors.vertical1 = new pahlib::TrackingWheel(drivetrain.leftMotors, drivetrain.wheelDiameter,

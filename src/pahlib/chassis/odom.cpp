@@ -15,7 +15,7 @@
 pros::Task* trackingTask = nullptr;
 
 // global variables
-pahlib::OdomSensors odomSensors(nullptr, nullptr, nullptr, nullptr, nullptr); // the sensors to be used for odometry
+pahlib::OdomSensors odomSensors(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); // the sensors to be used for odometry
 pahlib::Drivetrain drive(nullptr, nullptr, 0, 0, 0, 0); // the drivetrain to be used for odometry
 pahlib::Pose odomPose(0, 0, 0); // the pose of the robot
 pahlib::Pose odomSpeed(0, 0, 0); // the speed of the robot
@@ -84,7 +84,7 @@ void pahlib::update() {
     if (odomSensors.vertical2 != nullptr) vertical2Raw = odomSensors.vertical2->getDistanceTraveled();
     if (odomSensors.horizontal1 != nullptr) horizontal1Raw = odomSensors.horizontal1->getDistanceTraveled();
     if (odomSensors.horizontal2 != nullptr) horizontal2Raw = odomSensors.horizontal2->getDistanceTraveled();
-    if (odomSensors.imu != nullptr) imuRaw = degToRad(odomSensors.imu->get_rotation());
+    if (odomSensors.imu1 != nullptr) imuRaw = degToRad((odomSensors.imu1->get_rotation() + odomSensors.imu2->get_rotation()) / 2);
 
     // calculate the change in sensor values
     float deltaVertical1 = vertical1Raw - prevVertical1;
@@ -116,7 +116,7 @@ void pahlib::update() {
         heading -= (deltaVertical1 - deltaVertical2) /
                    (odomSensors.vertical1->getOffset() - odomSensors.vertical2->getOffset());
     // else, if the inertial sensor exists, use it
-    else if (odomSensors.imu != nullptr) heading += deltaImu;
+    else if (odomSensors.imu1 != nullptr) heading += deltaImu;
     // else, use the the substituted tracking wheels
     else
         heading -= (deltaVertical1 - deltaVertical2) /

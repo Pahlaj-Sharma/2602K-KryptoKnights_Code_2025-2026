@@ -15,7 +15,8 @@ inline constexpr int PORT_LEFT_PTO      = 20;
 inline constexpr int PORT_RIGHT_PTO     = -21;
 
 // --- Sensor Ports ---
-inline constexpr int PORT_IMU                = 11;  // Inertial Measurement Unit
+inline constexpr int PORT_IMU_1                = 11;  // Inertial Measurement Unit
+inline constexpr int PORT_IMU_2               = 12;  // Second Inertial Measurement Unit
 //inline constexpr int PORT_HORIZONTAL_ENCODER = 3;  // Horizontal tracking wheel encoder (negative for reversed direction)
 inline constexpr int PORT_VERTICAL_ENCODER   = -21; // Vertical tracking wheel encoder
 inline constexpr int PORT_AUTON_SELECTOR_POT = 6;  // Potentiometer for autonomous routine selection
@@ -30,7 +31,8 @@ inline constexpr int PORT_DISTANCE_BACK      = 19;
 inline constexpr float TRACK_WIDTH      = 11.55; // Distance between the centers of the left and right wheels in inches
 inline constexpr int    WHEEL_RPM        = 450;   // Max effective RPM of the drivetrain (e.g., 600 RPM blue motors with 1.33:1 external gearing)
 inline constexpr float HORIZONTAL_DRIFT = 8.0;   // Horizontal drift in inches, used for odometry calculations
-inline constexpr float IMU_SCALER       = 1.010445;   // Custom IMU scaling factor, adjust based on IMU's calibration
+inline constexpr float IMU_SCALER_1       = 1.010445;   // Custom IMU scaling factor, adjust based on IMU's calibration
+inline constexpr float IMU_SCALER_2       = 1.010445;   // Custom IMU scaling factor, adjust based on IMU's calibration
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
