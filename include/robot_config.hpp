@@ -3,20 +3,18 @@
 #include "pahlib/chassis/chassis.hpp"
 // --- Motor Ports ---
 // Define motor port numbers for clarity and easy modification.
-// A negative port number (e.g., -14) indicates that the motor's direction should be reversed.
 
-inline constexpr int PORT_RIGHT_MOTOR_FRONT = -11;
-inline constexpr int PORT_RIGHT_MOTOR_MIDDLE = 13;
-inline constexpr int PORT_RIGHT_MOTOR_BACK = -12;
-inline constexpr int PORT_LEFT_MOTOR_FRONT  = 14;
-inline constexpr int PORT_LEFT_MOTOR_MIDDLE  = -15;
-inline constexpr int PORT_LEFT_MOTOR_BACK  = 16;
-inline constexpr int PORT_LEFT_PTO      = 20;
-inline constexpr int PORT_RIGHT_PTO     = -21;
+inline constexpr int PORT_RIGHT_MOTOR_FRONT  = 1;
+inline constexpr int PORT_RIGHT_MOTOR_MIDDLE = -2;
+inline constexpr int PORT_RIGHT_MOTOR_BACK   = 3;
+inline constexpr int PORT_LEFT_MOTOR_FRONT   = -11;
+inline constexpr int PORT_LEFT_MOTOR_MIDDLE  = 12;
+inline constexpr int PORT_LEFT_MOTOR_BACK    = -13;
+inline constexpr int PORT_LEFT_PTO           = 20;
+inline constexpr int PORT_RIGHT_PTO          = -10;
 
 // --- Sensor Ports ---
-inline constexpr int PORT_IMU_1                = 11;  // Inertial Measurement Unit
-inline constexpr int PORT_IMU_2               = 12;  // Second Inertial Measurement Unit
+inline constexpr int PORT_IMU                = 14;  // Inertial Measurement Unit
 //inline constexpr int PORT_HORIZONTAL_ENCODER = 3;  // Horizontal tracking wheel encoder (negative for reversed direction)
 inline constexpr int PORT_VERTICAL_ENCODER   = -21; // Vertical tracking wheel encoder
 inline constexpr int PORT_AUTON_SELECTOR_POT = 6;  // Potentiometer for autonomous routine selection
@@ -29,10 +27,9 @@ inline constexpr int PORT_DISTANCE_BACK      = 19;
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
 inline constexpr float TRACK_WIDTH      = 11.55; // Distance between the centers of the left and right wheels in inches
-inline constexpr int    WHEEL_RPM        = 450;   // Max effective RPM of the drivetrain (e.g., 600 RPM blue motors with 1.33:1 external gearing)
+inline constexpr int   WHEEL_RPM        = 450;   // Max effective RPM of the drivetrain (e.g., 600 RPM blue motors with 1.33:1 external gearing)
 inline constexpr float HORIZONTAL_DRIFT = 8.0;   // Horizontal drift in inches, used for odometry calculations
-inline constexpr float IMU_SCALER_1       = 1.010445;   // Custom IMU scaling factor, adjust based on IMU's calibration
-inline constexpr float IMU_SCALER_2       = 1.010445;   // Custom IMU scaling factor, adjust based on IMU's calibration
+inline constexpr float IMU_SCALER       = 1.010445;   // Custom IMU scaling factor, adjust based on IMU's calibration
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
@@ -56,19 +53,19 @@ struct PIDConstants {
 
 // Default Lateral PID constants
 inline constexpr PIDConstants LATERAL_PID {
-    7.0, 0.0, 9.0, 0.0, 3, 1, 100, 2, 500, 15
+    7.0, 0.0, 9.0, 0.0, 3, 1, 100, 2, 500, 20
 };
 // Custom "Fast" Lateral PID constants
 inline constexpr PIDConstants F_LATERAL_PID {
-    7.0, 0.0, 9.0, 0.0, 3, 2, 100, 3, 500, 15
+    7.0, 0.0, 9.0, 0.0, 3, 2, 100, 3, 500, 20
 };
 // Custom "Precise" Lateral PID constants
 inline constexpr PIDConstants P_LATERAL_PID {
-    7.0, 0.0, 9.0, 0.0, 3, 1, 100, 2, 500, 15
+    7.0, 0.0, 9.0, 0.0, 3, 1, 100, 2, 500, 20
 };
 // Default Angular PID constants
 inline constexpr PIDConstants ANGULAR_PID {
-    2.0, 0.0, 16.0, 0.0, 3, 1, 100, 3, 500, 0
+    1.0, 0.0, 16.0, 0.0, 3, 1, 100, 3, 500, 0
 };
 // Custom "Fast" Angular PID constants
 inline constexpr PIDConstants F_ANGULAR_PID {

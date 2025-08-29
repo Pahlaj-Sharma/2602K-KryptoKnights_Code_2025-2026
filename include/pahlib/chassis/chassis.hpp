@@ -42,13 +42,12 @@ class OdomSensors {
          * @endcode
          */
         OdomSensors(TrackingWheel* vertical1, TrackingWheel* vertical2, TrackingWheel* horizontal1,
-                    TrackingWheel* horizontal2, pros::Imu* imu1, pros::Imu* imu2);
+                    TrackingWheel* horizontal2, pros::Imu* imu);
         TrackingWheel* vertical1;
         TrackingWheel* vertical2;
         TrackingWheel* horizontal1;
         TrackingWheel* horizontal2;
-        pros::Imu* imu1;
-        pros::Imu* imu2;
+        pros::Imu* imu;
 };
 
 /**
@@ -319,7 +318,7 @@ struct MoveToPoseParams {
         float earlyExitRange = 0;
         // Settle distance
         float settleDist = 4;
-        /** maximum acceleration 
+        /** maximum acceleration in in/s^2
          */
         float maxAcceleration = 60;
 };

@@ -45,8 +45,7 @@ Distance leftDistance(PORT_DISTANCE_LEFT);
 Distance frontDistance(PORT_DISTANCE_FRONT);
 Distance backDistance(PORT_DISTANCE_BACK);
 adi::DigitalOut pto(PORT_PTO_DIGITAL_OUT);
-ScalarIMU inertial1(PORT_IMU_1, IMU_SCALER_1);
-ScalarIMU inertial2(PORT_IMU_2, IMU_SCALER_2);
+ScalarIMU inertial(PORT_IMU, IMU_SCALER);
 
 // --- Drivetrain Setup ---
 Drivetrain drivetrain(
@@ -61,7 +60,7 @@ TrackingWheel vertical_tracking_wheel(
 OdomSensors sensors(
     &vertical_tracking_wheel, nullptr,
     nullptr, nullptr,
-    &inertial1, &inertial2
+    &inertial
 );
 
 ExpoDriveCurve drive_curve(5, 20, 1.02);
@@ -84,14 +83,13 @@ bool ptoState = false;
 
 // --- Initialization ---
 void initialize() {
-    left_motors.append(left_middle); left_motors.append(left_back);
-    right_motors.append(right_middle); right_motors.append(right_back);
+    left_motors.append(left_middle); left_motors.append(left_back); left_motors.append(left_pto);
+    right_motors.append(right_middle); right_motors.append(right_back); right_motors.append(right_pto);
 
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     vertical_encoder.reset_position();
 
-    lcd::initialize();
     chassis.calibrate();
     controller.clear();
 
@@ -105,8 +103,7 @@ void initialize() {
                 screen::print(E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta);
             }
             if (count % 200 == 0) {
-                controller.print(0, 0, "Battery: %.1f", battery::get_capacity());
-                controller.print(1, 0, "DT Temp: %.1f",
+                controller.print(0, 0, "Temp: %.1f",
                     std::max(left_front.get_temperature(), right_front.get_temperature()));
             }
             count++;
@@ -115,7 +112,7 @@ void initialize() {
     });
 
     std::vector<bool> devices_connected = {
-        inertial1.is_installed(), rightDistance.is_installed(), leftDistance.is_installed(), frontDistance.is_installed(),
+        inertial.is_installed(), rightDistance.is_installed(), leftDistance.is_installed(), frontDistance.is_installed(),
         backDistance.is_installed(), left_front.is_installed(), left_middle.is_installed(), left_back.is_installed(),
         right_front.is_installed(), right_middle.is_installed(), right_back.is_installed(), left_pto.is_installed(),
         right_pto.is_installed(), vertical_encoder.is_installed()
@@ -141,7 +138,6 @@ void disabled() {
 }
 
 void competition_initialize() {
-    screen::erase();
     controller.clear();
     // Select auton using potentiometer before match starts
     while (competition::is_disabled()) {
@@ -151,7 +147,7 @@ void competition_initialize() {
         if (autons.count(selectedAuton)) {
             std::string autonName = autons.at(selectedAuton).first;
             screen::print(E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
-            controller.print(2, 0, "%s", autonName.c_str());
+            controller.print(0, 5, "%s", autonName.c_str());
         }
         delay(200);
     }
@@ -159,13 +155,13 @@ void competition_initialize() {
 
 void autonomous() {
     vertical_encoder.reset_position();
-    left_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE);
-    right_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE);
+    //left_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE);
+    //right_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE);
 
     if (autons.count(selectedAuton)) 
         autons.at(selectedAuton).second();
     else 
-        autons.at(0).second();
+        autons.at(4).second();
     
 }
 

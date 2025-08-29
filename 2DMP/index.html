@@ -152,6 +152,22 @@
         .action-buttons .rotate-btn:hover {
             background-color: #0b7dda;
         }
+        .copy-button {
+            background-color: #FF5722;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+        }
+        .copy-button:hover {
+            background-color: #e64a19;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -162,6 +178,7 @@
         <input type="file" id="fileInput" accept=".txt" style="display: none;" onchange="loadPathFile(event)">
         <button class="control-button" onclick="document.getElementById('fileInput').click()">Load Path File</button>
         <button class="control-button" onclick="generateData()">Generate Path Data</button>
+        <button class="copy-button" onclick="copyMoveToPose()">Copy moveToPose()</button>
         <pre id="output"></pre>
         <div id="controlPanel" class="control-section">
             <div class="control-header">
@@ -266,9 +283,9 @@
                     } else if (i > 0) {
                         theta = getThetaFromPoints(points[i-1], points[i]);
                     } else {
-                        theta = 0; // Default forward direction (north) for first point
+                        theta = 0;
                     }
-                    point.heading = theta; // Set the calculated heading as default
+                    point.heading = theta;
                 }
                 drawHeadingArrow(point.x, point.y, theta);
             }
@@ -363,8 +380,7 @@
                     segments[clickedSegment].reverse = !segments[clickedSegment].reverse;
                     draw();
                 } else {
-                    // Calculate default heading based on position
-                    let defaultHeading = 0; // Default to forward (north)
+                    let defaultHeading = 0;
                     if (points.length > 0) {
                         defaultHeading = getThetaFromPoints(points[points.length - 1], {x, y});
                     }
@@ -372,12 +388,11 @@
                     const newPoint = { x, y, heading: defaultHeading };
                     points.push(newPoint);
                     
-                    // Update the previous point's heading to point toward this new point
                     if (points.length > 1) {
                         const prevPoint = points[points.length - 2];
                         if (prevPoint.heading === undefined || prevPoint.heading === null || !prevPoint.manuallySet) {
                             prevPoint.heading = getThetaFromPoints(prevPoint, newPoint);
-                            prevPoint.manuallySet = false; // Mark as auto-calculated
+                            prevPoint.manuallySet = false;
                         }
                         segments.push({ reverse: false });
                     }
@@ -429,7 +444,7 @@
             selectedPoint.x = newVexX * PIXEL_TO_INCH + canvas.width / 2;
             selectedPoint.y = canvas.height / 2 - newVexY * PIXEL_TO_INCH;
             selectedPoint.heading = parseFloat(headingInput.value);
-            selectedPoint.manuallySet = true; // Mark as manually set
+            selectedPoint.manuallySet = true;
             
             draw();
         }
@@ -442,7 +457,7 @@
             currentHeading = (currentHeading % 360 + 360) % 360;
             
             headingInput.value = currentHeading.toFixed(2);
-            selectedPoint.manuallySet = true; // Mark as manually set
+            selectedPoint.manuallySet = true;
             updatePoint();
         }
 
@@ -497,7 +512,6 @@
             const pathPoints = [];
             let tempPoints = [];
 
-            // Add virtual control points to handle start and end headings
             const startDx = Math.sin(controlPoints[0].heading * Math.PI / 180) * 10;
             const startDy = -Math.cos(controlPoints[0].heading * Math.PI / 180) * 10;
             const startVirtual = { x: controlPoints[0].x - startDx, y: controlPoints[0].y - startDy, heading: controlPoints[0].heading };
@@ -551,62 +565,46 @@
 
             const pathData = [];
             const numSteps = 100;
-            const maxVelocity = 115;
             const accelDistance = 200;
-            const curvatureFactor = 15;
             const minVelocity = 25;
-            const reverseTransitionDistance = 50; // Distance for velocity transition when reversing
+
+            const CURVATURE_FACTOR = 0.5;
+            const MAX_SPEED_CAP = 115;
+            const MIN_SPEED_CAP = 25;
 
             const generatedPoints = generatePathPoints(points, numSteps);
 
             let currentDistance = 0;
             let totalPathLength = 0;
             
-            // Calculate total path length
             for (let i = 1; i < generatedPoints.length; i++) {
                 const p1 = generatedPoints[i - 1];
                 const p2 = generatedPoints[i];
                 totalPathLength += Math.hypot(p2.x - p1.x, p2.y - p1.y);
             }
+            
+            const convertedPoints = generatedPoints.map(p => ({
+                x: (p.x - canvas.width / 2) / PIXEL_TO_INCH,
+                y: (canvas.height / 2 - p.y) / PIXEL_TO_INCH
+            }));
 
-            // Pre-calculate which segments are reversed
-            const segmentReversals = [];
-            for (let i = 0; i < generatedPoints.length; i++) {
-                const waypointIndex = Math.floor(i / numSteps);
-                const segmentReverse = segments[Math.min(waypointIndex, segments.length-1)].reverse;
-                segmentReversals.push(segmentReverse);
-            }
-
-            // Find transition points where direction changes
-            const transitionPoints = [];
-            for (let i = 1; i < segmentReversals.length; i++) {
-                if (segmentReversals[i] !== segmentReversals[i-1]) {
-                    transitionPoints.push(i);
-                }
-            }
-
-            for (let i = 0; i < generatedPoints.length; i++) {
-                const currentPoint = generatedPoints[i];
-                let prevPoint = i > 0 ? generatedPoints[i-1] : currentPoint;
+            for (let i = 0; i < convertedPoints.length; i++) {
+                const currentPoint = convertedPoints[i];
+                let prevPoint = i > 0 ? convertedPoints[i-1] : currentPoint;
                 
                 const segmentLength = Math.hypot(currentPoint.x - prevPoint.x, currentPoint.y - prevPoint.y);
                 currentDistance += segmentLength;
-
-                // Calculate heading with interpolation between control points
+                
                 let theta = 0;
                 let waypointIndex = Math.floor(i / numSteps);
                 let t = (i % numSteps) / numSteps;
                 
                 if (waypointIndex < points.length - 1) {
-                    // Interpolate between control point headings
                     const currentControlPoint = points[waypointIndex];
                     const nextControlPoint = points[waypointIndex + 1];
-                    
-                    // Use manual headings if they exist, otherwise calculate from curve tangent
                     let currentHeading = currentControlPoint.heading;
                     let nextHeading = nextControlPoint.heading;
                     
-                    // If headings weren't manually set, calculate from tangent
                     if (currentHeading === undefined || currentHeading === null || !currentControlPoint.manuallySet) {
                         const p0Index = Math.max(0, waypointIndex - 1);
                         const p1Index = waypointIndex;
@@ -614,11 +612,7 @@
                         const p3Index = Math.min(points.length - 1, waypointIndex + 2);
                         
                         const tangent = getCatmullRomDerivative(
-                            points[p0Index],
-                            points[p1Index], 
-                            points[p2Index],
-                            points[p3Index],
-                            0 // At start of segment
+                            points[p0Index], points[p1Index], points[p2Index], points[p3Index], 0
                         );
                         currentHeading = (Math.atan2(tangent.dx, -tangent.dy) * 180 / Math.PI + 360) % 360;
                     }
@@ -630,83 +624,71 @@
                         const p3Index = Math.min(points.length - 1, waypointIndex + 3);
                         
                         const tangent = getCatmullRomDerivative(
-                            points[p0Index],
-                            points[p1Index], 
-                            points[p2Index],
-                            points[p3Index],
-                            0 // At start of next segment
+                            points[p0Index], points[p1Index], points[p2Index], points[p3Index], 0
                         );
                         nextHeading = (Math.atan2(tangent.dx, -tangent.dy) * 180 / Math.PI + 360) % 360;
                     }
                     
-                    // Smooth interpolation between headings
                     theta = lerpAngle(currentHeading, nextHeading, t);
                 } else {
-                    // Use the last waypoint's heading
                     theta = points[points.length-1].heading;
                     if (theta === undefined || theta === null) {
-                        theta = 0; // Default forward
+                        theta = 0;
                     }
                 }
                 
-                let velocity = maxVelocity;
+                let velocity = MAX_SPEED_CAP;
 
-                // Apply curvature-based velocity reduction
-                if (i > 0 && i < generatedPoints.length - 1) {
-                    const p1 = generatedPoints[i - 1];
-                    const p2 = generatedPoints[i];
-                    const p3 = generatedPoints[i + 1];
+                if (i > 0 && i < convertedPoints.length - 1) {
+                    const p1 = convertedPoints[i - 1];
+                    const p2 = convertedPoints[i];
+                    const p3 = convertedPoints[i + 1];
                     const curvature = calculateCurvature(p1, p2, p3);
-                    velocity = Math.min(velocity, maxVelocity / (1 + curvatureFactor * curvature));
+                    velocity = Math.min(velocity, MAX_SPEED_CAP / (1 + CURVATURE_FACTOR * curvature));
                 }
                 
-                const segmentReverse = segmentReversals[i];
+                const segmentReverse = segments[Math.min(waypointIndex, segments.length-1)].reverse;
 
-                // Calculate distance to nearest transition point
+                const reverseTransitionDistance = 50;
                 let distanceToTransition = Infinity;
-                for (const transitionPoint of transitionPoints) {
-                    distanceToTransition = Math.min(distanceToTransition, Math.abs(i - transitionPoint));
+                for (let j = 1; j < segments.length; j++) {
+                    if (segments[j].reverse !== segments[j-1].reverse) {
+                        const transitionCanvasX = points[j].x;
+                        const transitionCanvasY = points[j].y;
+                        const distFromCurrent = Math.hypot(currentPoint.x - (transitionCanvasX - canvas.width/2)/PIXEL_TO_INCH, currentPoint.y - (canvas.height/2-transitionCanvasY)/PIXEL_TO_INCH);
+                        distanceToTransition = Math.min(distanceToTransition, distFromCurrent);
+                    }
                 }
-
-                // Apply transition velocity reduction near direction changes
                 if (distanceToTransition < reverseTransitionDistance) {
                     const transitionFactor = distanceToTransition / reverseTransitionDistance;
-                    velocity *= Math.max(0.3, transitionFactor); // Reduce to 30% minimum near transitions
+                    velocity *= Math.max(0.3, transitionFactor);
                 }
 
-                // Handle velocity and heading for reverse paths
-                if (segmentReverse) {
-                    theta = (theta + 180) % 360; // Turn around for reverse motion
-                    velocity = -velocity; // Make velocity negative
-                }
-
-                // Apply acceleration/deceleration at path start/end
                 const accelDecelFactor = Math.min(1, currentDistance / accelDistance, (totalPathLength - currentDistance) / accelDistance);
-
-                // Apply minimum velocity constraint
-                if (Math.abs(velocity) < minVelocity) {
-                    velocity = velocity < 0 ? -minVelocity : minVelocity;
-                }
-                
                 velocity *= accelDecelFactor;
                 
-                // Apply maximum velocity constraint
-                if (Math.abs(velocity) > maxVelocity) {
-                    velocity = velocity < 0 ? -maxVelocity : maxVelocity;
+                if (segmentReverse) {
+                    theta = (theta + 180) % 360;
+                    velocity = -velocity;
+                }
+
+                if (Math.abs(velocity) < MIN_SPEED_CAP) {
+                    velocity = velocity < 0 ? -MIN_SPEED_CAP : MIN_SPEED_CAP;
                 }
                 
                 pathData.push({ x: currentPoint.x, y: currentPoint.y, theta, velocity });
             }
 
-            let outputString = "double pathPoints[][] = {\n";
+            let outputString = `// LemLib Path for lemlib::Chassis::follow()\n`;
+            outputString += `// Max speed will be dynamically adjusted based on path curvature and length.\n`;
+            outputString += `// The 'lead' parameter in chassis.follow() controls how 'curvy' the path is. Higher lead = more curvy. You can adjust this in PROS.\n`;
+            outputString += `double followPath[][] = {\n`;
             pathData.forEach((point, index) => {
-                const x = (point.x - canvas.width / 2) / PIXEL_TO_INCH;
-                const y = (canvas.height / 2 - point.y) / PIXEL_TO_INCH;
                 const comma = index < pathData.length - 1 ? "," : "";
-                outputString += `    {${x.toFixed(2)}, ${y.toFixed(2)}, ${point.theta.toFixed(2)}, ${point.velocity.toFixed(2)}}${comma}\n`;
+                outputString += `    {${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.theta.toFixed(2)}, ${point.velocity.toFixed(2)}}${comma}\n`;
             });
-            outputString += "};";
-            
+            outputString += `};\n\n`;
+
             const blob = new Blob([outputString], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             
@@ -720,7 +702,65 @@
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
-            outputDiv.textContent = "File 'path.txt' has been downloaded.";
+            outputDiv.textContent = "File 'path.txt' has been downloaded with path data.";
+        }
+
+        function getMoveToPoseCode() {
+            if (points.length < 2) {
+                return "// Please create a path with at least 2 points.";
+            }
+
+            let codeString = `// Waypoints for lemlib::Chassis::moveToPose()\n`;
+            codeString += `// Speed and timeout are automatically generated based on the distance between points.\n`;
+            
+            for (let i = 0; i < points.length; i++) {
+                const p = points[i];
+                const x = (p.x - canvas.width / 2) / PIXEL_TO_INCH;
+                const y = (canvas.height / 2 - p.y) / PIXEL_TO_INCH;
+                const heading = p.heading;
+                
+                let maxSpeed = 70;
+                let timeout = 4000;
+                let forwards = true;
+                
+                if (i < points.length - 1) {
+                    const nextP = points[i + 1];
+                    const nextX = (nextP.x - canvas.width / 2) / PIXEL_TO_INCH;
+                    const nextY = (canvas.height / 2 - nextP.y) / PIXEL_TO_INCH;
+                    
+                    const distance = Math.hypot(nextX - x, nextY - y);
+                    
+                    const MIN_MOVE_SPEED = 50;
+                    const MAX_MOVE_SPEED = 100;
+                    const LONG_PATH_THRESHOLD = 50;
+                    
+                    maxSpeed = Math.min(MAX_MOVE_SPEED, MIN_MOVE_SPEED + (distance / LONG_PATH_THRESHOLD) * (MAX_MOVE_SPEED - MIN_MOVE_SPEED));
+                    maxSpeed = Math.max(MIN_MOVE_SPEED, maxSpeed);
+
+                    const timePerInch = 100;
+                    const baseTimeout = 2000;
+                    timeout = Math.round(baseTimeout + (distance * timePerInch));
+                    
+                    forwards = !segments[i].reverse;
+                }
+
+                codeString += `    chassis.moveToPose(${x.toFixed(2)}, ${y.toFixed(2)}, ${heading.toFixed(2)}, ${timeout}, {${forwards}, 0, 0.6, ${maxSpeed.toFixed(0)}, 0, 0});\n`;
+                codeString += `\n`;
+            }
+            
+            return codeString;
+        }
+
+        function copyMoveToPose() {
+            const code = getMoveToPoseCode();
+            navigator.clipboard.writeText(code).then(() => {
+                const outputDiv = document.getElementById('output');
+                outputDiv.textContent = "moveToPose() code copied to clipboard!";
+            }, (err) => {
+                console.error('Could not copy text: ', err);
+                const outputDiv = document.getElementById('output');
+                outputDiv.textContent = "Failed to copy code. See console for details.";
+            });
         }
 
         function loadPathFile(event) {
@@ -741,20 +781,17 @@
         }
 
         function parsePathData(content) {
-            // Clear existing data
             points = [];
             segments = [];
             selectedPoint = null;
             
-            // Extract the array data from the C++ format
-            const arrayMatch = content.match(/double\s+pathPoints\s*\[\s*\]\s*\[\s*\]\s*=\s*\{\s*([\s\S]*?)\s*\};/);
+            const arrayMatch = content.match(/double\s+followPath\s*\[\s*\]\s*\[\s*\]\s*=\s*\{\s*([\s\S]*?)\s*\};/);
             if (!arrayMatch) {
                 throw new Error("Invalid path file format. Expected C++ array format.");
             }
             
             const arrayContent = arrayMatch[1];
             
-            // Parse each line of data
             const lines = arrayContent.split('\n');
             const pathPoints = [];
             
@@ -762,7 +799,6 @@
                 const trimmedLine = line.trim();
                 if (trimmedLine === '' || trimmedLine.startsWith('//')) continue;
                 
-                // Extract numbers from format: {x, y, theta, velocity}
                 const numberMatch = trimmedLine.match(/\{\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\}/);
                 if (numberMatch) {
                     const x = parseFloat(numberMatch[1]);
@@ -778,14 +814,11 @@
                 throw new Error("No valid path points found in file.");
             }
             
-            // Convert path points back to control points
-            // We'll sample every Nth point to create control points
-            const sampleRate = Math.max(1, Math.floor(pathPoints.length / 10)); // Aim for ~10 control points
+            const sampleRate = Math.max(1, Math.floor(pathPoints.length / 10));
             
             for (let i = 0; i < pathPoints.length; i += sampleRate) {
                 const pathPoint = pathPoints[i];
                 
-                // Convert from VEX coordinates to canvas coordinates
                 const canvasX = pathPoint.x * PIXEL_TO_INCH + canvas.width / 2;
                 const canvasY = canvas.height / 2 - pathPoint.y * PIXEL_TO_INCH;
                 
@@ -793,22 +826,20 @@
                     x: canvasX,
                     y: canvasY,
                     heading: pathPoint.theta,
-                    manuallySet: true // Mark as manually set since it came from file
+                    manuallySet: true
                 };
                 
                 points.push(controlPoint);
             }
             
-            // Ensure we get the last point
             if (pathPoints.length > 1) {
                 const lastPoint = pathPoints[pathPoints.length - 1];
                 const lastCanvasX = lastPoint.x * PIXEL_TO_INCH + canvas.width / 2;
                 const lastCanvasY = canvas.height / 2 - lastPoint.y * PIXEL_TO_INCH;
                 
-                // Only add if it's different from the last added point
                 const lastAddedPoint = points[points.length - 1];
                 const distance = Math.hypot(lastCanvasX - lastAddedPoint.x, lastCanvasY - lastAddedPoint.y);
-                if (distance > 10) { // Minimum distance threshold
+                if (distance > 10) {
                     points.push({
                         x: lastCanvasX,
                         y: lastCanvasY,
@@ -818,12 +849,10 @@
                 }
             }
             
-            // Create segments (all forward by default)
             for (let i = 0; i < points.length - 1; i++) {
                 segments.push({ reverse: false });
             }
             
-            // Redraw the canvas
             draw();
             updateControlPanel();
         }
