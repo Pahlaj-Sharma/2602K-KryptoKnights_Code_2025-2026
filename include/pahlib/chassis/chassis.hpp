@@ -585,7 +585,7 @@ class Chassis {
         float kF;
         };
 
-        void turnToPoint(float x, float y, int timeout, TurnToPointParams params = {}, std::optional<PIDGains> angularGains = std::nullopt, bool async = true);
+        void turnTo(float x, float y, int timeout, TurnToPointParams params = {}, std::optional<PIDGains> angularGains = std::nullopt, bool async = true);
         /**
          * @brief Turn the chassis so it is facing the target heading
          *
@@ -613,7 +613,7 @@ class Chassis {
          * chassis.turnToHeading(45, 2000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void turnToHeading(float theta, int timeout, TurnToHeadingParams params = {}, std::optional<PIDGains> angularGains = std::nullopt, bool async = true);
+        void turnTo(float theta, int timeout, TurnToHeadingParams params = {}, std::optional<PIDGains> angularGains = std::nullopt, bool async = true);
         /**
          * @brief Turn the chassis so it is facing the target heading, but only by moving one half of the drivetrain
          *
@@ -647,7 +647,7 @@ class Chassis {
          * chassis.swingToHeading(45, DriveSide::LEFT, 2000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void swingToHeading(float theta, DriveSide lockedSide, int timeout, SwingToHeadingParams params = {}, 
+        void swingTo(float theta, DriveSide lockedSide, int timeout, SwingToHeadingParams params = {}, 
                             std::optional<PIDGains> angularGains = std::nullopt, bool async = true);
         /**
          * @brief Turn the chassis so it is facing the target point, but only by moving one half of the drivetrain
@@ -688,7 +688,7 @@ class Chassis {
          * chassis.swingToPoint(7.5, 7.5, DriveSide::RIGHT, 2000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void swingToPoint(float x, float y, DriveSide lockedSide, int timeout, SwingToPointParams params = {},
+        void swingTo(float x, float y, DriveSide lockedSide, int timeout, SwingToPointParams params = {},
                           std::optional<PIDGains> angularGains = std::nullopt, bool async = true);
         /**
          * @brief Move the chassis towards the target pose
@@ -723,7 +723,7 @@ class Chassis {
          * chassis.moveToPose(0, 0, 0, 4000, {.lead = 0.3});
          * @endcode
          */
-        void moveToPose(float x, float y, float theta, int timeout, MoveToPoseParams params = {}, 
+        void moveTo(float x, float y, float theta, int timeout, MoveToPoseParams params = {}, 
                 std::optional<PIDGains> lateralGains = std::nullopt, std::optional<PIDGains> angularGains = std::nullopt, 
                 bool async = true);
         /**
@@ -753,7 +753,7 @@ class Chassis {
          * chassis.moveToPoint(7.5, 7.5, 4000, {.minSpeed = 60, .earlyExitRange = 5});
          * @endcode
          */
-        void moveToPoint(float x, float y, int timeout, MoveToPointParams params = {},
+        void moveTo(float x, float y, int timeout, MoveToPointParams params = {},
                 std::optional<PIDGains> lateralGains = std::nullopt, std::optional<PIDGains> angularGains = std::nullopt, 
                 bool async = true);
         /**

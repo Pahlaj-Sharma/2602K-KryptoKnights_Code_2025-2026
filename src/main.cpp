@@ -2,7 +2,7 @@
  * Project: 2602K-RobotCode
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
- * Current Version: 3.31
+ * Current Version: 3.40
  * Last Updated: Aug 22, 2025
  *
  * Copyright (c) 2025, Pahlaj Sharma.
@@ -210,7 +210,7 @@ void tunePID() {
             chassis.calibrate();
             chassis.setPose(0, 0, 0);
             delay(100);
-            chassis.moveToPoint(0, 24, 10000);
+            chassis.moveTo(0, 24, 10000);
             chassis.waitUntilDone();
             controller.rumble(".");
             controller.clear();

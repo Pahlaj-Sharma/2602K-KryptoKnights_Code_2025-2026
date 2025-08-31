@@ -14,7 +14,7 @@ void auton1() {
     chassis.moveLinear(12);
     chassis.resetOdometry();
     chassis.follow(path_txt, 2, 10000);
-    chassis.moveToPose(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
+    chassis.moveTo(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
 }
 
 void auton2() {

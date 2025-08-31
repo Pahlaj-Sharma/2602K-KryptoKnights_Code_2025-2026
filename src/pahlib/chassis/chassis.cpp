@@ -163,7 +163,7 @@ void pahlib::Chassis::moveLinear(float inches, int timeout, float lead, float ma
     const float targetY = currentPose.y + (inches * std::sin(currentPose.theta));
 
     // Set the chassis to move to the calculated target position
-    this->moveToPose(targetX, targetY, pahlib::radToDeg(currentPose.theta), timeout, {
+    this->moveTo(targetX, targetY, pahlib::radToDeg(currentPose.theta), timeout, {
         .lead = lead,
         .maxSpeed = maxspeed,
         .minSpeed = minspeed
