@@ -1,6 +1,5 @@
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
-#include "pahlib/timer.hpp"
 
 /**
  * @brief Finds the closest point on the path to the robot.

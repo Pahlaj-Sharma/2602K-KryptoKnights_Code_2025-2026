@@ -1,7 +1,6 @@
 #include <cmath>
 #include <optional>
 #include "pahlib/chassis/chassis.hpp"
-#include "pahlib/timer.hpp"
 #include "pahlib/util.hpp"
 #include "pros/misc.hpp"
 
