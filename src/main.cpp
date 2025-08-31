@@ -161,7 +161,7 @@ void autonomous() {
     if (autons.count(selectedAuton)) 
         autons.at(selectedAuton).second();
     else 
-        autons.at(4).second();
+        autons.at(0).second();
     
 }
 

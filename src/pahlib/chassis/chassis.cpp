@@ -1,5 +1,4 @@
 #include "main.h"
-#include "pahlib/logger/logger.hpp"
 #include "pahlib/util.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/chassis/odom.hpp"
@@ -59,13 +58,11 @@ void calibrateIMU(pahlib::OdomSensors& sensors) {
         }
         // indicate error
         pros::c::controller_rumble(pros::E_CONTROLLER_MASTER, "---");
-        pahlib::infoSink()->warn("IMU failed to calibrate! Attempt #{}", attempt);
         attempt++;
     }
     // check if calibration attempts were successful
     if (attempt > 5) {
         sensors.imu = nullptr;
-        pahlib::infoSink()->error("IMU calibration failed, defaulting to tracking wheels / motor encoders");
     }
 }
 
@@ -217,47 +214,170 @@ void pahlib::Chassis::setPID(
     this->angularPID.kF = angular_kF;
 }
 
-void pahlib::Chassis::setMotionProfile(float target_distance, float max_velocity, float max_acceleration) {
-    // Ensure positive values
-    target_distance = std::fabs(target_distance);
-    g_max_velocity = std::fabs(max_velocity);
-    g_max_acceleration = std::fabs(max_acceleration);
-    g_target_distance = target_distance;
+// FeedForward Motion Control goes here
 
-    // Calculate time and distance to accelerate to max velocity
-    g_time_accel = g_max_velocity / g_max_acceleration;
-    float d_accel = 0.5 * g_max_acceleration * pow(g_time_accel, 2);
-
-    // Check if the profile is triangular (if we can't reach max velocity)
-    if (target_distance < 2 * d_accel) {
-        // Recalculate max velocity and acceleration time for a triangular profile
-        g_max_velocity = std::sqrt(g_max_acceleration * g_target_distance);
-        g_time_accel = g_max_velocity / g_max_acceleration;
-        g_time_cruise = 0;
-    } else {
-        // Calculate the time spent at constant velocity for a trapezoidal profile
-        g_time_cruise = (g_target_distance - (2 * d_accel)) / g_max_velocity;
+// Motion Profile Implementation (corrected namespace)
+void pahlib::MotionProfile::setMotionProfile(float target_distance, float max_voltage, float max_acceleration) {
+    // Handle direction and ensure positive calculations
+    m_direction = (target_distance >= 0) ? 1 : -1;
+    m_target_distance = std::fabs(target_distance);
+    
+    // Input validation
+    if (m_target_distance < MIN_EPSILON) {
+        // Zero distance - create a stationary profile
+        m_max_velocity = 0;
+        m_max_acceleration = 0;
+        m_time_accel = 0;
+        m_time_cruise = 0;
+        m_time_total = 0;
+        m_is_triangular = true;
+        return;
     }
+    
+    // Convert voltage to velocity and validate inputs
+    m_max_velocity = std::fabs(max_voltage) * VOLTS_TO_VELOCITY;
+    m_max_acceleration = std::fabs(max_acceleration);
+    
+    if (m_max_velocity < MIN_EPSILON || m_max_acceleration < MIN_EPSILON) {
+        // Invalid parameters - create stationary profile
+        m_max_velocity = 0;
+        m_max_acceleration = 0;
+        m_time_accel = 0;
+        m_time_cruise = 0;
+        m_time_total = 0;
+        m_is_triangular = true;
+        return;
+    }
+    
+    // Calculate time and distance to accelerate to max velocity
+    m_time_accel = m_max_velocity / m_max_acceleration;
+    float accel_distance = 0.5f * m_max_acceleration * m_time_accel * m_time_accel;
+    
+    // Determine if profile is triangular or trapezoidal
+    if (m_target_distance < (2.0f * accel_distance)) {
+        // Triangular profile - can't reach max velocity
+        m_is_triangular = true;
+        m_max_velocity = std::sqrt(m_max_acceleration * m_target_distance);
+        m_time_accel = m_max_velocity / m_max_acceleration;
+        m_time_cruise = 0;
+    } else {
+        // Trapezoidal profile - reaches max velocity
+        m_is_triangular = false;
+        m_time_cruise = (m_target_distance - (2.0f * accel_distance)) / m_max_velocity;
+    }
+    
+    // Calculate total time
+    m_time_total = (2.0f * m_time_accel) + m_time_cruise;
+}
 
-    // Calculate the total time for the motion
-    g_time_total = (2 * g_time_accel) + g_time_cruise;
+float pahlib::MotionProfile::getTargetVelocity(float elapsed_time) const {
+    // Clamp time to valid range
+    elapsed_time = std::max(0.0f, std::min(elapsed_time, m_time_total));
+    
+    // Handle edge cases
+    if (m_time_total < MIN_EPSILON) {
+        return 0.0f;
+    }
+    
+    float target_velocity = 0.0f;
+    
+    // Determine which phase we're in
+    if (elapsed_time <= m_time_accel) {
+        // Acceleration phase
+        target_velocity = (elapsed_time / m_time_accel) * m_max_velocity;
+    } 
+    else if (elapsed_time <= (m_time_accel + m_time_cruise)) {
+        // Constant velocity (cruise) phase
+        target_velocity = m_max_velocity;
+    } 
+    else {
+        // Deceleration phase
+        float time_into_decel = elapsed_time - (m_time_accel + m_time_cruise);
+        float decel_progress = time_into_decel / m_time_accel;
+        target_velocity = m_max_velocity * (1.0f - decel_progress);
+    }
+    
+    // Apply direction
+    return target_velocity * m_direction;
+}
+
+float pahlib::MotionProfile::getTargetAcceleration(float elapsed_time) const {
+    // Clamp time to valid range
+    elapsed_time = std::max(0.0f, std::min(elapsed_time, m_time_total));
+    
+    if (m_time_total < MIN_EPSILON) {
+        return 0.0f;
+    }
+    
+    float target_acceleration = 0.0f;
+    
+    if (elapsed_time < m_time_accel) {
+        // Acceleration phase
+        target_acceleration = m_max_acceleration;
+    }
+    else if (elapsed_time < (m_time_accel + m_time_cruise)) {
+        // Cruise phase
+        target_acceleration = 0.0f;
+    }
+    else if (elapsed_time < m_time_total) {
+        // Deceleration phase
+        target_acceleration = -m_max_acceleration;
+    }
+    
+    // Apply direction
+    return target_acceleration * m_direction;
+}
+
+float pahlib::MotionProfile::getTargetPosition(float elapsed_time) const {
+    // Clamp time to valid range
+    elapsed_time = std::max(0.0f, std::min(elapsed_time, m_time_total));
+    
+    if (m_time_total < MIN_EPSILON) {
+        return 0.0f;
+    }
+    
+    float target_position = 0.0f;
+    
+    if (elapsed_time <= m_time_accel) {
+        // Acceleration phase: s = 0.5 * a * t^2
+        target_position = 0.5f * m_max_acceleration * elapsed_time * elapsed_time;
+    }
+    else if (elapsed_time <= (m_time_accel + m_time_cruise)) {
+        // Cruise phase: s = s_accel + v_max * t_cruise
+        float accel_distance = 0.5f * m_max_acceleration * m_time_accel * m_time_accel;
+        float cruise_time = elapsed_time - m_time_accel;
+        target_position = accel_distance + (m_max_velocity * cruise_time);
+    }
+    else {
+        // Deceleration phase
+        float accel_distance = 0.5f * m_max_acceleration * m_time_accel * m_time_accel;
+        float cruise_distance = m_max_velocity * m_time_cruise;
+        float time_into_decel = elapsed_time - (m_time_accel + m_time_cruise);
+        
+        // s = v_max * t - 0.5 * a * t^2
+        float decel_distance = (m_max_velocity * time_into_decel) - 
+                             (0.5f * m_max_acceleration * time_into_decel * time_into_decel);
+        
+        target_position = accel_distance + cruise_distance + decel_distance;
+    }
+    
+    // Apply direction
+    return target_position * m_direction;
+}
+
+// Chassis wrapper functions (corrected)
+void pahlib::Chassis::setMotionProfile(float target_distance, float max_voltage, float max_acceleration) {
+    m_motion_profile.setMotionProfile(target_distance, max_voltage, max_acceleration);
 }
 
 float pahlib::Chassis::getTargetVelocity(float elapsed_time) {
-    // Return 0 if time is invalid
-    if (elapsed_time < 0 || elapsed_time >= g_time_total) return 0;
-    
-    // Acceleration phase 
-    if (elapsed_time < g_time_accel) {
-        return elapsed_time * g_max_acceleration;
-    }
-    // Constant velocity (cruise) phase
-    else if (elapsed_time < g_time_accel + g_time_cruise) {
-        return g_max_velocity;
-    }
-    // Deceleration phase
-    else {
-        float time_into_decel = elapsed_time - (g_time_accel + g_time_cruise);
-        return g_max_velocity - (time_into_decel * g_max_acceleration);
-    }
+    return m_motion_profile.getTargetVelocity(elapsed_time);
+}
+
+float pahlib::Chassis::getTargetAcceleration(float elapsed_time) {
+    return m_motion_profile.getTargetAcceleration(elapsed_time);
+}
+
+float pahlib::Chassis::getTargetPosition(float elapsed_time) {
+    return m_motion_profile.getTargetPosition(elapsed_time);
 }

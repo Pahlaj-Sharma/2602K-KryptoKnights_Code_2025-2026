@@ -514,11 +514,15 @@
 
             const startDx = Math.sin(controlPoints[0].heading * Math.PI / 180) * 10;
             const startDy = -Math.cos(controlPoints[0].heading * Math.PI / 180) * 10;
-            const startVirtual = { x: controlPoints[0].x - startDx, y: controlPoints[0].y - startDy, heading: controlPoints[0].heading };
+            const startVirtual = { x: controlPoints[0].x - startDx,
+                                   y: controlPoints[0].y - startDy, 
+                                   heading: controlPoints[0].heading };
             
             const endDx = Math.sin(controlPoints[controlPoints.length - 1].heading * Math.PI / 180) * 10;
             const endDy = -Math.cos(controlPoints[controlPoints.length - 1].heading * Math.PI / 180) * 10;
-            const endVirtual = { x: controlPoints[controlPoints.length - 1].x + endDx, y: controlPoints[controlPoints.length - 1].y + endDy, heading: controlPoints[controlPoints.length - 1].heading };
+            const endVirtual = { x: controlPoints[controlPoints.length - 1].x + endDx, 
+                                 y: controlPoints[controlPoints.length - 1].y + endDy, 
+                                 heading: controlPoints[controlPoints.length - 1].heading };
 
             tempPoints = [
                 startVirtual,
@@ -655,7 +659,8 @@
                     if (segments[j].reverse !== segments[j-1].reverse) {
                         const transitionCanvasX = points[j].x;
                         const transitionCanvasY = points[j].y;
-                        const distFromCurrent = Math.hypot(currentPoint.x - (transitionCanvasX - canvas.width/2)/PIXEL_TO_INCH, currentPoint.y - (canvas.height/2-transitionCanvasY)/PIXEL_TO_INCH);
+                        const distFromCurrent = Math.hypot(currentPoint.x - (transitionCanvasX - canvas.width/2)/PIXEL_TO_INCH,
+                                                currentPoint.y - (canvas.height/2-transitionCanvasY)/PIXEL_TO_INCH);
                         distanceToTransition = Math.min(distanceToTransition, distFromCurrent);
                     }
                 }
@@ -664,7 +669,8 @@
                     velocity *= Math.max(0.3, transitionFactor);
                 }
 
-                const accelDecelFactor = Math.min(1, currentDistance / accelDistance, (totalPathLength - currentDistance) / accelDistance);
+                const accelDecelFactor = Math.min(1, currentDistance / accelDistance,
+                                                  (totalPathLength - currentDistance) / accelDistance);
                 velocity *= accelDecelFactor;
                 
                 if (segmentReverse) {
@@ -679,13 +685,12 @@
                 pathData.push({ x: currentPoint.x, y: currentPoint.y, theta, velocity });
             }
 
-            let outputString = `// LemLib Path for lemlib::Chassis::follow()\n`;
-            outputString += `// Max speed will be dynamically adjusted based on path curvature and length.\n`;
-            outputString += `// The 'lead' parameter in chassis.follow() controls how 'curvy' the path is. Higher lead = more curvy. You can adjust this in PROS.\n`;
+            let outputString = `// Path for chassis\n`;
             outputString += `double followPath[][] = {\n`;
             pathData.forEach((point, index) => {
                 const comma = index < pathData.length - 1 ? "," : "";
-                outputString += `    {${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.theta.toFixed(2)}, ${point.velocity.toFixed(2)}}${comma}\n`;
+                outputString += `    {${point.x.toFixed(2)}, ${point.y.toFixed(2)},
+                                      ${point.theta.toFixed(2)}, ${point.velocity.toFixed(2)}}${comma}\n`;
             });
             outputString += `};\n\n`;
 

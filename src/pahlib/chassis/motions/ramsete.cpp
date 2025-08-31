@@ -1,4 +1,3 @@
-#include "pahlib/logger/logger.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 
@@ -25,14 +24,12 @@ std::vector<RamsetePathPoint> getRamsetePathData(const asset& path) {
     // Find the opening brace of the array data
     size_t start_pos = data.find("{{");
     if (start_pos == std::string::npos) {
-        infoSink()->error("Path Parse Error: Could not find array start '{{'");
         return robotPath;
     }
     
     // Find the closing brace of the array data
     size_t end_pos = data.rfind("}}");
     if (end_pos == std::string::npos) {
-        infoSink()->error("Path Parse Error: Could not find array end '}}'");
         return robotPath;
     }
     
@@ -63,7 +60,6 @@ std::vector<RamsetePathPoint> getRamsetePathData(const asset& path) {
                 try {
                     values.push_back(std::stod(token));
                 } catch (const std::exception& e) {
-                    infoSink()->error("Path Parse Error: Invalid number '%s'", token.c_str());
                     return std::vector<RamsetePathPoint>(); // Return empty on error
                 }
             }
@@ -76,14 +72,11 @@ std::vector<RamsetePathPoint> getRamsetePathData(const asset& path) {
             point.theta = values[2];
             point.velocity = values[3];
             robotPath.push_back(point);
-        } else {
-            infoSink()->warn("Path Parse Warning: Point has %d values instead of 4", values.size());
         }
         
         pos = point_end + 1;
     }
     
-    infoSink()->info("Parsed %d path points", robotPath.size());
     return robotPath;
 }
 
@@ -101,7 +94,6 @@ void Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bo
     // Parse the path data
     std::vector<RamsetePathPoint> pathPoints = getRamsetePathData(path);
     if (pathPoints.empty()) {
-        infoSink()->error("No points in path! Skipping motion");
         distTraveled = -1;
         this->endMotion();
         return;
@@ -153,7 +145,6 @@ void Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bo
         if (currentTargetIndex >= pathPoints.size() - 1) {
             Pose endPose(pathPoints.back().x, pathPoints.back().y);
             if (pose.distance(endPose) < 2.0) { // 2 inch tolerance
-                infoSink()->info("Reached end of path");
                 break;
             }
         }

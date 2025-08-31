@@ -1,6 +1,5 @@
 #include <cmath>
 #include "pahlib/chassis/chassis.hpp"
-#include "pahlib/logger/logger.hpp"
 #include "pahlib/timer.hpp"
 #include "pahlib/util.hpp"
 #include "pros/misc.hpp"
@@ -11,10 +10,7 @@ void pahlib::Chassis::turnToPoint(float x, float y, int timeout, TurnToPointPara
 
     // Apply custom PID settings if they are provided
     if (angularGains) {
-        this->angularPID.kP = angularGains->kP;
-        this->angularPID.kI = angularGains->kI;
-        this->angularPID.kD = angularGains->kD;
-        this->angularPID.kF = angularGains->kF;
+        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
     }
 
     params.minSpeed = std::abs(params.minSpeed);
@@ -86,8 +82,6 @@ void pahlib::Chassis::turnToPoint(float x, float y, int timeout, TurnToPointPara
         if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
         else if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
         prevMotorPower = motorPower;
-
-        infoSink()->debug("Turn Motor Power: {} ", motorPower);
 
         // move the drivetrain
         drivetrain.leftMotors->move(motorPower);

@@ -1,7 +1,6 @@
 #include <cmath>
 #include <optional>
 #include "pahlib/chassis/chassis.hpp"
-#include "pahlib/logger/logger.hpp"
 #include "pahlib/timer.hpp"
 #include "pahlib/util.hpp"
 #include "pros/misc.hpp"
@@ -13,16 +12,10 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
 
     // Apply custom PID settings if they are provided
     if (lateralGains) {
-        this->lateralPID.kP = lateralGains->kP;
-        this->lateralPID.kI = lateralGains->kI;
-        this->lateralPID.kD = lateralGains->kD;
-        this->lateralPID.kF = lateralGains->kF;
+        this->lateralPID = {lateralGains->kP, lateralGains->kI, lateralGains->kD, lateralGains->kF};
     }
     if (angularGains) {
-        this->angularPID.kP = angularGains->kP;
-        this->angularPID.kI = angularGains->kI;
-        this->angularPID.kD = angularGains->kD;
-        this->angularPID.kF = angularGains->kF;
+        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
     }
 
     params.earlyExitRange = std::fabs(params.earlyExitRange);
@@ -61,7 +54,7 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
     Pose target(x, y);
     target.theta = lastPose.angle(target);
 
-    this->setMotionProfile(target.distance(getPose()), params.maxSpeed / 2.54,
+    this->setMotionProfile(target.distance(getPose()), params.maxSpeed,
                            params.maxAcceleration);
 
     // main loop
@@ -102,7 +95,10 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         lateralLargeExit.update(lateralError);
 
         // get output from PIDs
-        float lateralOut = lateralPID.update(lateralError, this->getTargetVelocity(timer.getTimePassed() / 1000.0));
+        float feedforward_velocity = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
+        float lateralOut = lateralPID.update(lateralError, feedforward_velocity);
+        float feedforward_accel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0);
+        lateralOut += feedforward_accel * 0.1f;  // Adjust the 0.1f gain as needed!!
         float angularOut = angularPID.update(radToDeg(angularError));
         if (close) angularOut = 0;
 
@@ -128,8 +124,6 @@ void pahlib::Chassis::moveToPoint(float x, float y, int timeout, MoveToPointPara
         // update previous output
         prevAngularOut = angularOut;
         prevLateralOut = lateralOut;
-
-        infoSink()->debug("Angular Out: {}, Lateral Out: {}", angularOut, lateralOut);
 
         // ratio the speeds to respect the max speed
         float leftPower = lateralOut + angularOut;

@@ -167,6 +167,45 @@ class Drivetrain {
 };
 
 /**
+ * @brief Motion Profile for FeedForward Control
+ */
+class MotionProfile {
+private:
+    // Profile parameters
+    float m_target_distance;
+    float m_max_velocity;
+    float m_max_acceleration;
+    
+    // Timing parameters
+    float m_time_accel;
+    float m_time_cruise;
+    float m_time_total;
+    
+    // Profile type
+    bool m_is_triangular;
+    
+    // Direction (for handling negative distances)
+    int m_direction;
+    
+    // Constants
+    static constexpr float VOLTS_TO_VELOCITY = 0.3937f; // 127V = 50 in/sec
+    static constexpr float MIN_EPSILON = 1e-6f;
+    
+public:
+    void setMotionProfile(float target_distance, float max_voltage, float max_acceleration);
+    float getTargetVelocity(float elapsed_time) const;
+    float getTargetAcceleration(float elapsed_time) const;
+    float getTargetPosition(float elapsed_time) const;
+    
+    // Getters for profile information
+    float getTotalTime() const { return m_time_total; }
+    float getMaxVelocity() const { return m_max_velocity; }
+    float getMaxAcceleration() const { return m_max_acceleration; }
+    bool isTriangular() const { return m_is_triangular; }
+    bool isComplete(float elapsed_time) const { return elapsed_time >= m_time_total; }
+};
+
+/**
  * @brief AngularDirection
  *
  * When turning, the user may want to specify the direction the robot should turn in.
@@ -1093,6 +1132,14 @@ class Chassis {
          */
         float getTargetVelocity(float elapsed_time);
         /**
+         * @brief Updates the target acceleration for this motion
+         */
+        float getTargetAcceleration(float elapsed_time);
+        /**
+         * @brief Updates the target position for this motion
+         */
+        float getTargetPosition(float elapsed_time);
+        /**
          * @brief Indicates that this motion is queued and blocks current task until this motion reaches front of queue
          */
         void requestMotionStart();
@@ -1120,6 +1167,7 @@ class Chassis {
         
     private:
         pros::Mutex mutex;
+        MotionProfile m_motion_profile;
         
         // --- Motion Profile Variables ---
         // Store the calculated time segments of the motion profile

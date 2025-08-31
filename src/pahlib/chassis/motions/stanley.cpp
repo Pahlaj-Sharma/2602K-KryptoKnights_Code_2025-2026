@@ -1,4 +1,3 @@
-#include "pahlib/logger/logger.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 #include "pahlib/timer.hpp"
@@ -125,7 +124,6 @@ void pahlib::Chassis::stanley(const asset& path, float lookahead, float stanleyG
 
     std::vector<pahlib::Pose> pathPoints = getData(path);
     if (pathPoints.size() < 2) {
-        infoSink()->error("Path must contain at least 2 points! Skipping motion");
         distTraveled = -1;
         this->endMotion();
         return;

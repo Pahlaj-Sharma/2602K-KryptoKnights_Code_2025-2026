@@ -6,9 +6,6 @@
 using namespace pahlib;
 
 ASSET(path_txt);
-ASSET(path2_txt);
-ASSET(path3_txt);
-ASSET(ramsete_txt);
 
 void auton1() {
     chassis.setPose(0, 0, 0);
@@ -30,7 +27,7 @@ void auton3() {
 }
 
 void auton4() {
-    chassis.follow(path3_txt, 3, 10000);
+
 }
 
 void auton5() {

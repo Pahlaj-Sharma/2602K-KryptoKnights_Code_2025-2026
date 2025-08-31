@@ -67,19 +67,19 @@ void pahlib::Chassis::resetOdometry(float threshold) {
     }
 
     // Adjust calculated position based on robot's current quadrant
-    if (pose.x > 0)
+    if (pose.x > 0.0f)
         calc_x = FIELD_SIZE_IN - calc_x;
-    else if (pose.x < 0)
+    else if (pose.x < 0.0f)
         calc_x -= FIELD_SIZE_IN;
     else
-        calc_x = 0;
+        calc_x = 0.0f;
 
-    if (pose.y > 0)
+    if (pose.y > 0.0f)
         calc_y = FIELD_SIZE_IN - calc_y;
-    else if (pose.y < 0)
+    else if (pose.y < 0.0f)
         calc_y -= FIELD_SIZE_IN;
     else
-        calc_y = 0;
+        calc_y = 0.0f;
 
     // Check if the new pose is within the allowed threshold
     const float x_diff = std::abs(calc_x - pose.x);

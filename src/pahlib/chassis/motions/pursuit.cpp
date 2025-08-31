@@ -3,7 +3,6 @@
 // Here is a link to the original document
 // https://www.chiefdelphi.com/uploads/default/original/3X/b/e/be0e06de00e07db66f97686505c3f4dde2e332dc.pdf
 
-#include "pahlib/logger/logger.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 
@@ -133,7 +132,6 @@ void pahlib::Chassis::follow(const asset& path, float lookahead, int timeout, bo
 
     std::vector<pahlib::Pose> pathPoints = getData(path); // get list of path points
     if (pathPoints.size() == 0) {
-        infoSink()->error("No points in path! Do you have the right format? Skipping motion");
         // set distTraveled to -1 to indicate that the function has finished
         distTraveled = -1;
         // give the mutex back

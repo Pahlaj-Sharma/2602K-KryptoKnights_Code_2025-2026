@@ -26,15 +26,15 @@ inline constexpr int PORT_DISTANCE_FRONT     = 5;
 inline constexpr int PORT_DISTANCE_BACK      = 19;
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
-inline constexpr float TRACK_WIDTH      = 11.55; // Distance between the centers of the left and right wheels in inches
+inline constexpr float TRACK_WIDTH      = 11.55f; // Distance between the centers of the left and right wheels in inches
 inline constexpr int   WHEEL_RPM        = 450;   // Max effective RPM of the drivetrain (e.g., 600 RPM blue motors with 1.33:1 external gearing)
-inline constexpr float HORIZONTAL_DRIFT = 8.0;   // Horizontal drift in inches, used for odometry calculations
-inline constexpr float IMU_SCALER       = 1.010445;   // Custom IMU scaling factor, adjust based on IMU's calibration
+inline constexpr float HORIZONTAL_DRIFT = 8.0f;   // Horizontal drift in inches, used for odometry calculations
+inline constexpr float IMU_SCALER       = 1.010445f;   // Custom IMU scaling factor, adjust based on IMU's calibration
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
-//inline constexpr float HORIZONTAL_TRACKING_OFFSET = 0.0;
-inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0;
+//inline constexpr float HORIZONTAL_TRACKING_OFFSET = 0.0f;
+inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0f;
 
 // --- PID Controller Settings for pahlib Chassis ---
 // A struct to hold all the PID constants for clarity and easy management.
@@ -53,27 +53,27 @@ struct PIDConstants {
 
 // Default Lateral PID constants
 inline constexpr PIDConstants LATERAL_PID {
-    7.0, 0.0, 9.0, 0.0, 3, 1, 100, 2, 500, 20
+    7.0f, 0.0f, 9.0f, 1.2f, 3, 1, 100, 2, 500, 20
 };
 // Custom "Fast" Lateral PID constants
 inline constexpr PIDConstants F_LATERAL_PID {
-    7.0, 0.0, 9.0, 0.0, 3, 2, 100, 3, 500, 20
+    7.0f, 0.0f, 9.0f, 1.2f, 3, 2, 100, 3, 500, 20
 };
 // Custom "Precise" Lateral PID constants
 inline constexpr PIDConstants P_LATERAL_PID {
-    7.0, 0.0, 9.0, 0.0, 3, 1, 100, 2, 500, 20
+    7.0f, 0.0f, 9.0f, 1.2f, 3, 1, 100, 2, 500, 20
 };
 // Default Angular PID constants
 inline constexpr PIDConstants ANGULAR_PID {
-    1.0, 0.0, 16.0, 0.0, 3, 1, 100, 3, 500, 0
+    1.0f, 0.0f, 16.0f, 0.0f, 3, 1, 100, 3, 500, 0
 };
 // Custom "Fast" Angular PID constants
 inline constexpr PIDConstants F_ANGULAR_PID {
-    2.0, 0.0, 16.0, 0.0, 3, 2, 100, 4, 500, 0
+    2.0f, 0.0f, 16.0f, 0.0f, 3, 2, 100, 4, 500, 0
 };
 // Custom "Precise" Angular PID constants
 inline constexpr PIDConstants P_ANGULAR_PID {
-    2.0, 0.0, 16.0, 0.0, 3, 1, 100, 2, 500, 0
+    2.0f, 0.0f, 16.0f, 0.0f, 3, 1, 100, 2, 500, 0
 };
 
 // Convert to pahlib ControllerSettings
@@ -110,9 +110,9 @@ inline const pahlib::ControllerSettings P_angular_PID = {
 
 // --- Distance Sensor Offsets ---
 // Distance from the actual sensor reading point to the center of the robot in inches.
-inline constexpr float DS_FRONT_CENTER = 5.5;
-inline constexpr float DS_BACK_CENTER  = 1.375;
-inline constexpr float DS_LEFT_CENTER  = 1.75;
-inline constexpr float DS_RIGHT_CENTER = 1.75;
+inline constexpr float DS_FRONT_CENTER = 5.53f;
+inline constexpr float DS_BACK_CENTER  = 1.37f;
+inline constexpr float DS_LEFT_CENTER  = 1.75f;
+inline constexpr float DS_RIGHT_CENTER = 1.75f;
 
 #endif
