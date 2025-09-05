@@ -1,3 +1,5 @@
+
+
 // The implementation below is mostly based off of
 // the document written by Dawgma
 // Here is a link to the original document
@@ -6,14 +8,8 @@
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 
-/**
- * @brief find the closest point on the path to the robot
- *
- * @param pose the current pose of the robot
- * @param path the path to follow
- * @return int index to the closest point
- */
 int findClosest(pahlib::Pose pose, std::vector<pahlib::Pose> path) {
+    /*
     int closestPoint;
     float closestDist = infinity();
 
@@ -27,20 +23,14 @@ int findClosest(pahlib::Pose pose, std::vector<pahlib::Pose> path) {
     }
 
     return closestPoint;
+    */
+    return -1;
 }
 
-/**
- * @brief Function that finds the intersection point between a circle and a line
- *
- * @param p1 start point of the line
- * @param p2 end point of the line
- * @param pos position of the robot
- * @param path the path to follow
- * @return float how far along the line the
- */
 float circleIntersect(pahlib::Pose p1, pahlib::Pose p2, pahlib::Pose pose, float lookaheadDist) {
     // calculations
     // uses the quadratic formula to calculate intersection points
+    /*
     pahlib::Pose d = p2 - p1;
     pahlib::Pose f = p1 - pose;
     float a = d * d;
@@ -61,17 +51,10 @@ float circleIntersect(pahlib::Pose p1, pahlib::Pose p2, pahlib::Pose pose, float
 
     // no intersection found
     return -1;
+    */
+    return -1;
 }
 
-/**
- * @brief returns the lookahead point
- *
- * @param lastLookahead - the last lookahead point
- * @param pose - the current position of the robot
- * @param path - the path to follow
- * @param closest - the index of the point closest to the robot
- * @param lookaheadDist - the lookahead distance of the algorithm
- */
 pahlib::Pose lookaheadPoint(pahlib::Pose lastLookahead, pahlib::Pose pose, std::vector<pahlib::Pose> path, int closest,
                             float lookaheadDist) {
     // optimizations applied:
@@ -79,6 +62,7 @@ pahlib::Pose lookaheadPoint(pahlib::Pose lastLookahead, pahlib::Pose pose, std::
     // to the robot
     // and intersections that have an index greater than or equal to the index of the last
     // lookahead point
+    /*
     const int start = std::max(closest, int(lastLookahead.theta));
     for (int i = start; i < path.size() - 1; i++) {
         pahlib::Pose lastPathPose = path.at(i);
@@ -95,17 +79,12 @@ pahlib::Pose lookaheadPoint(pahlib::Pose lastLookahead, pahlib::Pose pose, std::
 
     // robot deviated from path, use last lookahead point
     return lastLookahead;
+    */
+    return pahlib::Pose(0, 0);
 }
 
-/**
- * @brief Get the curvature of a circle that intersects the robot and the lookahead point
- *
- * @param pos the position of the robot
- * @param heading the heading of the robot
- * @param lookahead the lookahead point
- * @return float curvature
- */
 float findLookaheadCurvature(pahlib::Pose pose, float heading, pahlib::Pose lookahead) {
+    /*
     // calculate whether the robot is on the left or right side of the circle
     float side = pahlib::sgn(std::sin(heading) * (lookahead.x - pose.x) - std::cos(heading) * (lookahead.y - pose.y));
     // calculate center point and radius
@@ -116,9 +95,12 @@ float findLookaheadCurvature(pahlib::Pose pose, float heading, pahlib::Pose look
 
     // return curvature
     return side * ((2 * x) / (d * d));
+    */
+    return -1;
 }
 
 void pahlib::Chassis::follow(const asset& path, float lookahead, int timeout, bool forwards, bool async) {
+    /*
     this->requestMotionStart();
     // were all motions cancelled?
     if (!this->motionRunning) return;
@@ -216,4 +198,5 @@ void pahlib::Chassis::follow(const asset& path, float lookahead, int timeout, bo
     distTraveled = -1;
     // give the mutex back
     this->endMotion();
+    */
 }

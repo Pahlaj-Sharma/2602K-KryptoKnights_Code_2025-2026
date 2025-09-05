@@ -4,90 +4,116 @@
 #include "pros/misc.hpp"
 
 void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, SwingToHeadingParams params,
-                                     std::optional<PIDGains> angularGains, bool async) {
+                              std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
-    pahlib::ControllerSettings originalAngular = this->angularSettings;
+    pahlib::PID originalAngularPID = this->angularPID;
 
-    // Apply custom PID settings if they are provided
     if (angularGains) {
         this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
     }
 
-    params.minSpeed = std::fabs(params.minSpeed);
+    params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
-    // were all motions cancelled?
+    
     if (!this->motionRunning) {
-        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+        this->angularPID = originalAngularPID;
         return;
     }
-    // if the function is async, run it in a new task
+    
     if (async) {
-        pros::Task task([&]() { swingTo(theta, lockedSide, timeout, params, angularGains, false); });
+        pros::Task task([=, this]() { 
+            swingTo(theta, lockedSide, timeout, params, angularGains, false); 
+        });
+        pros::delay(10);
         this->endMotion();
-        pros::delay(10); // delay to give the task time to start
         return;
     }
-    float targetTheta;
-    float deltaTheta;
-    float motorPower;
+
+    // Get and store original brake mode
+    pros::MotorBrake originalBrakeMode;
+    if (lockedSide == DriveSide::LEFT) {
+        originalBrakeMode = drivetrain.leftMotors->get_brake_mode_all().at(0);
+        drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    } else {
+        originalBrakeMode = drivetrain.rightMotors->get_brake_mode_all().at(0);
+        drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    }
+
+    // Initialize variables
+    const float startTheta = getPose().theta;
     float prevMotorPower = 0;
-    float startTheta = getPose().theta;
     bool settling = false;
-    std::optional<float> prevRawDeltaTheta = std::nullopt;
     std::optional<float> prevDeltaTheta = std::nullopt;
-    std::uint8_t compState = pros::competition::get_status();
+    
     distTraveled = 0;
     Timer timer(timeout);
     angularLargeExit.reset();
     angularSmallExit.reset();
     angularPID.reset();
-    // get original braking mode of that side of the drivetrain so we can set it back to it after this motion ends
-    pros::MotorBrake brakeMode = (lockedSide == DriveSide::LEFT)
-                                     ? this->drivetrain.leftMotors->get_brake_mode_all().at(0)
-                                     : this->drivetrain.rightMotors->get_brake_mode_all().at(0);
-    // set brake mode of the locked side to hold
-    if (lockedSide == DriveSide::LEFT) this->drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
-    else this->drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
 
-    // main loop
-    while (!timer.isDone() && !angularLargeExit.getExit() && !angularSmallExit.getExit() && this->motionRunning) {
-        // update variables
-        Pose pose = getPose();
-        pose.theta = std::fmod(pose.theta, 360);
+    // Calculate initial error and settle threshold
+    const float initialError = std::abs(angleError(theta, getPose().theta, false));
+    const float settleThreshold = std::max(4.0f, initialError * 0.18f); // Slightly higher for swing
+    float adaptiveMaxSpeed = params.maxSpeed;
 
-        // update completion vars
-        distTraveled = std::fabs(angleError(pose.theta, startTheta, false));
-        targetTheta = theta;
+    while (!timer.isDone() && this->motionRunning) {
+        const Pose pose = getPose();
+        distTraveled = std::abs(angleError(pose.theta, startTheta, false));
 
-        // check if settling
-        const float rawDeltaTheta = angleError(targetTheta, pose.theta, false);
-        if (prevRawDeltaTheta == std::nullopt) prevRawDeltaTheta = rawDeltaTheta;
-        if (sgn(rawDeltaTheta) != sgn(prevRawDeltaTheta)) settling = true;
-        prevRawDeltaTheta = rawDeltaTheta;
+        // Calculate error
+        float deltaTheta;
+        if (settling) {
+            deltaTheta = angleError(theta, pose.theta, false);
+        } else {
+            deltaTheta = angleError(theta, pose.theta, false, params.direction);
+        }
 
-        // calculate deltaTheta
-        if (settling) deltaTheta = angleError(targetTheta, pose.theta, false);
-        else deltaTheta = angleError(targetTheta, pose.theta, false, params.direction);
-        if (prevDeltaTheta == std::nullopt) prevDeltaTheta = deltaTheta;
+        // Detect settling condition
+        if (prevDeltaTheta != std::nullopt) {
+            if (!settling && (std::abs(deltaTheta) < settleThreshold || 
+                             sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
+                settling = true;
+                // More conservative speed reduction for swing motions
+                adaptiveMaxSpeed = std::max(20.0f, std::min(50.0f, std::abs(prevMotorPower)));
+            }
+        }
+        prevDeltaTheta = deltaTheta;
 
-        // motion chaining
-        if (params.minSpeed != 0 && std::fabs(deltaTheta) < params.earlyExitRange) break;
-        if (params.minSpeed != 0 && sgn(deltaTheta) != sgn(prevDeltaTheta)) break;
-
-        // calculate the speed
-        motorPower = angularPID.update(deltaTheta);
+        // Update exit conditions
         angularLargeExit.update(deltaTheta);
         angularSmallExit.update(deltaTheta);
 
-        // cap the speed
-        if (motorPower > params.maxSpeed) motorPower = params.maxSpeed;
-        else if (motorPower < -params.maxSpeed) motorPower = -params.maxSpeed;
-        if (std::fabs(deltaTheta) > 20) motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
-        if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
-        else if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
+        // Check for completion
+        if (settling && angularSmallExit.getExit() && std::abs(deltaTheta) < 1.2f) break;
+
+        // Early exit for motion chaining
+        if (params.minSpeed > 0 && settling && std::abs(deltaTheta) < params.earlyExitRange) break;
+
+        // Calculate PID output
+        float motorPower = angularPID.update(deltaTheta);
+
+        // Apply speed constraints
+        motorPower = std::clamp(motorPower, -adaptiveMaxSpeed, adaptiveMaxSpeed);
+
+        // More conservative slew rate for swing motions to prevent wheel slip
+        if (std::abs(deltaTheta) > 12.0f && !settling) {
+            motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.8f);
+        } else if (settling) {
+            motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.6f);
+        }
+
+        // Apply minimum speed constraints AFTER slew rate limiting
+        if (params.minSpeed > 0 && !settling) {
+            if (motorPower > 0 && motorPower < params.minSpeed) {
+                motorPower = params.minSpeed;
+            } else if (motorPower < 0 && motorPower > -params.minSpeed) {
+                motorPower = -params.minSpeed;
+            }
+        }
+
         prevMotorPower = motorPower;
 
-        // move the drivetrain
+        // Move drivetrain (swing motion)
         if (lockedSide == DriveSide::LEFT) {
             drivetrain.rightMotors->move(-motorPower);
             drivetrain.leftMotors->brake();
@@ -96,111 +122,148 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
             drivetrain.rightMotors->brake();
         }
 
-        // delay to save resources
         pros::delay(10);
     }
 
-    // set the brake mode of the locked side of the drivetrain to its
-    // original value
-    if (lockedSide == DriveSide::LEFT) this->drivetrain.leftMotors->set_brake_mode_all(brakeMode);
-    else this->drivetrain.rightMotors->set_brake_mode_all(brakeMode);
-    // stop the drivetrain
+    // Restore original brake mode and stop
+    if (lockedSide == DriveSide::LEFT) {
+        drivetrain.leftMotors->set_brake_mode_all(originalBrakeMode);
+    } else {
+        drivetrain.rightMotors->set_brake_mode_all(originalBrakeMode);
+    }
+    
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
-    // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
-    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+    this->angularPID = originalAngularPID;
     this->endMotion();
 }
 
 void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeout, SwingToPointParams params,
-                                   std::optional<PIDGains> angularGains, bool async) {
+                              std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
-    pahlib::ControllerSettings originalAngular = this->angularSettings;
+    pahlib::PID originalAngularPID = this->angularPID;
 
-    // Apply custom PID settings if they are provided
     if (angularGains) {
         this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
     }
 
-    params.minSpeed = std::fabs(params.minSpeed);
+    params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
-    // were all motions cancelled?
+    
     if (!this->motionRunning) {
-        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+        this->angularPID = originalAngularPID;
         return;
     }
-    // if the function is async, run it in a new task
+    
     if (async) {
-        pros::Task task([&]() { swingTo(x, y, lockedSide, timeout, params, angularGains, false); });
+        pros::Task task([=, this]() { 
+            swingTo(x, y, lockedSide, timeout, params, angularGains, false); 
+        });
+        pros::delay(10);
         this->endMotion();
-        pros::delay(10); // delay to give the task time to start
         return;
     }
-    float targetTheta;
-    float deltaX, deltaY, deltaTheta;
-    float motorPower;
+
+    // Get and store original brake mode
+    pros::MotorBrake originalBrakeMode;
+    if (lockedSide == DriveSide::LEFT) {
+        originalBrakeMode = drivetrain.leftMotors->get_brake_mode_all().at(0);
+        drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    } else {
+        originalBrakeMode = drivetrain.rightMotors->get_brake_mode_all().at(0);
+        drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    }
+
+    // Initialize variables
+    const float startTheta = getPose().theta;
     float prevMotorPower = 0;
-    float startTheta = getPose().theta;
     bool settling = false;
-    std::optional<float> prevRawDeltaTheta = std::nullopt;
     std::optional<float> prevDeltaTheta = std::nullopt;
-    std::uint8_t compState = pros::competition::get_status();
+    
     distTraveled = 0;
     Timer timer(timeout);
     angularLargeExit.reset();
     angularSmallExit.reset();
     angularPID.reset();
-    // get original braking mode of that side of the drivetrain so we can set it back to it after this motion ends
-    pros::MotorBrake brakeMode = (lockedSide == DriveSide::LEFT)
-                                     ? this->drivetrain.leftMotors->get_brake_mode_all().at(0)
-                                     : this->drivetrain.rightMotors->get_brake_mode_all().at(0);
-    // set brake mode of the locked side to hold
-    if (lockedSide == DriveSide::LEFT) this->drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
-    else this->drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
 
-    // main loop
-    while (!timer.isDone() && !angularLargeExit.getExit() && !angularSmallExit.getExit() && this->motionRunning) {
-        // update variables
+    // Calculate initial target and settle threshold
+    Pose currentPose = getPose();
+    const float deltaX = x - currentPose.x;
+    const float deltaY = y - currentPose.y;
+    const float initialTargetTheta = std::fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)) + 360.0f, 360.0f);
+    const float initialError = std::abs(angleError(initialTargetTheta, currentPose.theta, false));
+    const float settleThreshold = std::max(5.0f, initialError * 0.15f);
+    float adaptiveMaxSpeed = params.maxSpeed;
+
+    while (!timer.isDone() && this->motionRunning) {
         Pose pose = getPose();
-        pose.theta = (params.forwards) ? std::fmod(pose.theta, 360) : std::fmod(pose.theta - 180, 360);
+        
+        // Adjust pose theta for backward movement
+        if (!params.forwards) {
+            pose.theta = std::fmod(pose.theta + 180.0f, 360.0f);
+        }
 
-        // update completion vars
-        distTraveled = std::fabs(angleError(pose.theta, startTheta, false));
+        distTraveled = std::abs(angleError(pose.theta, startTheta, false));
 
-        deltaX = x - pose.x;
-        deltaY = y - pose.y;
-        targetTheta = std::fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)), 360);
+        // Calculate target angle
+        const float dx = x - pose.x;
+        const float dy = y - pose.y;
+        const float targetTheta = std::fmod(radToDeg(M_PI_2 - atan2(dy, dx)) + 360.0f, 360.0f);
 
-        // check if settling
-        const float rawDeltaTheta = angleError(targetTheta, pose.theta, false);
-        if (prevRawDeltaTheta == std::nullopt) prevRawDeltaTheta = rawDeltaTheta;
-        if (sgn(rawDeltaTheta) != sgn(prevRawDeltaTheta)) settling = true;
-        prevRawDeltaTheta = rawDeltaTheta;
+        // Calculate error
+        float deltaTheta;
+        if (settling) {
+            deltaTheta = angleError(targetTheta, pose.theta, false);
+        } else {
+            deltaTheta = angleError(targetTheta, pose.theta, false, params.direction);
+        }
 
-        // calculate deltaTheta
-        if (settling) deltaTheta = angleError(targetTheta, pose.theta, false);
-        else deltaTheta = angleError(targetTheta, pose.theta, false, params.direction);
-        if (prevDeltaTheta == std::nullopt) prevDeltaTheta = deltaTheta;
+        // Detect settling condition
+        if (prevDeltaTheta != std::nullopt) {
+            if (!settling && (std::abs(deltaTheta) < settleThreshold || 
+                             sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
+                settling = true;
+                adaptiveMaxSpeed = std::max(25.0f, std::min(55.0f, std::abs(prevMotorPower)));
+            }
+        }
+        prevDeltaTheta = deltaTheta;
 
-        // motion chaining
-        if (params.minSpeed != 0 && std::fabs(deltaTheta) < params.earlyExitRange) break;
-        if (params.minSpeed != 0 && sgn(deltaTheta) != sgn(prevDeltaTheta)) break;
-
-        // calculate the speed
-        motorPower = angularPID.update(deltaTheta);
+        // Update exit conditions
         angularLargeExit.update(deltaTheta);
         angularSmallExit.update(deltaTheta);
 
-        // cap the speed
-        if (motorPower > params.maxSpeed) motorPower = params.maxSpeed;
-        else if (motorPower < -params.maxSpeed) motorPower = -params.maxSpeed;
-        if (std::fabs(deltaTheta) > 20) motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
-        if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
-        else if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
+        // Check for completion
+        if (settling && angularSmallExit.getExit() && std::abs(deltaTheta) < 1.5f) break;
+
+        // Early exit for motion chaining
+        if (params.minSpeed > 0 && settling && std::abs(deltaTheta) < params.earlyExitRange) break;
+
+        // Calculate PID output
+        float motorPower = angularPID.update(deltaTheta);
+
+        // Apply speed constraints
+        motorPower = std::clamp(motorPower, -adaptiveMaxSpeed, adaptiveMaxSpeed);
+
+        // Conservative slew rate for swing to point
+        if (std::abs(deltaTheta) > 10.0f && !settling) {
+            motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.85f);
+        } else if (settling) {
+            motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.65f);
+        }
+
+        // Apply minimum speed constraints AFTER slew rate limiting
+        if (params.minSpeed > 0 && !settling) {
+            if (motorPower > 0 && motorPower < params.minSpeed) {
+                motorPower = params.minSpeed;
+            } else if (motorPower < 0 && motorPower > -params.minSpeed) {
+                motorPower = -params.minSpeed;
+            }
+        }
+
         prevMotorPower = motorPower;
 
-        // move the drivetrain
+        // Move drivetrain (swing motion)
         if (lockedSide == DriveSide::LEFT) {
             drivetrain.rightMotors->move(-motorPower);
             drivetrain.leftMotors->brake();
@@ -212,15 +275,16 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
         pros::delay(10);
     }
 
-    // set the brake mode of the locked side of the drivetrain to its
-    // original value
-    if (lockedSide == DriveSide::LEFT) this->drivetrain.leftMotors->set_brake_mode_all(brakeMode);
-    else this->drivetrain.rightMotors->set_brake_mode_all(brakeMode);
-    // stop the drivetrain
+    // Restore original brake mode and stop
+    if (lockedSide == DriveSide::LEFT) {
+        drivetrain.leftMotors->set_brake_mode_all(originalBrakeMode);
+    } else {
+        drivetrain.rightMotors->set_brake_mode_all(originalBrakeMode);
+    }
+    
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
-    // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
-    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+    this->angularPID = originalAngularPID;
     this->endMotion();
 }

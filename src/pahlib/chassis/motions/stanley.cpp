@@ -1,14 +1,8 @@
+/**
+
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 
-/**
- * @brief Finds the closest point on the path to the robot.
- *
- * @param pose The current pose of the robot.
- * @param path The path to follow.
- * @param lastIndex The index of the last closest point.
- * @return A pair containing the index of the closest segment and the projection parameter 't'.
- */
 std::pair<int, float> findClosestPoint(const pahlib::Pose& pose, const std::vector<pahlib::Pose>& path, int lastIndex) {
     float minDistance = std::numeric_limits<float>::max();
     int closestSegment = lastIndex;
@@ -55,16 +49,6 @@ struct PursuitError {
     float futureHeadingError;
 };
 
-/**
- * @brief Calculates the cross-track error and heading error for the Stanley controller.
- *
- * @param pose The current robot pose.
- * @param path The path to follow.
- * @param i The index of the current path segment.
- * @param t The projection parameter along the segment.
- * @param lookahead The lookahead distance.
- * @return A PursuitError struct containing the calculated errors.
- */
 PursuitError calculateErrors(const pahlib::Pose& pose, const std::vector<pahlib::Pose>& path, int i, float t,
                              float lookahead) {
     const auto& p1 = path[i];
@@ -200,3 +184,4 @@ void pahlib::Chassis::stanley(const asset& path, float lookahead, float stanleyG
     distTraveled = -1;
     this->endMotion();
 }
+*/

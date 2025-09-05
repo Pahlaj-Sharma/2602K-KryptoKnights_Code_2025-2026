@@ -3,11 +3,12 @@
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 #include "pros/misc.hpp"
+#include "robot_config.hpp"
 
 void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams params, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
-    pahlib::ControllerSettings originalLateral = this->lateralSettings;
-    pahlib::ControllerSettings originalAngular = this->angularSettings;
+    pahlib::PID originalLateralPID = this->lateralPID;
+    pahlib::PID originalAngularPID = this->angularPID;
 
     // Apply custom PID settings if they are provided
     if (lateralGains) {
@@ -19,144 +20,184 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
 
     params.earlyExitRange = std::fabs(params.earlyExitRange);
     this->requestMotionStart();
-    // were all motions cancelled?
+    
+    // Check if all motions were cancelled
     if (!this->motionRunning) {
-        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
-        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+        this->lateralPID = originalLateralPID;
+        this->angularPID = originalAngularPID;
         return;
     }
-    // if the function is async, run it in a new task
+    
+    // If the function is async, run it in a new task
     if (async) {
-        pros::Task task([&]() { moveTo(x, y, timeout, params, lateralGains, angularGains, false); });
+        pros::Task task([=, this]() { 
+            moveTo(x, y, timeout, params, lateralGains, angularGains, false); 
+        });
+        pros::delay(10);
         this->endMotion();
-        pros::delay(10); // delay to give the task time to start
         return;
     }
 
-    // reset PIDs and exit conditions
+    // Reset PIDs and exit conditions
     lateralPID.reset();
     lateralLargeExit.reset();
     lateralSmallExit.reset();
     angularPID.reset();
 
-    // initialize vars used between iterations
+    // Initialize variables
     Pose lastPose = getPose();
     distTraveled = 0;
     Timer timer(timeout);
     bool close = false;
-    float prevLateralOut = 0; // previous lateral power
-    float prevAngularOut = 0; // previous angular power
-    const int compState = pros::competition::get_status();
-    std::optional<bool> prevSide = std::nullopt;
+    bool settling = false;
+    float prevLateralOut = 0;
+    float prevAngularOut = 0;
+    int crossed_target_counter = 0; // HYSTERESIS: counter for early exit
 
-    // calculate target pose in standard form
+    // Calculate target pose
     Pose target(x, y);
-    target.theta = lastPose.angle(target);
+    const float initialDistance = target.distance(getPose());
+    
+    // Set motion profile
+    this->setMotionProfile(initialDistance, params.maxSpeed, params.maxAcceleration);
 
-    this->setMotionProfile(target.distance(getPose()), params.maxSpeed,
-                           params.maxAcceleration);
-
-    // main loop
-    while (!timer.isDone() && ((!lateralSmallExit.getExit() && !lateralLargeExit.getExit()) || !close) &&
-           this->motionRunning) {
-        // update position
+    // Adaptive settling parameters
+    const float settleDistance = std::max(2.0f, initialDistance * 0.1f);
+    float adaptiveMaxSpeed = params.maxSpeed;
+    
+    // Main control loop
+    while (!timer.isDone() && this->motionRunning) {
+        // Update position
         const Pose pose = getPose(true, true);
 
-        // update distance traveled
-        distTraveled += pose.distance(lastPose);
+        // Update distance traveled
+        const float deltaDistance = pose.distance(lastPose);
+        distTraveled += deltaDistance;
         lastPose = pose;
 
-        // calculate distance to the target point
+        // Calculate distance to target
         const float distTarget = pose.distance(target);
+        
+        // Determine target heading (point towards target)
+        const float targetHeading = pose.angle(target);
 
-        // check if the robot is close enough to the target to start settling
-        if (distTarget < 4 && close == false) {
-            close = true;
-            params.maxSpeed = fmax(std::fabs(prevLateralOut), 60);
+        // Adaptive speed control based on distance
+        if (distTarget < settleDistance && !settling) {
+            settling = true;
+            adaptiveMaxSpeed = std::max(30.0f, std::min(60.0f, std::fabs(prevLateralOut)));
         }
 
-        // motion chaining
-        const bool side =
-            (pose.y - target.y) * -sin(target.theta) <= (pose.x - target.x) * cos(target.theta) + params.earlyExitRange;
-        if (prevSide == std::nullopt) prevSide = side;
-        const bool sameSide = side == prevSide;
-        // exit if close
-        if (!sameSide && params.minSpeed != 0) break;
-        prevSide = side;
+        // HYSTERESIS: Early exit condition for motion chaining
+        const bool has_crossed = (pose.y - target.y) * -sin(targetHeading) > 
+                                 (pose.x - target.x) * cos(targetHeading) + params.earlyExitRange;
+        
+        if (has_crossed) {
+            crossed_target_counter++;
+        } else {
+            crossed_target_counter = 0; // Reset counter if we haven't crossed
+        }
 
-        // calculate error
+        // HYSTERESIS_CYCLES defined in robot_config.hpp as 3
+        if (crossed_target_counter > HYSTERESIS_CYCLES && params.minSpeed > 0 && settling) break;
+
+        // Calculate errors
         const float adjustedRobotTheta = params.forwards ? pose.theta : pose.theta + M_PI;
-        const float angularError = angleError(adjustedRobotTheta, pose.angle(target));
-        float lateralError = pose.distance(target) * cos(angleError(pose.theta, pose.angle(target)));
+        const float angularError = angleError(adjustedRobotTheta, targetHeading);
+        const float cosError = cos(angleError(pose.theta, targetHeading));
+        const float lateralError = distTarget * cosError;
 
-        // update exit conditions
+        // Update exit conditions
         lateralSmallExit.update(lateralError);
         lateralLargeExit.update(lateralError);
 
-        // get output from PIDs
-        float feedforward_velocity = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
-        float lateralOut = lateralPID.update(lateralError, feedforward_velocity);
-        float feedforward_accel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0);
-        lateralOut += feedforward_accel * 0.1f;  // Adjust the 0.1f gain as needed!!
-        float angularOut = angularPID.update(radToDeg(angularError));
-        if (close) angularOut = 0;
-
-        // apply restrictions on angular speed
-        angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);
-        angularOut = slew(angularOut, prevAngularOut, angularSettings.slew);
-
-        // apply restrictions on lateral speed
-        lateralOut = std::clamp(lateralOut, -params.maxSpeed, params.maxSpeed);
-        // constrain lateral output by max accel
-        // but not for decelerating, since that would interfere with settling
-        if (!close) lateralOut = slew(lateralOut, prevLateralOut, lateralSettings.slew);
-
-        // prevent moving in the wrong direction
-        if (params.forwards && !close) lateralOut = std::fmax(lateralOut, 0);
-        else if (!params.forwards && !close) lateralOut = std::fmin(lateralOut, 0);
-
-        // constrain lateral output by the minimum speed
-        if (params.forwards && lateralOut < std::fabs(params.minSpeed) && lateralOut > 0) lateralOut = std::fabs(params.minSpeed);
-        if (!params.forwards && -lateralOut < std::fabs(params.minSpeed) && lateralOut < 0)
-            lateralOut = -std::fabs(params.minSpeed);
-
-        // update previous output
-        prevAngularOut = angularOut;
-        prevLateralOut = lateralOut;
-
-        // ratio the speeds to respect the max speed
-        float leftPower = lateralOut + angularOut;
-        float rightPower = lateralOut - angularOut;
-        const float ratio = std::max(std::fabs(leftPower), std::fabs(rightPower)) / params.maxSpeed;
-        if (ratio > 1) {
-            leftPower /= ratio;
-            rightPower /= ratio;
+        // Check if we should exit
+        if (settling && lateralSmallExit.getExit() && std::fabs(radToDeg(angularError)) < 3.0f) {
+            break;
         }
 
-        // move the drivetrain
+        // Get PID outputs with feedforward
+        float feedforwardVel = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
+        float feedforwardAccel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0f);
+        
+        // Scale feedforward based on alignment
+        feedforwardVel *= std::max(0.3f, std::fabs(cosError));
+        
+        float lateralOut = lateralPID.update(lateralError, feedforwardVel);
+        lateralOut += feedforwardAccel * 0.08f; // Reduced feedforward gain
+        
+        float angularOut = angularPID.update(radToDeg(angularError));
+
+        // Reduce angular output when settling to prevent oscillation
+        if (settling) {
+            angularOut *= std::max(0.3f, distTarget / settleDistance);
+        }
+
+        // Apply speed constraints
+        angularOut = std::clamp(angularOut, -adaptiveMaxSpeed, adaptiveMaxSpeed);
+        lateralOut = std::clamp(lateralOut, -adaptiveMaxSpeed, adaptiveMaxSpeed);
+
+        // Apply slew rate limiting
+        if (!settling) {
+            lateralOut = slew(lateralOut, prevLateralOut, lateralSettings.slew);
+            angularOut = slew(angularOut, prevAngularOut, angularSettings.slew);
+        }
+
+        // Direction constraints
+        if (params.forwards && !settling) {
+            lateralOut = std::max(lateralOut, -10.0f);
+        } else if (!params.forwards && !settling) {
+            lateralOut = std::min(lateralOut, 10.0f);
+        }
+
+        // Minimum speed constraints (apply after slew)
+        if (params.minSpeed > 0 && !settling) {
+            if (params.forwards && lateralOut > 0 && lateralOut < params.minSpeed) {
+                lateralOut = params.minSpeed;
+            } else if (!params.forwards && lateralOut < 0 && -lateralOut < params.minSpeed) {
+                lateralOut = -params.minSpeed;
+            }
+        }
+
+        // Store previous outputs
+        prevLateralOut = lateralOut;
+        prevAngularOut = angularOut;
+
+        // Calculate motor powers
+        float leftPower = lateralOut + angularOut;
+        float rightPower = lateralOut - angularOut;
+
+        // Normalize to respect max speed
+        const float maxPower = std::max(std::fabs(leftPower), std::fabs(rightPower));
+        if (maxPower > adaptiveMaxSpeed) {
+            const float ratio = adaptiveMaxSpeed / maxPower;
+            leftPower *= ratio;
+            rightPower *= ratio;
+        }
+
+        // Move drivetrain
         drivetrain.leftMotors->move(leftPower);
         drivetrain.rightMotors->move(rightPower);
 
-        // delay to save resources
         pros::delay(10);
     }
 
-    // stop the drivetrain
+    // Stop drivetrain
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
-    // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
-    this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
-    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+    
+    // Restore original PID settings
+    this->lateralPID = originalLateralPID;
+    this->angularPID = originalAngularPID;
     this->endMotion();
 }
 
 void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToPoseParams params, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
-    pahlib::ControllerSettings originalLateral = this->lateralSettings;
-    pahlib::ControllerSettings originalAngular = this->angularSettings;
+    pahlib::PID originalLateralPID = this->lateralPID;
+    pahlib::PID originalAngularPID = this->angularPID;
 
-    // Apply custom PID settings if they are provided
+    // Apply custom PID settings if provided
     if (lateralGains) {
         this->lateralPID = {lateralGains->kP, lateralGains->kI, lateralGains->kD, lateralGains->kF};
     }
@@ -164,23 +205,24 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
         this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
     }
 
-    // take the mutex
     this->requestMotionStart();
-    // were all motions cancelled?
+    
     if (!this->motionRunning) {
-        this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
-        this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+        this->lateralPID = originalLateralPID;
+        this->angularPID = originalAngularPID;
         return;
     }
-    // if the function is async, run it in a new task
+    
     if (async) {
-        pros::Task task([&]() { moveTo(x, y, theta, timeout, params, lateralGains, angularGains, false); });
+        pros::Task task([=, this]() { 
+            moveTo(x, y, theta, timeout, params, lateralGains, angularGains, false); 
+        });
+        pros::delay(10);
         this->endMotion();
-        pros::delay(10); // delay to give the task time to start
         return;
     }
 
-    // reset PIDs and exit conditions
+    // Reset controllers
     lateralPID.reset();
     lateralLargeExit.reset();
     lateralSmallExit.reset();
@@ -188,147 +230,178 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
     angularLargeExit.reset();
     angularSmallExit.reset();
 
-    // calculate target pose in standard form
+    // Calculate target pose
     Pose target(x, y, M_PI_2 - degToRad(theta));
-    if (!params.forwards) target.theta = std::fmod(target.theta + M_PI, M_TWOPI); // backwards movement
+    if (!params.forwards) target.theta = std::fmod(target.theta + M_PI, 2.0f * M_PI);
 
-    // use global horizontalDrift is horizontalDrift is 0
+    // Use global horizontal drift if not specified
     if (params.horizontalDrift == 0) params.horizontalDrift = drivetrain.horizontalDrift;
 
-    // initialize vars used between iterations
+    // Initialize variables
     Pose lastPose = getPose();
     distTraveled = 0;
     Timer timer(timeout);
-    bool close = false;
     bool lateralSettled = false;
-    bool prevSameSide = false;
-    float prevLateralOut = 0; // previous lateral power
-    float prevAngularOut = 0; // previous angular power
-    const int compState = pros::competition::get_status();
+    bool angularSettled = false;
+    bool settling = false;
+    float prevLateralOut = 0;
+    float prevAngularOut = 0;
+    int crossed_target_counter = 0; // HYSTERESIS: counter for early exit
 
-    this->setMotionProfile(target.distance(getPose()), params.maxSpeed,
-                           params.maxAcceleration);
+    const float initialDistance = target.distance(getPose());
+    this->setMotionProfile(initialDistance, params.maxSpeed, params.maxAcceleration);
 
-    // main loop
-    while (!timer.isDone() &&
-           ((!lateralSettled || (!angularLargeExit.getExit() && !angularSmallExit.getExit())) || !close) &&
-           this->motionRunning) {
-        // update position
+    // Adaptive parameters
+    const float settleDistance = std::max(params.settleDist, initialDistance * 0.08f);
+    float adaptiveMaxSpeed = params.maxSpeed;
+    float adaptiveLead = params.lead;
+
+    while (!timer.isDone() && this->motionRunning) {
         const Pose pose = getPose(true, true);
 
-        // update distance traveled
+        // Update distance traveled
         distTraveled += pose.distance(lastPose);
         lastPose = pose;
 
-        // calculate distance to the target point
         const float distTarget = pose.distance(target);
 
-        // check if the robot is close enough to the target to start settling
-        if (distTarget < 4 && close == false) {
-            close = true;
-            params.maxSpeed = fmax(std::fabs(prevLateralOut), 60);
+        // Transition to settling phase
+        if (distTarget < settleDistance && !settling) {
+            settling = true;
+            adaptiveMaxSpeed = std::max(40.0f, std::min(80.0f, std::fabs(prevLateralOut)));
+            adaptiveLead = std::min(params.lead, 0.3f); // Reduce lead for better accuracy
         }
 
-        // check if the lateral controller has settled
-        if (lateralLargeExit.getExit() && lateralSmallExit.getExit()) lateralSettled = true;
+        // Check settlement status
+        lateralSettled = lateralLargeExit.getExit() && lateralSmallExit.getExit();
+        angularSettled = angularLargeExit.getExit() && angularSmallExit.getExit();
 
-        // calculate the carrot point
-        Pose carrot = target - Pose(cos(target.theta), sin(target.theta)) * params.lead * distTarget;
-        if (close) carrot = target; // settling behavior
+        // Calculate carrot point with adaptive lead
+        const float effectiveLead = settling ? adaptiveLead * 0.5f : adaptiveLead;
+        Pose carrot = target - Pose(cos(target.theta), sin(target.theta)) * effectiveLead * distTarget;
+        if (settling) carrot = target;
 
-        // calculate if the robot is on the same side as the carrot point
-        const bool robotSide =
-            (pose.y - target.y) * -sin(target.theta) <= (pose.x - target.x) * cos(target.theta) + params.earlyExitRange;
-        const bool carrotSide = (carrot.y - target.y) * -sin(target.theta) <=
-                                (carrot.x - target.x) * cos(target.theta) + params.earlyExitRange;
-        const bool sameSide = robotSide == carrotSide;
-        // exit if close
-        if (!sameSide && prevSameSide && close && params.minSpeed != -1.0f) break;
-        prevSameSide = sameSide;
+        // HYSTERESIS: Motion chaining logic
+        const bool robot_has_crossed = (pose.y - target.y) * -sin(target.theta) > 
+                                       (pose.x - target.x) * cos(target.theta) + params.earlyExitRange;
+        const bool carrot_has_crossed = (carrot.y - target.y) * -sin(target.theta) > 
+                                        (carrot.x - target.x) * cos(target.theta) + params.earlyExitRange;
+        
+        if (robot_has_crossed != carrot_has_crossed) {
+            crossed_target_counter++;
+        } else {
+            crossed_target_counter = 0;
+        }
+        
+        const int HYSTERESIS_CYCLES = 3; // 30ms
+        if (crossed_target_counter > HYSTERESIS_CYCLES && params.minSpeed > 0 && settling && lateralSettled) break;
 
-        // calculate error
+        // Calculate errors
         const float adjustedRobotTheta = params.forwards ? pose.theta : pose.theta + M_PI;
-        const float angularError =
-            close ? angleError(adjustedRobotTheta, target.theta) : angleError(adjustedRobotTheta, pose.angle(carrot));
+        const float targetAngle = settling ? target.theta : pose.angle(carrot);
+        const float angularError = angleError(adjustedRobotTheta, targetAngle);
+        
         float lateralError = pose.distance(carrot);
-        // only use cos when settling
-        // otherwise just multiply by the sign of cos
-        // maxSlipSpeed takes care of lateralOut
-        if (close) lateralError *= cos(angleError(pose.theta, pose.angle(carrot)));
-        else lateralError *= sgn(cos(angleError(pose.theta, pose.angle(carrot))));
+        if (settling) {
+            lateralError *= cos(angleError(pose.theta, pose.angle(carrot)));
+        } else {
+            lateralError *= sgn(cos(angleError(pose.theta, pose.angle(carrot))));
+        }
 
-        // update exit conditions
+        // Update exit conditions
         lateralSmallExit.update(lateralError);
         lateralLargeExit.update(lateralError);
         angularSmallExit.update(radToDeg(angularError));
         angularLargeExit.update(radToDeg(angularError));
 
-        // get output from PIDs
-        float feedforward_velocity = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
-        float lateralOut = lateralPID.update(lateralError, feedforward_velocity);
-        float feedforward_accel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0);
-        lateralOut += feedforward_accel * 0.1f;  // Adjust the 0.1f gain as needed!!
+        // Check for completion
+        if (settling && lateralSettled && angularSettled) break;
+
+        // Calculate PID outputs with feedforward
+        float feedforwardVel = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
+        float feedforwardAccel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0f);
+        
+        float lateralOut = lateralPID.update(lateralError, feedforwardVel);
+        lateralOut += feedforwardAccel * 0.08f;
+        
         float angularOut = angularPID.update(radToDeg(angularError));
 
-        if (distTarget < params.settleDist) {
-            // The scaling factor will be between 0 and 1, getting smaller as distTarget approaches 0.
-            angularOut *= std::tanh(distTarget / params.settleDist);
+        // Adaptive angular scaling in settle phase
+        if (settling) {
+            const float angularScale = std::max(0.2f, std::min(1.0f, distTarget / settleDistance));
+            angularOut *= angularScale;
         }
 
-        // apply restrictions on angular speed
-        angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);
+        // Apply speed constraints
+        angularOut = std::clamp(angularOut, -adaptiveMaxSpeed, adaptiveMaxSpeed);
+        lateralOut = std::clamp(lateralOut, -adaptiveMaxSpeed, adaptiveMaxSpeed);
 
-        // apply restrictions on lateral speed
-        lateralOut = std::clamp(lateralOut, -params.maxSpeed, params.maxSpeed);
+        // Slew rate limiting
+        if (!settling) {
+            lateralOut = slew(lateralOut, prevLateralOut, lateralSettings.slew);
+            angularOut = slew(angularOut, prevAngularOut, angularSettings.slew * 0.8f); // Slightly reduce angular slew
+        }
 
-        // constrain lateral output by max accel
-        if (!close) lateralOut = slew(lateralOut, prevLateralOut, lateralSettings.slew);
+        // Slip prevention
+        if (!settling) {
+            const float radius = 1.0f / std::max(0.01f, std::fabs(getCurvature(pose, carrot)));
+            const float maxSlipSpeed = sqrt(params.horizontalDrift * radius * 9.8f);
+            lateralOut = std::clamp(lateralOut, -maxSlipSpeed, maxSlipSpeed);
+        }
 
-        // constrain lateral output by the max speed it can travel at without
-        // slipping
-        const float radius = 1 / std::fabs(getCurvature(pose, carrot));
-        const float maxSlipSpeed(sqrt(params.horizontalDrift * radius * 9.8));
-        lateralOut = std::clamp(lateralOut, -maxSlipSpeed, maxSlipSpeed);
-        // prioritize angular movement over lateral movement
-        const float overturn = std::fabs(angularOut) + std::fabs(lateralOut) - params.maxSpeed;
-        if (overturn > 0) lateralOut -= lateralOut > 0 ? overturn : -overturn;
+        // Prioritize angular over lateral when both are large
+        const float totalPower = std::fabs(angularOut) + std::fabs(lateralOut);
+        if (totalPower > adaptiveMaxSpeed) {
+            const float angularWeight = settling ? 0.7f : 0.5f; // Prioritize angular when settling
+            const float excessPower = totalPower - adaptiveMaxSpeed;
+            const float lateralReduction = excessPower * (1.0f - angularWeight);
+            lateralOut = lateralOut > 0 ? std::max(0.0f, lateralOut - lateralReduction) : 
+                                        std::min(0.0f, lateralOut + lateralReduction);
+        }
 
-        // prevent moving in the wrong direction
-        if (params.forwards && !close) lateralOut = std::fmax(lateralOut, 0);
-        else if (!params.forwards && !close) lateralOut = std::fmin(lateralOut, 0);
+        // Direction constraints
+        if (params.forwards && !settling) {
+            lateralOut = std::max(lateralOut, 0.0f);
+        } else if (!params.forwards && !settling) {
+            lateralOut = std::min(lateralOut, 0.0f);
+        }
 
-        // constrain lateral output by the minimum speed
-        if (params.forwards && lateralOut < std::fabs(params.minSpeed) && lateralOut > 0) lateralOut = std::fabs(params.minSpeed);
-        if (!params.forwards && -lateralOut < std::fabs(params.minSpeed) && lateralOut < 0)
-            lateralOut = -std::fabs(params.minSpeed);
+        // Minimum speed constraints (apply after slew)
+        if (params.minSpeed > 0 && !settling) {
+            if (params.forwards && lateralOut > 0 && lateralOut < params.minSpeed) {
+                lateralOut = params.minSpeed;
+            } else if (!params.forwards && lateralOut < 0 && -lateralOut < params.minSpeed) {
+                lateralOut = -params.minSpeed;
+            }
+        }
 
-        // update previous output
-        prevAngularOut = angularOut;
         prevLateralOut = lateralOut;
+        prevAngularOut = angularOut;
 
-        // ratio the speeds to respect the max speed
+        // Calculate and normalize motor powers
         float leftPower = lateralOut + angularOut;
         float rightPower = lateralOut - angularOut;
-        const float ratio = std::max(std::fabs(leftPower), std::fabs(rightPower)) / params.maxSpeed;
-        if (ratio > 1) {
-            leftPower /= ratio;
-            rightPower /= ratio;
+        const float maxPower = std::max(std::fabs(leftPower), std::fabs(rightPower));
+        
+        if (maxPower > adaptiveMaxSpeed) {
+            const float ratio = adaptiveMaxSpeed / maxPower;
+            leftPower *= ratio;
+            rightPower *= ratio;
         }
 
-        // move the drivetrain
+        // Move drivetrain
         drivetrain.leftMotors->move(leftPower);
         drivetrain.rightMotors->move(rightPower);
 
-        // delay to save resources
         pros::delay(10);
     }
 
-    // stop the drivetrain
+    // Stop and cleanup
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
-    // set distTraveled to -1 to indicate that the function has finished
     distTraveled = -1;
-    this->lateralPID = {originalLateral.kP, originalLateral.kI, originalLateral.kD, originalLateral.kF};
-    this->angularPID = {originalAngular.kP, originalAngular.kI, originalAngular.kD, originalAngular.kF};
+    
+    this->lateralPID = originalLateralPID;
+    this->angularPID = originalAngularPID;
     this->endMotion();
 }

@@ -35,6 +35,7 @@ inline constexpr float IMU_SCALER       = 1.010445f;   // Custom IMU scaling fac
 // Offsets from the robot's center to the tracking wheel in inches.
 //inline constexpr float HORIZONTAL_TRACKING_OFFSET = 0.0f;
 inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0f;
+inline constexpr int HYSTERESIS_CYCLES = 3; // Robot must be past target for 3 cycles (30ms), increase if undershooting
 
 // --- PID Controller Settings for pahlib Chassis ---
 // A struct to hold all the PID constants for clarity and easy management.
