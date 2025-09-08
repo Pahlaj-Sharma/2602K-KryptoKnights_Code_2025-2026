@@ -51,10 +51,11 @@ void pahlib::Chassis::resetOdometry(float threshold) {
     float calc_x = 0, calc_y = 0;
 
     // Determine if the robot is facing a standard axis direction
+    float theta_degrees = radToDeg(pose.theta);
     const bool standard_axis = (
-        (0.0f <= pose.theta && pose.theta < M_PI_4) ||
-        (M_7PI_4 < pose.theta && pose.theta <= M_TWOPI) ||
-        (M_3PI_4 < pose.theta && pose.theta < M_5PI_4)
+        (0.0f <= theta_degrees && theta_degrees < 45.0f) ||
+        (315.0f < theta_degrees && theta_degrees <= 360.0f) ||
+        (135.0f < theta_degrees && theta_degrees < 225.0f)
     );
 
     // Assign calculated x and y based on sensor axes and orientation

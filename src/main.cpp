@@ -2,23 +2,23 @@
  * Project: 2602K-RobotCode
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
- * Current Version: 3.40
+ * Current Version: 3.51
  * Last Updated: Aug 22, 2025
  *
- * Copyright (c) 2025, Pahlaj Sharma.
+ * @copyright (c) 2025, @Pahlaj-Sharma
  * All rights reserved.
  *
  **/
 
-#include "main.h" // PROS main header
+#include "main.h"
 #include "pahlib/api.hpp"
 #include "robot_config.hpp"
 #include "autons.hpp"
 #include "subsystems.hpp"
 #include <map>
 
-using namespace pahlib;
 using namespace pros;
+using namespace pahlib;
 
 // Initializes the primary controller connected to the robot
 Controller controller(E_CONTROLLER_MASTER);
@@ -155,13 +155,11 @@ void competition_initialize() {
 
 void autonomous() {
     vertical_encoder.reset_position();
-    //left_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE);
-    //right_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE);
+    left_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE); left_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
+    right_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE); right_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
 
-    if (autons.count(selectedAuton)) 
-        autons.at(selectedAuton).second();
-    else 
-        autons.at(0).second();
+    if (autons.count(selectedAuton)) autons.at(selectedAuton).second();
+    else autons.at(0).second();
     
 }
 
@@ -183,6 +181,7 @@ void opcontrol() {
 }
 
 // --- PID Tuning (Remove When Done) ---
+/*
 Rotation rot_kp(1), rot_ki(2), rot_kd(3);
 
 void tunePID() {
@@ -218,3 +217,4 @@ void tunePID() {
         delay(50);
     }
 }
+*/

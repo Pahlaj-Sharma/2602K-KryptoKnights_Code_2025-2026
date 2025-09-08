@@ -826,8 +826,8 @@ class Chassis {
         * @param forwards If true, the robot moves forward along the path; otherwise, it moves backward.
         * @param async If true, the function runs asynchronously (non-blocking); otherwise, it is a blocking call.
         */
-        void stanley(const asset& path, float lookahead, float stanleyGain, float headingFF, int timeout,
-                bool forwards = true, bool async = true);
+        //void stanley(const asset& path, float lookahead, float stanleyGain, float headingFF, int timeout,
+        //        bool forwards = true, bool async = true);
         /**
         * @brief Follows a predefined path using the Pahlaj controller.
         * This function uses a Pahlaj path-tracking algorithm to guide the robot along a series of waypoints.

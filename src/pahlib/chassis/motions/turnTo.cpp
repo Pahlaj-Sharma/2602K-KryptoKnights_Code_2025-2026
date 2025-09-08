@@ -1,7 +1,5 @@
-#include <cmath>
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
-#include "pros/misc.hpp"
 
 void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams params, 
                              std::optional<PIDGains> angularGains, bool async) {
@@ -9,9 +7,7 @@ void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams param
     pahlib::PID originalAngularPID = this->angularPID;
 
     // Apply custom PID settings if provided
-    if (angularGains) {
-        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
-    }
+    if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
@@ -22,9 +18,7 @@ void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams param
     }
     
     if (async) {
-        pros::Task task([=, this]() { 
-            turnTo(theta, timeout, params, angularGains, false); 
-        });
+        pros::Task task([=, this]() {turnTo(theta, timeout, params, angularGains, false);});
         pros::delay(10);
         this->endMotion();
         return;
@@ -56,11 +50,8 @@ void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams param
 
         // Calculate error with direction consideration
         float deltaTheta;
-        if (settling) {
-            deltaTheta = angleError(theta, pose.theta, false);
-        } else {
-            deltaTheta = angleError(theta, pose.theta, false, params.direction);
-        }
+        if (settling) deltaTheta = angleError(theta, pose.theta, false);
+        else deltaTheta = angleError(theta, pose.theta, false, params.direction);
 
         // Detect when we should start settling (crossed target or close enough)
         if (prevDeltaTheta != std::nullopt) {
@@ -89,20 +80,15 @@ void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams param
         motorPower = std::clamp(motorPower, -adaptiveMaxSpeed, adaptiveMaxSpeed);
 
         // Apply slew rate limiting more aggressively when not settling
-        if (std::abs(deltaTheta) > 15.0f && !settling) {
+        if (std::abs(deltaTheta) > 15.0f && !settling) 
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
-        } else if (settling) {
-            // Gentler slew when settling to prevent oscillation
+        else if (settling) // Gentler slew when settling
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.7f);
-        }
 
         // Apply minimum speed constraints AFTER slew rate limiting
         if (params.minSpeed > 0 && !settling) {
-            if (motorPower > 0 && motorPower < params.minSpeed) {
-                motorPower = params.minSpeed;
-            } else if (motorPower < 0 && motorPower > -params.minSpeed) {
-                motorPower = -params.minSpeed;
-            }
+            if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
+            else if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
         }
 
         prevMotorPower = motorPower;
@@ -127,9 +113,7 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
 
-    if (angularGains) {
-        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
-    }
+    if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
@@ -140,11 +124,9 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
     }
     
     if (async) {
-        pros::Task task([=, this]() { 
-            turnTo(x, y, timeout, params, angularGains, false); 
-        });
-        this->endMotion();
+        pros::Task task([=, this]() {turnTo(x, y, timeout, params, angularGains, false);});
         pros::delay(10);
+        this->endMotion();
         return;
     }
 
@@ -173,9 +155,7 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
         Pose pose = getPose();
         
         // Adjust pose theta based on forward/backward movement
-        if (!params.forwards) {
-            pose.theta = std::fmod(pose.theta + 180.0f, 360.0f);
-        }
+        if (!params.forwards) pose.theta = std::fmod(pose.theta + 180.0f, 360.0f);
 
         distTraveled = std::abs(angleError(pose.theta, startTheta, false));
 
@@ -186,16 +166,13 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
 
         // Calculate error
         float deltaTheta;
-        if (settling) {
-            deltaTheta = angleError(targetTheta, pose.theta, false);
-        } else {
-            deltaTheta = angleError(targetTheta, pose.theta, false, params.direction);
-        }
+        if (settling) deltaTheta = angleError(targetTheta, pose.theta, false);
+        else deltaTheta = angleError(targetTheta, pose.theta, false, params.direction);
 
         // Detect settling condition
         if (prevDeltaTheta != std::nullopt) {
             if (!settling && (std::abs(deltaTheta) < settleThreshold || 
-                             sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
+                              sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
                 settling = true;
                 adaptiveMaxSpeed = std::max(30.0f, std::min(65.0f, std::abs(prevMotorPower)));
             }
@@ -219,19 +196,16 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
         motorPower = std::clamp(motorPower, -adaptiveMaxSpeed, adaptiveMaxSpeed);
 
         // Apply slew rate limiting
-        if (std::abs(deltaTheta) > 15.0f && !settling) {
+        if (std::abs(deltaTheta) > 15.0f && !settling) 
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew);
-        } else if (settling) {
+        else if (settling)
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.75f);
-        }
+        
 
         // Apply minimum speed constraints AFTER slew rate limiting
         if (params.minSpeed > 0 && !settling) {
-            if (motorPower > 0 && motorPower < params.minSpeed) {
-                motorPower = params.minSpeed;
-            } else if (motorPower < 0 && motorPower > -params.minSpeed) {
-                motorPower = -params.minSpeed;
-            }
+            if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
+            else if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
         }
 
         prevMotorPower = motorPower;

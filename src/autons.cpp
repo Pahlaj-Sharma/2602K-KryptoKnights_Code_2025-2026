@@ -13,7 +13,6 @@ void auton1() {
     chassis.setPID(2.0, 0.0, 16.0, 0.0, 2.0, 0.0, 16.0, 0.0); // Custom PID values for this auton
     chassis.moveLinear(12);
     chassis.resetOdometry();
-    chassis.follow(path_txt, 2, 10000);
     chassis.moveTo(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
 }
 

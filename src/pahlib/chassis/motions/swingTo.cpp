@@ -1,16 +1,12 @@
-#include <cmath>
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
-#include "pros/misc.hpp"
 
 void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, SwingToHeadingParams params,
                               std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
 
-    if (angularGains) {
-        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
-    }
+    if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
@@ -21,9 +17,7 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
     }
     
     if (async) {
-        pros::Task task([=, this]() { 
-            swingTo(theta, lockedSide, timeout, params, angularGains, false); 
-        });
+        pros::Task task([=, this]() {swingTo(theta, lockedSide, timeout, params, angularGains, false);});
         pros::delay(10);
         this->endMotion();
         return;
@@ -62,11 +56,8 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
 
         // Calculate error
         float deltaTheta;
-        if (settling) {
-            deltaTheta = angleError(theta, pose.theta, false);
-        } else {
-            deltaTheta = angleError(theta, pose.theta, false, params.direction);
-        }
+        if (settling) deltaTheta = angleError(theta, pose.theta, false);
+        else deltaTheta = angleError(theta, pose.theta, false, params.direction);
 
         // Detect settling condition
         if (prevDeltaTheta != std::nullopt) {
@@ -96,19 +87,15 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
         motorPower = std::clamp(motorPower, -adaptiveMaxSpeed, adaptiveMaxSpeed);
 
         // More conservative slew rate for swing motions to prevent wheel slip
-        if (std::abs(deltaTheta) > 12.0f && !settling) {
+        if (std::abs(deltaTheta) > 12.0f && !settling)
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.8f);
-        } else if (settling) {
+        else if (settling)
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.6f);
-        }
 
         // Apply minimum speed constraints AFTER slew rate limiting
         if (params.minSpeed > 0 && !settling) {
-            if (motorPower > 0 && motorPower < params.minSpeed) {
-                motorPower = params.minSpeed;
-            } else if (motorPower < 0 && motorPower > -params.minSpeed) {
-                motorPower = -params.minSpeed;
-            }
+            if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
+            else if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
         }
 
         prevMotorPower = motorPower;
@@ -126,11 +113,8 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
     }
 
     // Restore original brake mode and stop
-    if (lockedSide == DriveSide::LEFT) {
-        drivetrain.leftMotors->set_brake_mode_all(originalBrakeMode);
-    } else {
-        drivetrain.rightMotors->set_brake_mode_all(originalBrakeMode);
-    }
+    if (lockedSide == DriveSide::LEFT) drivetrain.leftMotors->set_brake_mode_all(originalBrakeMode);
+    else drivetrain.rightMotors->set_brake_mode_all(originalBrakeMode);
     
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
@@ -144,9 +128,7 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
 
-    if (angularGains) {
-        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
-    }
+    if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
@@ -157,9 +139,7 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
     }
     
     if (async) {
-        pros::Task task([=, this]() { 
-            swingTo(x, y, lockedSide, timeout, params, angularGains, false); 
-        });
+        pros::Task task([=, this]() {swingTo(x, y, lockedSide, timeout, params, angularGains, false);});
         pros::delay(10);
         this->endMotion();
         return;
@@ -200,9 +180,7 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
         Pose pose = getPose();
         
         // Adjust pose theta for backward movement
-        if (!params.forwards) {
-            pose.theta = std::fmod(pose.theta + 180.0f, 360.0f);
-        }
+        if (!params.forwards) pose.theta = std::fmod(pose.theta + 180.0f, 360.0f);
 
         distTraveled = std::abs(angleError(pose.theta, startTheta, false));
 
@@ -213,11 +191,8 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
 
         // Calculate error
         float deltaTheta;
-        if (settling) {
-            deltaTheta = angleError(targetTheta, pose.theta, false);
-        } else {
-            deltaTheta = angleError(targetTheta, pose.theta, false, params.direction);
-        }
+        if (settling) deltaTheta = angleError(targetTheta, pose.theta, false);
+        else deltaTheta = angleError(targetTheta, pose.theta, false, params.direction);
 
         // Detect settling condition
         if (prevDeltaTheta != std::nullopt) {
@@ -246,19 +221,15 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
         motorPower = std::clamp(motorPower, -adaptiveMaxSpeed, adaptiveMaxSpeed);
 
         // Conservative slew rate for swing to point
-        if (std::abs(deltaTheta) > 10.0f && !settling) {
+        if (std::abs(deltaTheta) > 10.0f && !settling)
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.85f);
-        } else if (settling) {
+        else if (settling)
             motorPower = slew(motorPower, prevMotorPower, angularSettings.slew * 0.65f);
-        }
 
         // Apply minimum speed constraints AFTER slew rate limiting
         if (params.minSpeed > 0 && !settling) {
-            if (motorPower > 0 && motorPower < params.minSpeed) {
-                motorPower = params.minSpeed;
-            } else if (motorPower < 0 && motorPower > -params.minSpeed) {
-                motorPower = -params.minSpeed;
-            }
+            if (motorPower > 0 && motorPower < params.minSpeed) motorPower = params.minSpeed;
+            else if (motorPower < 0 && motorPower > -params.minSpeed) motorPower = -params.minSpeed;
         }
 
         prevMotorPower = motorPower;
@@ -276,11 +247,8 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
     }
 
     // Restore original brake mode and stop
-    if (lockedSide == DriveSide::LEFT) {
-        drivetrain.leftMotors->set_brake_mode_all(originalBrakeMode);
-    } else {
-        drivetrain.rightMotors->set_brake_mode_all(originalBrakeMode);
-    }
+    if (lockedSide == DriveSide::LEFT) drivetrain.leftMotors->set_brake_mode_all(originalBrakeMode);
+    else drivetrain.rightMotors->set_brake_mode_all(originalBrakeMode);
     
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);

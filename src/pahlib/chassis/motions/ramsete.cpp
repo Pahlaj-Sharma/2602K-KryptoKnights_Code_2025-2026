@@ -1,6 +1,5 @@
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
-#include "pros/rtos.hpp"
 
 using namespace pahlib;
 

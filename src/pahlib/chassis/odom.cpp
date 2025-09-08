@@ -1,4 +1,3 @@
-#include "pros/rtos.hpp"
 #include "pahlib/util.hpp"
 #include "pahlib/chassis/odom.hpp"
 #include "pahlib/chassis/chassis.hpp"
@@ -57,10 +56,10 @@ pahlib::Pose pahlib::estimatePose(float time, bool radians) {
     // calculate the future pose
     float avgHeading = curPose.theta + deltaLocalPose.theta / 2;
     Pose futurePose = curPose;
-    futurePose.x += deltaLocalPose.y * sin(avgHeading);
-    futurePose.y += deltaLocalPose.y * cos(avgHeading);
-    futurePose.x += deltaLocalPose.x * -cos(avgHeading);
-    futurePose.y += deltaLocalPose.x * sin(avgHeading);
+    futurePose.x += deltaLocalPose.y * std::sin(avgHeading);
+    futurePose.y += deltaLocalPose.y * std::cos(avgHeading);
+    futurePose.x += deltaLocalPose.x * -std::cos(avgHeading);
+    futurePose.y += deltaLocalPose.x * std::sin(avgHeading);
     if (!radians) futurePose.theta = radToDeg(futurePose.theta);
 
     return futurePose;
@@ -100,7 +99,7 @@ void pahlib::update() {
     // 3. Inertial Sensor
     // 4. Drivetrain
     float heading = odomPose.theta;
-    // calculate the heading using the horizontal tracking wheels
+    // calculate the heading ustd::sing the horizontal tracking wheels
     if (odomSensors.horizontal1 != nullptr && odomSensors.horizontal2 != nullptr)
         heading -= (deltaHorizontal1 - deltaHorizontal2) /
                    (odomSensors.horizontal1->getOffset() - odomSensors.horizontal2->getOffset());
@@ -150,18 +149,18 @@ void pahlib::update() {
         localX = deltaX;
         localY = deltaY;
     } else {
-        localX = 2 * sin(deltaHeading / 2) * (deltaX / deltaHeading + horizontalOffset);
-        localY = 2 * sin(deltaHeading / 2) * (deltaY / deltaHeading + verticalOffset);
+        localX = 2 * std::sin(deltaHeading / 2) * (deltaX / deltaHeading + horizontalOffset);
+        localY = 2 * std::sin(deltaHeading / 2) * (deltaY / deltaHeading + verticalOffset);
     }
 
     // save previous pose
     pahlib::Pose prevPose = odomPose;
 
     // calculate global x and y
-    odomPose.x += localY * sin(avgHeading);
-    odomPose.y += localY * cos(avgHeading);
-    odomPose.x += localX * -cos(avgHeading);
-    odomPose.y += localX * sin(avgHeading);
+    odomPose.x += localY * std::sin(avgHeading);
+    odomPose.y += localY * std::cos(avgHeading);
+    odomPose.x += localX * -std::cos(avgHeading);
+    odomPose.y += localX * std::sin(avgHeading);
     odomPose.theta = heading;
 
     // calculate speed

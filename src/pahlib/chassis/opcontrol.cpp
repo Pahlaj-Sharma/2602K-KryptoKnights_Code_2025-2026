@@ -26,12 +26,12 @@ void Chassis::arcade(int throttle, int turn, bool disableDriveCurve, float desat
     if (std::abs(throttle) + std::abs(turn) > 127) {
         int oldThrottle = throttle;
         int oldTurn = turn;
-        throttle *= (1 - desaturateBias * std::abs(oldTurn / 127.0));
-        turn *= (1 - (1 - desaturateBias) * std::abs(oldThrottle / 127.0));
+        throttle *= (1 - desaturateBias * std::abs(oldTurn / 127.0f));
+        turn *= (1 - (1 - desaturateBias) * std::abs(oldThrottle / 127.0f));
         // ensure the sum of the two values is equal to 127
         // this check is necessary because of integer division
         if (std::abs(turn) + std::abs(throttle) == 126) {
-            if (desaturateBias < 0.5) throttle += sgn(throttle);
+            if (desaturateBias < 0.5f) throttle += sgn(throttle);
             else turn += sgn(turn);
         }
     }
@@ -57,11 +57,11 @@ void Chassis::curvature(int throttle, int turn, bool disableDriveCurve) {
         turn = steerCurve->curve(turn);
     }
 
-    float leftPower = throttle + (std::fabs(throttle) * turn / 127.0);
-    float rightPower = throttle - (std::fabs(throttle) * turn / 127.0);
+    float leftPower = throttle + (std::fabs(throttle) * turn / 127.0f);
+    float rightPower = throttle - (std::fabs(throttle) * turn / 127.0f);
 
     // desaturate output
-    float max = std::max(std::fabs(leftPower), std::fabs(rightPower)) / 127;
+    float max = std::max(std::fabs(leftPower), std::fabs(rightPower)) / 127.0f;
     if (max > 1) {
         leftPower /= max;
         rightPower /= max;
