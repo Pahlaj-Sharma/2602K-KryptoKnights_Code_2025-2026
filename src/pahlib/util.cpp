@@ -10,11 +10,6 @@ float pahlib::slew(float target, float current, float maxChange) {
     return current + change;
 }
 
-constexpr float pahlib::sanitizeAngle(float angle, bool radians) {
-    if (radians) return std::fmod(std::fmod(angle, M_TWOPI) + M_TWOPI, M_TWOPI);
-    else return std::fmod(std::fmod(angle, 360) + 360, 360);
-}
-
 float pahlib::angleError(float target, float position, bool radians, AngularDirection direction) {
     // bound angles from 0 to 2pi or 0 to 360
     target = sanitizeAngle(target, radians);

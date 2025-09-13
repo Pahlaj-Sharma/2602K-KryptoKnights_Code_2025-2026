@@ -104,7 +104,7 @@ void initialize() {
             }
             if (count % 200 == 0) {
                 controller.print(0, 0, "Temp: %.1f",
-                    std::max(left_front.get_temperature(), right_front.get_temperature()));
+                    std::fmax(left_front.get_temperature(), right_front.get_temperature()));
             }
             count++;
             delay(25);

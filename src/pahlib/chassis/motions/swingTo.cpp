@@ -47,7 +47,7 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
 
     // Calculate initial error and settle threshold
     const float initialError = std::abs(angleError(theta, getPose().theta, false));
-    const float settleThreshold = std::max(4.0f, initialError * 0.18f); // Slightly higher for swing
+    const float settleThreshold = std::fmax(4.0f, initialError * 0.18f); // Slightly higher for swing
     float adaptiveMaxSpeed = params.maxSpeed;
 
     while (!timer.isDone() && this->motionRunning) {
@@ -65,7 +65,7 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
                              sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
                 settling = true;
                 // More conservative speed reduction for swing motions
-                adaptiveMaxSpeed = std::max(20.0f, std::min(50.0f, std::abs(prevMotorPower)));
+                adaptiveMaxSpeed = std::fmax(20.0f, std::min(50.0f, std::abs(prevMotorPower)));
             }
         }
         prevDeltaTheta = deltaTheta;
@@ -173,7 +173,7 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
     const float deltaY = y - currentPose.y;
     const float initialTargetTheta = std::fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)) + 360.0f, 360.0f);
     const float initialError = std::abs(angleError(initialTargetTheta, currentPose.theta, false));
-    const float settleThreshold = std::max(5.0f, initialError * 0.15f);
+    const float settleThreshold = std::fmax(5.0f, initialError * 0.15f);
     float adaptiveMaxSpeed = params.maxSpeed;
 
     while (!timer.isDone() && this->motionRunning) {
@@ -199,7 +199,7 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
             if (!settling && (std::abs(deltaTheta) < settleThreshold || 
                              sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
                 settling = true;
-                adaptiveMaxSpeed = std::max(25.0f, std::min(55.0f, std::abs(prevMotorPower)));
+                adaptiveMaxSpeed = std::fmax(25.0f, std::min(55.0f, std::abs(prevMotorPower)));
             }
         }
         prevDeltaTheta = deltaTheta;

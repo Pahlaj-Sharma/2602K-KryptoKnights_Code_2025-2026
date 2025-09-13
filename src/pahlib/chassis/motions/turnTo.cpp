@@ -38,7 +38,7 @@ void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams param
 
     // Calculate initial error to determine if we need to settle quickly
     const float initialError = std::abs(angleError(theta, getPose().theta, false));
-    const float settleThreshold = std::max(3.0f, initialError * 0.15f);
+    const float settleThreshold = std::fmax(3.0f, initialError * 0.15f);
     float adaptiveMaxSpeed = params.maxSpeed;
 
     // Main control loop
@@ -58,7 +58,7 @@ void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams param
             if (!settling && (std::abs(deltaTheta) < settleThreshold || 
                              sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
                 settling = true;
-                adaptiveMaxSpeed = std::max(25.0f, std::min(60.0f, std::abs(prevMotorPower)));
+                adaptiveMaxSpeed = std::fmax(25.0f, std::min(60.0f, std::abs(prevMotorPower)));
             }
         }
         prevDeltaTheta = deltaTheta;
@@ -148,7 +148,7 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
     const float deltaY = y - currentPose.y;
     const float initialTargetTheta = std::fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)) + 360.0f, 360.0f);
     const float initialError = std::abs(angleError(initialTargetTheta, currentPose.theta, false));
-    const float settleThreshold = std::max(4.0f, initialError * 0.12f);
+    const float settleThreshold = std::fmax(4.0f, initialError * 0.12f);
     float adaptiveMaxSpeed = params.maxSpeed;
 
     while (!timer.isDone() && this->motionRunning) {
@@ -174,7 +174,7 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
             if (!settling && (std::abs(deltaTheta) < settleThreshold || 
                               sgn(deltaTheta) != sgn(*prevDeltaTheta))) {
                 settling = true;
-                adaptiveMaxSpeed = std::max(30.0f, std::min(65.0f, std::abs(prevMotorPower)));
+                adaptiveMaxSpeed = std::fmax(30.0f, std::min(65.0f, std::abs(prevMotorPower)));
             }
         }
         prevDeltaTheta = deltaTheta;

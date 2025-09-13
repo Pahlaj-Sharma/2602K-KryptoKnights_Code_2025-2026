@@ -272,7 +272,7 @@ void pahlib::MotionProfile::setMotionProfile(float target_distance, float max_vo
 
 float pahlib::MotionProfile::getTargetVelocity(float elapsed_time) const {
     // Clamp time to valid range
-    elapsed_time = std::max(0.0f, std::min(elapsed_time, m_time_total));
+    elapsed_time = std::fmax(0.0f, std::min(elapsed_time, m_time_total));
     
     // Handle edge cases
     if (m_time_total < MIN_EPSILON) {
@@ -303,7 +303,7 @@ float pahlib::MotionProfile::getTargetVelocity(float elapsed_time) const {
 
 float pahlib::MotionProfile::getTargetAcceleration(float elapsed_time) const {
     // Clamp time to valid range
-    elapsed_time = std::max(0.0f, std::min(elapsed_time, m_time_total));
+    elapsed_time = std::fmax(0.0f, std::min(elapsed_time, m_time_total));
     
     if (m_time_total < MIN_EPSILON) {
         return 0.0f;
@@ -330,7 +330,7 @@ float pahlib::MotionProfile::getTargetAcceleration(float elapsed_time) const {
 
 float pahlib::MotionProfile::getTargetPosition(float elapsed_time) const {
     // Clamp time to valid range
-    elapsed_time = std::max(0.0f, std::min(elapsed_time, m_time_total));
+    elapsed_time = std::fmax(0.0f, std::min(elapsed_time, m_time_total));
     
     if (m_time_total < MIN_EPSILON) {
         return 0.0f;

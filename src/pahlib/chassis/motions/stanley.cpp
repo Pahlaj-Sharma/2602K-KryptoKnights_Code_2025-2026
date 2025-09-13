@@ -4,7 +4,7 @@
 #include "pahlib/util.hpp"
 
 std::pair<int, float> findClosestPoint(const pahlib::Pose& pose, const std::vector<pahlib::Pose>& path, int lastIndex) {
-    float minDistance = std::numeric_limits<float>::max();
+    float minDistance = std::numeric_limits<float>::fmax();
     int closestSegment = lastIndex;
     float closestT = 0;
 
@@ -26,7 +26,7 @@ std::pair<int, float> findClosestPoint(const pahlib::Pose& pose, const std::vect
 
         // Project the robot's position onto the path segment
         float t = (robotToStart_x * dx + robotToStart_y * dy) / segmentLengthSquared;
-        t = std::max(0.0f, std::min(1.0f, t)); // Clamp t to the range [0, 1]
+        t = std::fmax(0.0f, std::min(1.0f, t)); // Clamp t to the range [0, 1]
 
         const float projectedX = startPoint.x + t * dx;
         const float projectedY = startPoint.y + t * dy;
@@ -160,7 +160,7 @@ void pahlib::Chassis::stanley(const asset& path, float lookahead, float stanleyG
         float targetRightVel = throttle + turn * drivetrain.trackWidth / 2.0;
 
         // Scale wheel velocities to fit within the motor limits
-        const float ratio = std::max(std::fabs(targetLeftVel), std::fabs(targetRightVel)) / 127.0f;
+        const float ratio = std::fmax(std::fabs(targetLeftVel), std::fabs(targetRightVel)) / 127.0f;
         if (ratio > 1) {
             targetLeftVel /= ratio;
             targetRightVel /= ratio;

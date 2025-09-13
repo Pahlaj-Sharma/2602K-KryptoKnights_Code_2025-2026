@@ -187,7 +187,7 @@ void Chassis::ramsete(const asset& path, float beta, float zeta, int timeout, bo
         float rightVel = v_cmd + (w_cmd * trackWidth / 2.0f);
         
         // Voltage saturation
-        float maxVel = std::max(std::abs(leftVel), std::abs(rightVel));
+        float maxVel = std::fmax(std::abs(leftVel), std::abs(rightVel));
         if (maxVel > maxMotorVoltage) {
             leftVel = (leftVel / maxVel) * maxMotorVoltage;
             rightVel = (rightVel / maxVel) * maxMotorVoltage;

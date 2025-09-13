@@ -41,7 +41,7 @@ void pahlib::Chassis::resetOdometry(float threshold) {
     const SensorData& s2 = sensors[1];
 
     // Calculate orientation scaling factor
-    const float orientation_scale = std::max(std::abs(std::cos(pose.theta)),
+    const float orientation_scale = std::fmax(std::abs(std::cos(pose.theta)),
                                              std::abs(std::sin(pose.theta)));
 
     // Compute wall distances for both sensors

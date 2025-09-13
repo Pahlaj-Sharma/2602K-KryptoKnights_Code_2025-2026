@@ -75,7 +75,10 @@ constexpr float degToRad(float deg) { return deg * M_PI / 180; }
  * sanitizeAngle(7 * M_PI); // returns pi
  * @endcode
  */
-constexpr float sanitizeAngle(float angle, bool radians = true);
+constexpr float sanitizeAngle(float angle, bool radians = true) {
+        if (radians) return std::fmod(std::fmod(angle, M_TWOPI) + M_TWOPI, M_TWOPI);
+        else return std::fmod(std::fmod(angle, 360) + 360, 360);
+    }
 
 /**
  * @brief Calculate the error between 2 angles. Useful when calculating the error between 2 headings

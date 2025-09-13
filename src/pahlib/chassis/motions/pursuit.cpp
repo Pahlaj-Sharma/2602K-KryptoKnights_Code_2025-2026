@@ -63,7 +63,7 @@ pahlib::Pose lookaheadPoint(pahlib::Pose lastLookahead, pahlib::Pose pose, std::
     // and intersections that have an index greater than or equal to the index of the last
     // lookahead point
     /*
-    const int start = std::max(closest, int(lastLookahead.theta));
+    const int start = std::fmax(closest, int(lastLookahead.theta));
     for (int i = start; i < path.size() - 1; i++) {
         pahlib::Pose lastPathPose = path.at(i);
         pahlib::Pose currentPathPose = path.at(i + 1);
@@ -169,7 +169,7 @@ void pahlib::Chassis::follow(const asset& path, float lookahead, int timeout, bo
         float targetRightVel = targetVel * (2 - curvature * drivetrain.trackWidth) / 2;
 
         // ratio the speeds to respect the max speed
-        float ratio = std::max(std::fabs(targetLeftVel), std::fabs(targetRightVel)) / 127;
+        float ratio = std::fmax(std::fabs(targetLeftVel), std::fabs(targetRightVel)) / 127;
         if (ratio > 1) {
             targetLeftVel /= ratio;
             targetRightVel /= ratio;

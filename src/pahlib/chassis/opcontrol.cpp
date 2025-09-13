@@ -61,7 +61,7 @@ void Chassis::curvature(int throttle, int turn, bool disableDriveCurve) {
     float rightPower = throttle - (std::fabs(throttle) * turn / 127.0f);
 
     // desaturate output
-    float max = std::max(std::fabs(leftPower), std::fabs(rightPower)) / 127.0f;
+    float max = std::fmax(std::fabs(leftPower), std::fabs(rightPower)) / 127.0f;
     if (max > 1) {
         leftPower /= max;
         rightPower /= max;
