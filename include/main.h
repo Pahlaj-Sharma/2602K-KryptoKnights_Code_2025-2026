@@ -85,6 +85,7 @@ extern pros::MotorGroup right_motors;
 extern pros::MotorGroup left_motors;
 extern pros::Motor left_pto;
 extern pros::Motor right_pto;
+extern pros::Motor score_motor;
 extern pros::Distance rightDistance;
 extern pros::Distance leftDistance;
 extern pros::Distance frontDistance;

@@ -10,7 +10,7 @@ void toggle_pto(bool state) {
     pto.set_value(state);
 
     // Reconfigure the motor groups based on the new PTO state
-    if (ptoState) {
+    if (!ptoState) {
         // PTO is engaged for intake, add the PTO motors to the drivetrain groups
         left_pto.set_brake_mode(left_motors.get_brake_mode());
         right_pto.set_brake_mode(right_motors.get_brake_mode());
@@ -21,4 +21,16 @@ void toggle_pto(bool state) {
         left_pto.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
         right_pto.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
     }
+}
+
+void toggle_preroller(bool toggled, int vel) {
+    toggle_pto(toggled);
+    pros::delay(50);
+    right_pto.move(vel * toggled);
+    left_pto.move(vel * toggled);
+}
+
+void toggle_score(bool toggled, int vel) {
+    score_motor.move(vel * toggled);
+    toggle_preroller(toggled, vel);
 }

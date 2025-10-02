@@ -381,3 +381,33 @@ float pahlib::Chassis::getTargetAcceleration(float elapsed_time) {
 float pahlib::Chassis::getTargetPosition(float elapsed_time) {
     return m_motion_profile.getTargetPosition(elapsed_time);
 }
+
+// Interpolate PID gains based on current error using lnrInterpolation
+pahlib::Chassis::PIDGains pahlib::Chassis::interpolateGains(float currentValue, const std::vector<float>& setpoints, 
+                                           const std::vector<pahlib::Chassis::PIDGains>& gains) {
+    currentValue = std::fabs(currentValue);
+    
+    // If below minimum setpoint, use first gains
+    if (currentValue <= setpoints[0]) return gains[0];
+        
+    // If above maximum setpoint, use last gains
+    if (currentValue >= setpoints.back()) return gains.back();
+        
+    // Find the two setpoints to interpolate between
+    for (size_t i = 0; i < setpoints.size() - 1; i++) {
+        if (currentValue >= setpoints[i] && currentValue <= setpoints[i + 1]) {
+            pahlib::Chassis::PIDGains result;
+            result.kP = pahlib::lnrInterpolation(currentValue, setpoints[i], gains[i].kP, 
+                                                 setpoints[i + 1], gains[i + 1].kP);
+            result.kI = pahlib::lnrInterpolation(currentValue, setpoints[i], gains[i].kI, 
+                                                 setpoints[i + 1], gains[i + 1].kI);
+            result.kD = pahlib::lnrInterpolation(currentValue, setpoints[i], gains[i].kD, 
+                                                     setpoints[i + 1], gains[i + 1].kD);
+            result.kF = pahlib::lnrInterpolation(currentValue, setpoints[i], gains[i].kF, 
+                                                    setpoints[i + 1], gains[i + 1].kF);
+            return result;
+        }
+    }
+    
+    return gains.back();
+}

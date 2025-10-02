@@ -61,7 +61,7 @@ class PID {
          * @endcode
          */
         void reset();
-    public:
+
         // gains
         float kP;
         float kI;

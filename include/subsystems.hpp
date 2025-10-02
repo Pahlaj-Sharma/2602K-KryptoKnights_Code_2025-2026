@@ -15,4 +15,8 @@
  */
 void toggle_pto(bool state); // Function to toggle the PTO state
 
+void toggle_preroller(bool toggled, int volt = 85); // Function to toggle the preroller
+
+void toggle_score(bool toggled, int vel = 85); // Function to toggle the scoring motor
+
 #endif

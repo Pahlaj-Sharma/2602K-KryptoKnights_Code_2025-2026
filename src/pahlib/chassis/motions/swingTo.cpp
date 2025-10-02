@@ -1,12 +1,29 @@
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
+#include "robot_config.hpp"
 
 void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, SwingToHeadingParams params,
                               std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
 
-    if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
+    // Determine if we should use gain scheduling
+    bool useGainScheduling = !angularGains && params.gainScheduling;
+    AngularSchedule angularSchedule;
+
+    const float initialError = std::abs(angleError(theta, getPose().theta, false));
+
+    if (angularGains) {
+        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
+    } else if (useGainScheduling) {
+        // Calculate static PID gains for gain scheduling based on initial angular error
+        
+        PIDGains scheduledAngularGains = interpolateGains(
+            initialError, angularSchedule.angles, angularSchedule.gains);
+        
+        this->angularPID = {scheduledAngularGains.kP, scheduledAngularGains.kI, 
+                           scheduledAngularGains.kD, scheduledAngularGains.kF};
+    }
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
@@ -46,7 +63,6 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
     angularPID.reset();
 
     // Calculate initial error and settle threshold
-    const float initialError = std::abs(angleError(theta, getPose().theta, false));
     const float settleThreshold = std::fmax(4.0f, initialError * 0.18f); // Slightly higher for swing
     float adaptiveMaxSpeed = params.maxSpeed;
 
@@ -69,6 +85,15 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
             }
         }
         prevDeltaTheta = deltaTheta;
+
+        // Apply dynamic gain scheduling ONLY during settling phase
+        if (useGainScheduling && settling) {
+            PIDGains scheduledAngularGains = interpolateGains(
+                std::abs(deltaTheta), angularSchedule.angles, angularSchedule.gains);
+            
+            this->angularPID = {scheduledAngularGains.kP, scheduledAngularGains.kI, 
+                                 scheduledAngularGains.kD, scheduledAngularGains.kF};
+        }
 
         // Update exit conditions
         angularLargeExit.update(deltaTheta);
@@ -128,7 +153,27 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
 
-    if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
+    // Determine if we should use gain scheduling
+    bool useGainScheduling = !angularGains && params.gainScheduling;
+    AngularSchedule angularSchedule;
+
+    Pose currentPose = getPose();
+
+    if (angularGains) {
+        this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
+    } else if (useGainScheduling) {
+        // Calculate static PID gains for gain scheduling based on initial angular error
+        const float deltaX = x - currentPose.x;
+        const float deltaY = y - currentPose.y;
+        const float initialTargetTheta = std::fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)) + 360.0f, 360.0f);
+        const float initialError = std::abs(angleError(initialTargetTheta, currentPose.theta, false));
+        
+        PIDGains scheduledAngularGains = interpolateGains(
+            initialError, angularSchedule.angles, angularSchedule.gains);
+        
+        this->angularPID = {scheduledAngularGains.kP, scheduledAngularGains.kI, 
+                           scheduledAngularGains.kD, scheduledAngularGains.kF};
+    }
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
@@ -168,7 +213,6 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
     angularPID.reset();
 
     // Calculate initial target and settle threshold
-    Pose currentPose = getPose();
     const float deltaX = x - currentPose.x;
     const float deltaY = y - currentPose.y;
     const float initialTargetTheta = std::fmod(radToDeg(M_PI_2 - atan2(deltaY, deltaX)) + 360.0f, 360.0f);
@@ -203,6 +247,15 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
             }
         }
         prevDeltaTheta = deltaTheta;
+
+        // Apply dynamic gain scheduling ONLY during settling phase
+        if (useGainScheduling && settling) {
+            PIDGains scheduledAngularGains = interpolateGains(
+                std::abs(deltaTheta), angularSchedule.angles, angularSchedule.gains);
+            
+            this->angularPID = {scheduledAngularGains.kP, scheduledAngularGains.kI, 
+                                 scheduledAngularGains.kD, scheduledAngularGains.kF};
+        }
 
         // Update exit conditions
         angularLargeExit.update(deltaTheta);

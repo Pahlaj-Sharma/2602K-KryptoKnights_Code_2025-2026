@@ -242,6 +242,9 @@ struct TurnToPointParams {
         /** maximum acceleration 
          */
         float maxAcceleration = 60;
+        /** whether gain scheduling should be used. true by default
+         */
+        bool gainScheduling = true;
 };
 
 /**
@@ -266,6 +269,9 @@ struct TurnToHeadingParams {
         /** maximum acceleration 
          */
         float maxAcceleration = 60;
+        /** whether gain scheduling should be used. true by default
+         */
+        bool gainScheduling = true;
 };
 
 /**
@@ -305,6 +311,9 @@ struct SwingToPointParams {
         /** maximum acceleration 
          */
         float maxAcceleration = 60;
+        /** whether gain scheduling should be used. true by default
+         */
+        bool gainScheduling = true;
 };
 
 /**
@@ -329,6 +338,9 @@ struct SwingToHeadingParams {
         /** maximum acceleration 
          */
         float maxAcceleration = 60;
+        /** whether gain scheduling should be used. true by default
+         */
+        bool gainScheduling = true;
 };
 
 /**
@@ -360,6 +372,9 @@ struct MoveToPoseParams {
         /** maximum acceleration in in/s^2
          */
         float maxAcceleration = 60;
+        /** whether gain scheduling should be used. true by default
+         */
+        bool gainScheduling = true;
 };
 
 /**
@@ -384,6 +399,9 @@ struct MoveToPointParams {
         /** maximum acceleration 
          */
         float maxAcceleration = 60;
+        /** whether gain scheduling should be used. true by default
+         */
+        bool gainScheduling = true;
 };
 
 // default drive curve
@@ -1139,6 +1157,17 @@ class Chassis {
          * @brief Updates the target position for this motion
          */
         float getTargetPosition(float elapsed_time);
+        /**
+         * @brief Interpolates between PID gains based on the current value and a set of setpoints
+         * and corresponding gains
+         *
+         * @param currentValue the current value to interpolate for
+         * @param setpoints the setpoints to interpolate between
+         * @param gains the gains corresponding to each setpoint
+         * @return the interpolated PID gains
+         */
+        pahlib::Chassis::PIDGains interpolateGains(float currentValue, const std::vector<float>& setpoints, 
+                                           const std::vector<pahlib::Chassis::PIDGains>& gains);
         /**
          * @brief Indicates that this motion is queued and blocks current task until this motion reaches front of queue
          */

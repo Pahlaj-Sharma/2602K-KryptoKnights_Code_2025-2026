@@ -49,6 +49,17 @@ float pahlib::getCurvature(Pose pose, Pose other) {
     return side * ((2 * x) / (d * d));
 }
 
+float pahlib::lnrInterpolation(double x, double x1, double y1, double x2, double y2) {
+    
+    // Check for division by zero (if x1 equals x2)
+    if (x1 == x2) return y1;
+    // y = y1 + ( (x - x1) / (x2 - x1) ) * (y2 - y1)
+    float slope = (y2 - y1) / (x2 - x1);
+    float interpolated_y = y1 + slope * (x - x1);
+    
+    return interpolated_y;
+}
+
 std::vector<pahlib::Pose> getData(const asset& path) {
     std::vector<pahlib::Pose> robotPath;
 

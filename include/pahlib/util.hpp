@@ -167,6 +167,8 @@ float ema(float current, float previous, float smooth);
  */
 float getCurvature(Pose pose, Pose other);
 
+float lnrInterpolation(double x, double x1, double y1, double x2, double y2);
+
 class Timer {
     public:
         /**

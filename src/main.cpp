@@ -2,8 +2,8 @@
  * Project: 2602K-RobotCode
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
- * Current Version: 3.51
- * Last Updated: Aug 22, 2025
+ * Current Version: 4.01
+ * Last Updated: Oct 2, 2025
  *
  * @copyright (c) 2025, @Pahlaj-Sharma
  * All rights reserved.
@@ -33,6 +33,7 @@ Motor right_back(PORT_RIGHT_MOTOR_BACK, v5::MotorGears::blue);
 
 Motor left_pto(PORT_LEFT_PTO, v5::MotorGears::blue);
 Motor right_pto(PORT_RIGHT_PTO, v5::MotorGears::blue);
+Motor score_motor(PORT_SCORE_MOTOR, v5::MotorGears::blue);
 
 MotorGroup left_motors(left_front);
 MotorGroup right_motors(right_front);
@@ -46,6 +47,10 @@ Distance frontDistance(PORT_DISTANCE_FRONT);
 Distance backDistance(PORT_DISTANCE_BACK);
 adi::DigitalOut pto(PORT_PTO_DIGITAL_OUT);
 ScalarIMU inertial(PORT_IMU, IMU_SCALER);
+adi::DigitalOut matchLoad(PORT_MATCH_LOAD);
+adi::DigitalOut centerGoal(PORT_CENTER_GOAL);
+adi::DigitalOut doublePark(PORT_DOUBLE_PARK);
+adi::DigitalOut antenne(PORT_ANTENNE);
 
 // --- Drivetrain Setup ---
 Drivetrain drivetrain(
@@ -155,8 +160,9 @@ void competition_initialize() {
 
 void autonomous() {
     vertical_encoder.reset_position();
-    left_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE); left_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
-    right_motors.set_brake_mode_all(E_MOTOR_BRAKE_BRAKE); right_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
+    // turn to brake is not consistent
+    left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //left_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
+    right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //right_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
 
     if (autons.count(selectedAuton)) autons.at(selectedAuton).second();
     else autons.at(0).second();
@@ -166,17 +172,47 @@ void autonomous() {
 void opcontrol() {
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
+    
+    bool intakeToggle = false; 
 
     while (true) {
+        // Drive Control
         int leftY = controller.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
-
         chassis.arcade(leftY, rightX);
-
-        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_A)) 
-            toggle_pto(!ptoState);
         
-        delay(10);
+        // Intake (Preroller) Toggle
+        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_Y)){
+            intakeToggle = !intakeToggle;
+            toggle_preroller(intakeToggle);
+        }
+        
+        // Intake (Score) Control
+        if (controller.get_digital(E_CONTROLLER_DIGITAL_R1)) {
+            // R1 is pressed, run the score/intake function ON
+            toggle_score(true); 
+        } else {
+            // R1 is NOT pressed, stop the score/intake function OFF
+            // Only stop if the Y-button toggle isn't keeping it on
+            if (!intakeToggle) {
+                toggle_score(false);
+            }
+        }
+
+        // Intake Center Goal
+        if (controller.get_digital(E_CONTROLLER_DIGITAL_RIGHT)) {
+            centerGoal.set_value(false); // Bring it down
+            // Run intake/score while down. Use a constant speed (40) or pass a speed value
+            toggle_score(true, 40); 
+        } else {
+            centerGoal.set_value(true); // Bring it up
+            // Stop intake/score, but only if R1 and Y-toggle aren't active
+            if (!controller.get_digital(E_CONTROLLER_DIGITAL_R1) && !intakeToggle) {
+                toggle_score(false);
+            }
+        }
+
+        pros::delay(10);
     }
 }
 
