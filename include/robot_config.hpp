@@ -4,20 +4,20 @@
 // --- Motor Ports ---
 // Define motor port numbers for clarity and easy modification.
 
-inline constexpr int PORT_RIGHT_MOTOR_FRONT  = 1;
-inline constexpr int PORT_RIGHT_MOTOR_MIDDLE = -2;
-inline constexpr int PORT_RIGHT_MOTOR_BACK   = 3;
-inline constexpr int PORT_LEFT_MOTOR_FRONT   = -11;
-inline constexpr int PORT_LEFT_MOTOR_MIDDLE  = 12;
-inline constexpr int PORT_LEFT_MOTOR_BACK    = -13;
-inline constexpr int PORT_LEFT_PTO           = -19;
-inline constexpr int PORT_RIGHT_PTO          = 10;
-inline constexpr int PORT_SCORE_MOTOR        = 15;
+inline constexpr int PORT_RIGHT_FRONT  = 8;
+inline constexpr int PORT_RIGHT_MIDDLE = -17 ;
+inline constexpr int PORT_RIGHT_BACK   = 10;
+inline constexpr int PORT_LEFT_FRONT   = -2;
+inline constexpr int PORT_LEFT_MIDDLE  = 11;
+inline constexpr int PORT_LEFT_BACK    = -1;
+inline constexpr int PORT_LEFT_PTO     = 3;
+inline constexpr int PORT_RIGHT_PTO    = -7;
+inline constexpr int PORT_SCORE_MOTOR  = 15;
 
 // --- Sensor Ports ---
-inline constexpr int PORT_IMU                = 14;  // Inertial Measurement Unit
-//inline constexpr int PORT_HORIZONTAL_ENCODER = 3;  // Horizontal tracking wheel encoder (negative for reversed direction)
-inline constexpr int PORT_VERTICAL_ENCODER   = -21; // Vertical tracking wheel encoder
+inline constexpr int PORT_IMU                = 21; // Inertial Measurement Unit
+inline constexpr int PORT_HORIZONTAL_ENCODER = 16; // Horizontal tracking wheel encoder
+inline constexpr int PORT_VERTICAL_ENCODER   = 9;  // Vertical tracking wheel encoder
 inline constexpr int PORT_AUTON_SELECTOR_POT = 6;  // Potentiometer for autonomous routine selection
 inline constexpr int PORT_TEAM_SELECTOR_POT  = 7;  // Potentiometer for team selection
 inline constexpr int PORT_PTO_DIGITAL_OUT    = 8;  // Digital output for PTO control
@@ -27,19 +27,19 @@ inline constexpr int PORT_DISTANCE_FRONT     = 5;
 inline constexpr int PORT_DISTANCE_BACK      = 19;
 inline constexpr int PORT_MATCH_LOAD         = 20;
 inline constexpr int PORT_CENTER_GOAL        = 9;
-inline constexpr int PORT_DOUBLE_PARK       = 4;
-inline constexpr int PORT_ANTENNE           = 3;
+inline constexpr int PORT_DOUBLE_PARK        = 4;
+inline constexpr int PORT_ANTENNE            = 3;
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
 inline constexpr float TRACK_WIDTH      = 11.55f; // Distance between the centers of the left and right wheels in inches
 inline constexpr int   WHEEL_RPM        = 450;   // Max effective RPM of the drivetrain (e.g., 600 RPM blue motors with 1.33:1 external gearing)
-inline constexpr float HORIZONTAL_DRIFT = 8.0f;   // Horizontal drift in inches, used for odometry calculations
+inline constexpr float HORIZONTAL_DRIFT = 2.0f;   // Horizontal drift in inches, used for odometry calculations
 inline constexpr float IMU_SCALER       = 1.010445f;   // Custom IMU scaling factor, adjust based on IMU's calibration
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
-//inline constexpr float HORIZONTAL_TRACKING_OFFSET = 0.0f;
 inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0f;
+inline constexpr float HORIZONTAL_TRACKING_OFFSET   = -0.75f;
 inline constexpr int HYSTERESIS_CYCLES = 3; // Robot must be past target for 3 cycles (30ms), increase if undershooting
 
 // --- PID Controller Settings for pahlib Chassis ---
@@ -59,19 +59,19 @@ struct PIDConstants {
 
 // Default Lateral PID constants
 inline constexpr PIDConstants LATERAL_PID {
-    7.0f, 0.0f, 9.0f, 1.2f, 3, 1, 100, 2, 500, 20
+    7.0f, 0.0f, 9.0f, 0.0f, 3, 1, 100, 2, 500, 20
 };
 // Custom "Fast" Lateral PID constants
 inline constexpr PIDConstants F_LATERAL_PID {
-    7.0f, 0.0f, 9.0f, 1.2f, 3, 2, 100, 3, 500, 20
+    7.0f, 0.0f, 9.0f, 0.0f, 3, 2, 100, 3, 500, 20
 };
 // Custom "Precise" Lateral PID constants
 inline constexpr PIDConstants P_LATERAL_PID {
-    7.0f, 0.0f, 9.0f, 1.2f, 3, 1, 100, 2, 500, 20
+    7.0f, 0.0f, 9.0f, 0.0f, 3, 1, 100, 2, 500, 20
 };
 // Default Angular PID constants
 inline constexpr PIDConstants ANGULAR_PID {
-    1.0f, 0.0f, 16.0f, 0.0f, 3, 1, 100, 3, 500, 0
+    5.0f, 0.0f, 16.0f, 0.0f, 3, 1, 100, 3, 500, 0
 };
 // Custom "Fast" Angular PID constants
 inline constexpr PIDConstants F_ANGULAR_PID {

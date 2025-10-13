@@ -26,8 +26,8 @@ void toggle_pto(bool state) {
 void toggle_preroller(bool toggled, int vel) {
     toggle_pto(toggled);
     pros::delay(50);
-    right_pto.move(vel * toggled);
-    left_pto.move(vel * toggled);
+    right_pto.move(-vel * toggled);
+    left_pto.move(-vel * toggled);
 }
 
 void toggle_score(bool toggled, int vel) {

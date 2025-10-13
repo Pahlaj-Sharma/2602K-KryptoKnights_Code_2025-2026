@@ -1,6 +1,7 @@
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/util.hpp"
 #include "robot_config.hpp"
+#include "units/Angle.hpp"
 
 void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams params, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings for restoration
@@ -8,29 +9,32 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
     pahlib::PID originalAngularPID = this->angularPID;
 
     // Initialize gain scheduling if no custom gains provided
-    bool useGainScheduling = !lateralGains && !angularGains && params.gainScheduling;
+    const bool useGainScheduling = !lateralGains && !angularGains && params.gainScheduling;
     LateralSchedule lateralSchedule;
     AngularSchedule angularSchedule;
 
     Pose target(x, y);
     
-    const float initialDistance = target.distance(getPose());
+    const float initialDistance = target.distance(getPose(true));
     
     // Apply custom PID gains or calculate initial scheduled gains
     if (lateralGains || angularGains) {
         if (lateralGains) this->lateralPID = {lateralGains->kP, lateralGains->kI, lateralGains->kD, lateralGains->kF};
         if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
     } else if (useGainScheduling) {
-        Pose currentPose = getPose(true); 
-        const float targetHeading = currentPose.angle(target);
-        const float adjustedRobotTheta = params.forwards ? currentPose.theta : sanitizeAngle(currentPose.theta + M_PI, true);
+        Pose currentPose = getPose(true); // Compass radians
+        
+        // pose.angle() returns standard position, need to convert to compass
+        const Angle targetHeading = from_cRad(Number(currentPose.angle(target))); // Compass
+        const Angle robotHeading = Angle(currentPose.theta * rad); // Already compass, just wrap in Angle
+        const Angle adjustedRobotHeading = params.forwards ? robotHeading : robotHeading + Angle(180_cDeg);
 
-        const float initialAngularError = angleError(targetHeading, adjustedRobotTheta, true);
+        const Angle initialAngularError = units::constrainAngle180(targetHeading - adjustedRobotHeading);
 
         PIDGains scheduledLateralGains = interpolateGains(
             initialDistance, lateralSchedule.distances, lateralSchedule.gains);
         PIDGains scheduledAngularGains = interpolateGains(
-            radToDeg(std::fabs(initialAngularError)), angularSchedule.angles, angularSchedule.gains);
+            to_cDeg(units::abs(initialAngularError)), angularSchedule.angles, angularSchedule.gains);
         
         this->lateralPID = {scheduledLateralGains.kP, scheduledLateralGains.kI, 
                             scheduledLateralGains.kD, scheduledLateralGains.kF};
@@ -62,9 +66,11 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
     lateralLargeExit.reset();
     lateralSmallExit.reset();
     angularPID.reset();
+    angularLargeExit.reset();
+    angularSmallExit.reset();
 
     // Initialize control loop variables
-    Pose lastPose = getPose();
+    Pose lastPose = getPose(true);
     distTraveled = 0;
     Timer timer(timeout);
     bool settling = false;
@@ -79,19 +85,21 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
     float adaptiveMaxSpeed = params.maxSpeed;
     
     const float minAngularDistance = 2.0f;
-    const float angularErrorThreshold = 30.0f;
+    const Angle angularErrorThreshold = Angle(30_cDeg);
     float lastDistTarget = initialDistance;
     
     // Main control loop
     while (!timer.isDone() && this->motionRunning) {
-        const Pose pose = getPose(true);
+        const Pose pose = getPose(true); // Compass radians
 
         // Update distance traveled
         distTraveled += pose.distance(lastPose);
         lastPose = pose;
 
         const float distTarget = pose.distance(target);
-        const float targetHeading = pose.angle(target);
+        
+        // pose.angle() returns standard position, convert to compass
+        const Angle targetHeading = from_cRad(Number(pose.angle(target))); // Compass
 
         // Enter settling phase when close to target
         if (distTarget < settleDistance && !settling) {
@@ -100,7 +108,9 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
         }
 
         // Check if robot has crossed target point (for early exit)
-        const float distance_past_target = (pose.x - target.x) * std::cos(targetHeading) + (pose.y - target.y) * std::sin(targetHeading);
+        // Use standard position for dot product calculations
+        const float distance_past_target = (pose.x - target.x) * std::cos(pose.angle(target)) + 
+                                           (pose.y - target.y) * std::sin(pose.angle(target));
         const bool has_crossed = distance_past_target > params.earlyExitRange;
         
         if (has_crossed) crossed_target_counter++;
@@ -108,20 +118,24 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
 
         if (crossed_target_counter > 3 && params.minSpeed > 0 && settling) break;
 
-        // Calculate errors
-        const float adjustedRobotTheta = params.forwards ? pose.theta : sanitizeAngle(pose.theta + M_PI, true);
+        // Calculate errors in compass orientation
+        const Angle robotHeading = Angle(pose.theta * rad); // pose.theta is already compass radians
+        const Angle adjustedRobotHeading = params.forwards ? robotHeading : robotHeading + Angle(180_cDeg);
         
-        const float angularError = angleError(targetHeading, adjustedRobotTheta, true);
+        // Calculate angular error (shortest path, constrained to [-180, 180] degrees)
+        const Angle angularError = units::constrainAngle180(targetHeading - adjustedRobotHeading);
 
-        const float cosError = std::cos(angleError(targetHeading, pose.theta, true));
+        // Calculate lateral error projection using compass angles
+        const Angle headingError = units::constrainAngle180(targetHeading - robotHeading);
+        const float cosError = units::cos(headingError);
         const float lateralError = distTarget * cosError;
 
         // Apply dynamic gain scheduling during settling
         if (useGainScheduling && settling) {
             PIDGains scheduledLateralGains = interpolateGains(
-                lateralError, lateralSchedule.distances, lateralSchedule.gains);
+                std::fabs(lateralError), lateralSchedule.distances, lateralSchedule.gains);
             PIDGains scheduledAngularGains = interpolateGains(
-                radToDeg(std::fabs(angularError)), angularSchedule.angles, angularSchedule.gains);
+                to_cDeg(units::abs(angularError)), angularSchedule.angles, angularSchedule.gains);
             
             this->lateralPID = {scheduledLateralGains.kP, scheduledLateralGains.kI, 
                                 scheduledLateralGains.kD, scheduledLateralGains.kF};
@@ -135,7 +149,7 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
         lateralLargeExit.update(lateralError);
 
         // Exit if settled
-        if (settling && lateralSmallExit.getExit() && std::fabs(radToDeg(angularError)) < 3.0f) break;
+        if (settling && lateralSmallExit.getExit() && units::abs(angularError) < Angle(3_cDeg)) break;
 
         // Calculate feedforward components
         float feedforwardVel = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
@@ -149,20 +163,21 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
             feedforwardVel *= std::max(0.5f, cosError);
         }
         
-        // Calculate PID outputs
+        // Calculate PID outputs (PID uses compass degrees)
         float lateralOut = lateralPID.update(lateralError, feedforwardVel);
         lateralOut += feedforwardAccel * 0.08f;
         
-        float angularOut = angularPID.update(radToDeg(angularError));
+        // CRITICAL: Negate angular output because compass is CW-positive but motors expect CCW-positive (standard)
+        float angularOut = angularPID.update(to_cDeg(angularError));
 
         // Apply settling or slew rate limiting
         if (settling) {
             // Reduce angular correction when close to target, aligned, and not moving away
-            float distanceScale = std::clamp((distTarget - 1.0f) / minAngularDistance, 0.0f, 1.0f);
-            float errorScale = std::fabs(radToDeg(angularError)) < angularErrorThreshold ? 1.0f : 0.0f;
-            bool movingAway = distTarget > (lastDistTarget + 0.1f) && distTarget > 1.5f;
-            float awayScale = movingAway ? 0.0f : 1.0f;
-            float angularScale = distanceScale * errorScale * awayScale;
+            const float distanceScale = std::clamp((distTarget - 1.0f) / minAngularDistance, 0.0f, 1.0f);
+            const float errorScale = units::abs(angularError) < angularErrorThreshold ? 1.0f : 0.0f;
+            const bool movingAway = distTarget > (lastDistTarget + 0.1f) && distTarget > 1.5f;
+            const float awayScale = movingAway ? 0.0f : 1.0f;
+            const float angularScale = distanceScale * errorScale * awayScale;
             angularOut *= angularScale;
         } else {
             lateralOut = slew(lateralOut, prevLateralOut, lateralSettings.slew);
@@ -222,30 +237,35 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
     pahlib::PID originalAngularPID = this->angularPID;
 
     // Initialize gain scheduling if no custom gains provided
-    bool useGainScheduling = !lateralGains && !angularGains && params.gainScheduling;
+    const bool useGainScheduling = !lateralGains && !angularGains && params.gainScheduling;
     LateralSchedule lateralSchedule;
     AngularSchedule angularSchedule;
 
-    Pose target(x, y, M_PI_2 - degToRad(theta));
+    // theta parameter is in compass degrees (0° = North)
+    // Convert directly to compass radians (no conversion needed, just change units)
+    Pose target(x, y, degToRad(theta)); // Compass radians (internal storage)
 
-    const float initialDistance = target.distance(getPose());
+    const float initialDistance = target.distance(getPose(true));
     
     // Apply custom PID gains or calculate initial scheduled gains
     if (lateralGains || angularGains) {
         if (lateralGains) this->lateralPID = {lateralGains->kP, lateralGains->kI, lateralGains->kD, lateralGains->kF};
         if (angularGains) this->angularPID = {angularGains->kP, angularGains->kI, angularGains->kD, angularGains->kF};
     } else if (useGainScheduling) {
-        const float initialTargetTheta = params.forwards ? target.theta : sanitizeAngle(target.theta + M_PI, true);
+        // Convert compass to standard for calculations
+        Angle targetHeading = Angle(target.theta * rad); // Target is in compass radians
+        const Angle initialTargetHeading = params.forwards ? targetHeading : targetHeading + Angle(180_cDeg);
         
-        Pose currentPose = getPose(true); 
-        const float adjustedRobotTheta = params.forwards ? currentPose.theta : sanitizeAngle(currentPose.theta + M_PI, true);
+        Pose currentPose = getPose(true); // Compass radians
+        const Angle robotHeading = Angle(currentPose.theta * rad); // Already compass
+        const Angle adjustedRobotHeading = params.forwards ? robotHeading : robotHeading + Angle(180_cDeg);
 
-        const float initialAngularError = angleError(initialTargetTheta, adjustedRobotTheta, true);
+        const Angle initialAngularError = units::constrainAngle180(initialTargetHeading - adjustedRobotHeading);
         
         PIDGains scheduledLateralGains = interpolateGains(
             initialDistance, lateralSchedule.distances, lateralSchedule.gains);
         PIDGains scheduledAngularGains = interpolateGains(
-            radToDeg(std::fabs(initialAngularError)), angularSchedule.angles, angularSchedule.gains);
+            to_cDeg(units::abs(initialAngularError)), angularSchedule.angles, angularSchedule.gains);
         
         this->lateralPID = {scheduledLateralGains.kP, scheduledLateralGains.kI, 
                            scheduledLateralGains.kD, scheduledLateralGains.kF};
@@ -280,13 +300,13 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
     angularLargeExit.reset();
     angularSmallExit.reset();
 
-    // Adjust target heading if backing up (do this only ONCE)
+    // Adjust target heading if backing up (target.theta is already compass radians)
     if (!params.forwards) target.theta = sanitizeAngle(target.theta + M_PI, true);
 
     if (params.horizontalDrift == 0) params.horizontalDrift = drivetrain.horizontalDrift;
 
     // Initialize control loop variables
-    Pose lastPose = getPose();
+    Pose lastPose = getPose(true);
     distTraveled = 0;
     Timer timer(timeout);
     bool lateralSettled = false;
@@ -304,7 +324,7 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
 
     // Main control loop
     while (!timer.isDone() && this->motionRunning) {
-        const Pose pose = getPose(true); 
+        const Pose pose = getPose(true); // Compass radians
 
         // Update distance traveled
         distTraveled += pose.distance(lastPose);
@@ -325,14 +345,21 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
 
         // Calculate carrot point (lookahead point along target heading)
         const float effectiveLead = settling ? adaptiveLead * 0.5f : adaptiveLead;
-        Pose carrot = target - Pose(std::cos(target.theta), std::sin(target.theta)) * effectiveLead * distTarget;
+        // target.theta is compass radians, convert to standard position for trig functions
+        // Standard = 90° - Compass
+        const float targetThetaStandard = M_PI_2 - target.theta;
+        Pose carrot = target - Pose(std::cos(targetThetaStandard), std::sin(targetThetaStandard)) * effectiveLead * distTarget;
         if (settling) carrot = target;
 
         // Check if robot and carrot have crossed target (for early exit)
-        const float robot_dist_past = (pose.x - target.x) * std::cos(target.theta) + (pose.y - target.y) * std::sin(target.theta);
+        // Use standard position angles for dot product
+        const float robot_dist_past = (pose.x - target.x) * std::cos(targetThetaStandard) + 
+                                     (pose.y - target.y) * std::sin(targetThetaStandard);
         const bool robot_has_crossed = robot_dist_past > params.earlyExitRange;
 
-        const float carrot_dist_past = (carrot.x - target.x) * std::cos(target.theta) + (carrot.y - target.y) * std::sin(target.theta);
+        // For carrot, use the same target heading direction for consistency
+        const float carrot_dist_past = (carrot.x - target.x) * std::cos(targetThetaStandard) + 
+                                      (carrot.y - target.y) * std::sin(targetThetaStandard);
         const bool carrot_has_crossed = carrot_dist_past > params.earlyExitRange;
         
         if (robot_has_crossed != carrot_has_crossed) crossed_target_counter++;
@@ -340,22 +367,32 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
 
         if (crossed_target_counter > 3 && params.minSpeed > 0 && settling && lateralSettled) break;
 
-        // Calculate errors
-        const float adjustedRobotTheta = params.forwards ? pose.theta : sanitizeAngle(pose.theta + M_PI, true);
-        const float targetAngle = settling ? target.theta : pose.angle(carrot);
+        // Calculate errors in compass orientation
+        const Angle robotHeading = Angle(pose.theta * rad); // pose.theta is already compass radians
+        const Angle adjustedRobotHeading = params.forwards ? robotHeading : robotHeading + Angle(180_cDeg);
+        const Angle carrotHeading = from_cRad(Number(pose.angle(carrot))); // pose.angle() returns standard, convert to compass
+        const Angle finalTargetHeading = Angle(target.theta * rad); // target.theta is already compass radians
+        const Angle targetAngle = settling ? finalTargetHeading : carrotHeading;
 
-        const float angularError = angleError(targetAngle, adjustedRobotTheta, true);
+        // Calculate angular error (shortest path)
+        const Angle angularError = units::constrainAngle180(targetAngle - adjustedRobotHeading);
         
+        // Calculate lateral error
         float lateralError = pose.distance(carrot);
-        if (settling) lateralError *= std::cos(angleError(pose.angle(carrot), pose.theta, true));
-        else lateralError *= sgn(std::cos(angleError(pose.angle(carrot), pose.theta, true)));
+        const Angle carrotHeadingError = units::constrainAngle180(carrotHeading - robotHeading);
+        
+        if (settling) {
+            lateralError *= units::cos(carrotHeadingError);
+        } else {
+            lateralError *= units::sgn(units::cos(carrotHeadingError));
+        }
 
         // Apply dynamic gain scheduling during settling
         if (useGainScheduling && settling) {
             PIDGains scheduledLateralGains = interpolateGains(
-                lateralError, lateralSchedule.distances, lateralSchedule.gains);
+                std::fabs(lateralError), lateralSchedule.distances, lateralSchedule.gains);
             PIDGains scheduledAngularGains = interpolateGains(
-                radToDeg(std::fabs(angularError)), angularSchedule.angles, angularSchedule.gains);
+                to_cDeg(units::abs(angularError)), angularSchedule.angles, angularSchedule.gains);
             
             this->lateralPID = {scheduledLateralGains.kP, scheduledLateralGains.kI, 
                                 scheduledLateralGains.kD, scheduledLateralGains.kF};
@@ -364,24 +401,25 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
                                  scheduledAngularGains.kD, scheduledAngularGains.kF};
         }
 
-        // Update exit conditions
+        // Update exit conditions (use compass degrees)
         lateralSmallExit.update(lateralError);
         lateralLargeExit.update(lateralError);
-        angularSmallExit.update(radToDeg(angularError));
-        angularLargeExit.update(radToDeg(angularError));
+        angularSmallExit.update(to_cDeg(angularError));
+        angularLargeExit.update(to_cDeg(angularError));
 
         // Exit if both settled
         if (settling && lateralSettled && angularSettled) break;
 
         // Calculate feedforward components
-        float feedforwardVel = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
-        float feedforwardAccel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0f);
+        const float feedforwardVel = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
+        const float feedforwardAccel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0f);
         
-        // Calculate PID outputs
+        // Calculate PID outputs (PID uses compass degrees)
         float lateralOut = lateralPID.update(lateralError, feedforwardVel);
         lateralOut += feedforwardAccel * 0.08f;
         
-        float angularOut = angularPID.update(radToDeg(angularError));
+        // CRITICAL: Negate angular output because compass is CW-positive but motors expect CCW-positive (standard)
+        float angularOut = angularPID.update(to_cDeg(angularError));
 
         // Apply settling or slew rate limiting with slip prevention
         if (settling) {

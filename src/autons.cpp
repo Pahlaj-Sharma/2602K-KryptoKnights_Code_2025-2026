@@ -9,11 +9,7 @@ ASSET(path_txt);
 
 void auton1() {
     chassis.setPose(0, 0, 0);
-    chassis.setPID(Chassis::PIDPreset::normal);
-    chassis.setPID(2.0, 0.0, 16.0, 0.0, 2.0, 0.0, 16.0, 0.0); // Custom PID values for this auton
-    chassis.moveLinear(12);
-    chassis.resetOdometry();
-    chassis.moveTo(14, 14, 90, 3000, {}, {{2, 0, 16}}, {{2, 0, 16}});
+    chassis.moveTo(10, 10, 45, 1000, {.gainScheduling = false});
 }
 
 void auton2() {

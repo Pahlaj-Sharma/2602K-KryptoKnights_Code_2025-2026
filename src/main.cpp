@@ -24,22 +24,23 @@ using namespace pahlib;
 Controller controller(E_CONTROLLER_MASTER);
 
 // --- Motor Definitions ---
-Motor left_front(PORT_LEFT_MOTOR_FRONT, v5::MotorGears::blue);
-Motor left_middle(PORT_LEFT_MOTOR_MIDDLE, v5::MotorGears::green);
-Motor left_back(PORT_LEFT_MOTOR_BACK, v5::MotorGears::blue);
-Motor right_front(PORT_RIGHT_MOTOR_FRONT, v5::MotorGears::blue);
-Motor right_middle(PORT_RIGHT_MOTOR_MIDDLE, v5::MotorGears::green);
-Motor right_back(PORT_RIGHT_MOTOR_BACK, v5::MotorGears::blue);
+Motor left_front(PORT_LEFT_FRONT, MotorGears::blue);
+Motor left_middle(PORT_LEFT_MIDDLE, MotorGears::green);
+Motor left_back(PORT_LEFT_BACK, MotorGears::blue);
+Motor right_front(PORT_RIGHT_FRONT, MotorGears::blue);
+Motor right_middle(PORT_RIGHT_MIDDLE, MotorGears::green);
+Motor right_back(PORT_RIGHT_BACK, MotorGears::blue);
 
-Motor left_pto(PORT_LEFT_PTO, v5::MotorGears::blue);
-Motor right_pto(PORT_RIGHT_PTO, v5::MotorGears::blue);
-Motor score_motor(PORT_SCORE_MOTOR, v5::MotorGears::blue);
+Motor left_pto(PORT_LEFT_PTO, MotorGears::blue);
+Motor right_pto(PORT_RIGHT_PTO, MotorGears::blue);
+Motor score_motor(PORT_SCORE_MOTOR, MotorGears::blue);
 
-MotorGroup left_motors(left_front);
-MotorGroup right_motors(right_front);
+MotorGroup left_motors({PORT_LEFT_FRONT, PORT_LEFT_MIDDLE, PORT_LEFT_BACK, PORT_LEFT_PTO}, MotorGears::blue);
+MotorGroup right_motors({PORT_RIGHT_FRONT, PORT_RIGHT_MIDDLE, PORT_RIGHT_BACK, PORT_RIGHT_PTO}, MotorGears::blue);
 
 // --- Sensors ---
 Rotation vertical_encoder(PORT_VERTICAL_ENCODER);
+Rotation horizontal_encoder(PORT_HORIZONTAL_ENCODER);
 adi::Potentiometer autonSelector(PORT_AUTON_SELECTOR_POT);
 Distance rightDistance(PORT_DISTANCE_RIGHT);
 Distance leftDistance(PORT_DISTANCE_LEFT);
@@ -62,9 +63,13 @@ TrackingWheel vertical_tracking_wheel(
     &vertical_encoder, Omniwheel::NEW_2, VERTICAL_TRACKING_OFFSET
 );
 
+TrackingWheel horizontal_tracking_wheel(
+    &horizontal_encoder, Omniwheel::NEW_2, HORIZONTAL_TRACKING_OFFSET
+);
+
 OdomSensors sensors(
     &vertical_tracking_wheel, nullptr,
-    nullptr, nullptr,
+    &horizontal_tracking_wheel, nullptr,
     &inertial
 );
 
@@ -88,8 +93,8 @@ bool ptoState = false;
 
 // --- Initialization ---
 void initialize() {
-    left_motors.append(left_middle); left_motors.append(left_back); left_motors.append(left_pto);
-    right_motors.append(right_middle); right_motors.append(right_back); right_motors.append(right_pto);
+    left_motors.set_gearing(MotorGears::green, 1);
+    right_motors.set_gearing(MotorGears::green, 1);
 
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
@@ -160,7 +165,7 @@ void competition_initialize() {
 
 void autonomous() {
     vertical_encoder.reset_position();
-    // turn to brake is not consistent
+    // turn to brake if not consistent
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //left_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //right_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
 
@@ -194,11 +199,9 @@ void opcontrol() {
         } else {
             // R1 is NOT pressed, stop the score/intake function OFF
             // Only stop if the Y-button toggle isn't keeping it on
-            if (!intakeToggle) {
-                toggle_score(false);
-            }
+            
         }
-
+        
         // Intake Center Goal
         if (controller.get_digital(E_CONTROLLER_DIGITAL_RIGHT)) {
             centerGoal.set_value(false); // Bring it down
@@ -207,9 +210,7 @@ void opcontrol() {
         } else {
             centerGoal.set_value(true); // Bring it up
             // Stop intake/score, but only if R1 and Y-toggle aren't active
-            if (!controller.get_digital(E_CONTROLLER_DIGITAL_R1) && !intakeToggle) {
-                toggle_score(false);
-            }
+            
         }
 
         pros::delay(10);
