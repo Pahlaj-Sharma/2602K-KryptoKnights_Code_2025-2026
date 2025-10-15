@@ -39,7 +39,7 @@ inline constexpr float IMU_SCALER       = 1.010445f;   // Custom IMU scaling fac
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
 inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0f;
-inline constexpr float HORIZONTAL_TRACKING_OFFSET   = -0.75f;
+inline constexpr float HORIZONTAL_TRACKING_OFFSET   = 0.85f;
 inline constexpr int HYSTERESIS_CYCLES = 3; // Robot must be past target for 3 cycles (30ms), increase if undershooting
 
 // --- PID Controller Settings for pahlib Chassis ---
@@ -59,7 +59,7 @@ struct PIDConstants {
 
 // Default Lateral PID constants
 inline constexpr PIDConstants LATERAL_PID {
-    7.0f, 0.0f, 9.0f, 0.0f, 3, 1, 100, 2, 500, 20
+    10.0f, 0.0f, 9.5f, 0.0f, 3, 1, 100, 2, 500, 20
 };
 // Custom "Fast" Lateral PID constants
 inline constexpr PIDConstants F_LATERAL_PID {
@@ -71,7 +71,7 @@ inline constexpr PIDConstants P_LATERAL_PID {
 };
 // Default Angular PID constants
 inline constexpr PIDConstants ANGULAR_PID {
-    5.0f, 0.0f, 16.0f, 0.0f, 3, 1, 100, 3, 500, 0
+    4.0f, 0.0f, 25.0f, 0.0f, 3, 1, 100, 3, 500, 0
 };
 // Custom "Fast" Angular PID constants
 inline constexpr PIDConstants F_ANGULAR_PID {

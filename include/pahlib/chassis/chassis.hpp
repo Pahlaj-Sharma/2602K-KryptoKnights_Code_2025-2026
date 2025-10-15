@@ -244,7 +244,7 @@ struct TurnToPointParams {
         float maxAcceleration = 60;
         /** whether gain scheduling should be used. true by default
          */
-        bool gainScheduling = true;
+        bool gainScheduling = false;
 };
 
 /**
@@ -271,7 +271,7 @@ struct TurnToHeadingParams {
         float maxAcceleration = 60;
         /** whether gain scheduling should be used. true by default
          */
-        bool gainScheduling = true;
+        bool gainScheduling = false;
 };
 
 /**
@@ -313,7 +313,7 @@ struct SwingToPointParams {
         float maxAcceleration = 60;
         /** whether gain scheduling should be used. true by default
          */
-        bool gainScheduling = true;
+        bool gainScheduling = false;
 };
 
 /**
@@ -340,7 +340,7 @@ struct SwingToHeadingParams {
         float maxAcceleration = 60;
         /** whether gain scheduling should be used. true by default
          */
-        bool gainScheduling = true;
+        bool gainScheduling = false;
 };
 
 /**
@@ -374,7 +374,7 @@ struct MoveToPoseParams {
         float maxAcceleration = 60;
         /** whether gain scheduling should be used. true by default
          */
-        bool gainScheduling = true;
+        bool gainScheduling = false;
 };
 
 /**
@@ -401,7 +401,7 @@ struct MoveToPointParams {
         float maxAcceleration = 60;
         /** whether gain scheduling should be used. true by default
          */
-        bool gainScheduling = true;
+        bool gainScheduling = false;
 };
 
 // default drive curve

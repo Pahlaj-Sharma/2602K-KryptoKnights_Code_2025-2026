@@ -74,10 +74,11 @@ OdomSensors sensors(
 );
 
 ExpoDriveCurve drive_curve(5, 20, 1.02);
+ExpoDriveCurve steer_curve(5, 20, 2);
 
 Chassis chassis(
     drivetrain, lateral_PID, angular_PID, sensors,
-    &drive_curve, &drive_curve
+    &drive_curve, &steer_curve
 );
 
 // --- Autonomous Routines ---
