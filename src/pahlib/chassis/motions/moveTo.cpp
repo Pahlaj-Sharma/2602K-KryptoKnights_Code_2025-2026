@@ -40,6 +40,8 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
     Pose target(x, y);
     target.theta = lastPose.angle(target);
 
+    //this->setMotionProfile(target.distance(lastPose), params.maxSpeed, params.maxAcceleration);
+
     // main loop
     while (!timer.isDone() && ((!lateralSmallExit.getExit() && !lateralLargeExit.getExit()) || !close) &&
            this->motionRunning) {
@@ -78,8 +80,11 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
         lateralLargeExit.update(lateralError);
 
         // get output from PIDs
+        //float feedforward_velocity = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
         float lateralOut = lateralPID.update(lateralError);
         float angularOut = angularPID.update(radToDeg(angularError));
+        //float feedforward_accel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0);
+        //lateralOut += feedforward_accel * 0.1f;
         if (close) angularOut = 0;
 
         // apply restrictions on angular speed
@@ -179,6 +184,8 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
     float prevAngularOut = 0; // previous angular power
     const int compState = pros::competition::get_status();
 
+    //this->setMotionProfile(target.distance(lastPose), params.maxSpeed, params.maxAcceleration);
+
     // main loop
     while (!timer.isDone() &&
            ((!lateralSettled || (!angularLargeExit.getExit() && !angularSmallExit.getExit())) || !close) &&
@@ -250,8 +257,11 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
         angularLargeExit.update(radToDeg(angularError));
 
         // get output from PIDs
+        //float feedforward_velocity = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
         float lateralOut = lateralPID.update(lateralError);
         float angularOut = angularPID.update(radToDeg(angularError));
+        //float feedforward_accel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0);
+        //lateralOut += feedforward_accel * 0.1f;
 
         // apply restrictions on angular speed
         angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);

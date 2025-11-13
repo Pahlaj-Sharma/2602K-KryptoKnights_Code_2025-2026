@@ -91,8 +91,12 @@ extern pros::Distance leftDistance;
 extern pros::Distance frontDistance;
 extern pros::Distance backDistance;
 extern pros::adi::DigitalOut pto;
+extern pros::adi::DigitalOut centerGoal;
+extern pros::adi::DigitalOut matchLoad;
+extern pros::adi::DigitalOut antenne;
 extern int selectedAuton;
 extern bool ptoState; // PTO state, false = drivetrain, true = intake
+extern int antiJam;
 
 class ScalarIMU : public pros::IMU {
 public:

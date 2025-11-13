@@ -7,7 +7,7 @@ void toggle_pto(bool state) {
     ptoState = state;
 
     // Set the digital output to control the physical PTO
-    pto.set_value(state);
+    pto.set_value(!state);
 
     // Reconfigure the motor groups based on the new PTO state
     if (!ptoState) {
@@ -24,13 +24,16 @@ void toggle_pto(bool state) {
 }
 
 void toggle_preroller(bool toggled, int vel) {
-    toggle_pto(toggled);
+    toggle_pto(true);
     pros::delay(50);
-    right_pto.move(-vel * toggled);
-    left_pto.move(-vel * toggled);
+    right_pto.move(-vel * toggled * antiJam);
+    left_pto.move(-vel * toggled * antiJam);
 }
 
-void toggle_score(bool toggled, int vel) {
-    score_motor.move(vel * toggled);
-    toggle_preroller(toggled, vel);
+void toggle_score(bool toggled, int vel, int topVel) {
+    score_motor.move(topVel * toggled * antiJam);
+    toggle_pto(true);
+    pros::delay(50);
+    right_pto.move(-vel * toggled * antiJam);
+    left_pto.move(-vel * toggled * antiJam);
 }

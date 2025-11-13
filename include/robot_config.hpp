@@ -4,7 +4,7 @@
 // --- Motor Ports ---
 // Define motor port numbers for clarity and easy modification.
 
-inline constexpr int PORT_RIGHT_FRONT  = 8;
+inline constexpr int PORT_RIGHT_FRONT  = 14;
 inline constexpr int PORT_RIGHT_MIDDLE = -17 ;
 inline constexpr int PORT_RIGHT_BACK   = 10;
 inline constexpr int PORT_LEFT_FRONT   = -2;
@@ -15,20 +15,20 @@ inline constexpr int PORT_RIGHT_PTO    = -7;
 inline constexpr int PORT_SCORE_MOTOR  = 15;
 
 // --- Sensor Ports ---
-inline constexpr int PORT_IMU                = 21; // Inertial Measurement Unit
+inline constexpr int PORT_IMU                = 12; // Inertial Measurement Unit
 inline constexpr int PORT_HORIZONTAL_ENCODER = 16; // Horizontal tracking wheel encoder
-inline constexpr int PORT_VERTICAL_ENCODER   = 9;  // Vertical tracking wheel encoder
+inline constexpr int PORT_VERTICAL_ENCODER   = 13;  // Vertical tracking wheel encoder
 inline constexpr int PORT_AUTON_SELECTOR_POT = 6;  // Potentiometer for autonomous routine selection
 inline constexpr int PORT_TEAM_SELECTOR_POT  = 7;  // Potentiometer for team selection
-inline constexpr int PORT_PTO_DIGITAL_OUT    = 8;  // Digital output for PTO control
+inline constexpr int PORT_PTO                = 4;  // Digital output for PTO control
 inline constexpr int PORT_DISTANCE_RIGHT     = 7;
 inline constexpr int PORT_DISTANCE_LEFT      = 18;
 inline constexpr int PORT_DISTANCE_FRONT     = 5;
 inline constexpr int PORT_DISTANCE_BACK      = 19;
-inline constexpr int PORT_MATCH_LOAD         = 20;
-inline constexpr int PORT_CENTER_GOAL        = 9;
-inline constexpr int PORT_DOUBLE_PARK        = 4;
-inline constexpr int PORT_ANTENNE            = 3;
+inline constexpr int PORT_MATCH_LOAD         = 1;
+inline constexpr int PORT_CENTER_GOAL        = 3;
+inline constexpr int PORT_DOUBLE_PARK        = 7;
+inline constexpr int PORT_ANTENNE            = 2;
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
 inline constexpr float TRACK_WIDTH      = 11.55f; // Distance between the centers of the left and right wheels in inches
@@ -123,12 +123,12 @@ inline constexpr float DS_RIGHT_CENTER = 1.75f;
 
 // Lateral gain schedule (distance in inches)
 struct LateralSchedule {
-    std::vector<float> distances = {5.0f, 10.0f, 20.0f, 40.0f};
+    std::vector<float> distances = {2.0f, 5.0f, 10.0f, 20.0f};
     std::vector<pahlib::Chassis::PIDGains> gains = {
-        {8.0f, 0.0f, 0.5f, 0.0f},   // 5 inches
-        {6.0f, 0.0f, 0.4f, 0.0f},   // 10 inches
-        {4.5f, 0.0f, 0.3f, 0.0f},   // 20 inches
-        {3.0f, 0.0f, 0.2f, 0.0f}    // 40 inches
+        {7.0f, 0.0f, 11.0f, 0.0f},   // 2 inches
+        {8.0f, 0.0f, 10.5f, 0.0f},   // 5 inches
+        {10.0f, 0.0f, 9.5f, 0.0f},   // 10 inches
+        {12.0f, 0.0f, 10.0f, 0.0f}    // 20 inches
     };
 };
 
@@ -136,10 +136,10 @@ struct LateralSchedule {
 struct AngularSchedule {
     std::vector<float> angles = {15.0f, 45.0f, 90.0f, 180.0f};
     std::vector<pahlib::Chassis::PIDGains> gains = {
-        {2.5f, 0.0f, 0.15f, 0.0f},  // 15 degrees
-        {2.0f, 0.0f, 0.12f, 0.0f},  // 45 degrees
-        {1.5f, 0.0f, 0.10f, 0.0f},  // 90 degrees
-        {1.0f, 0.0f, 0.08f, 0.0f}   // 180 degrees
+        {1.5f, 0.0f, 25.0f, 0.0f},  // 15 degrees
+        {2.0f, 0.0f, 25.0f, 0.0f},  // 45 degrees
+        {4.0f, 0.0f, 25.0f, 0.0f},  // 90 degrees
+        {5.0f, 0.0f, 25.0f, 0.0f}   // 180 degrees
     };
 };
 
