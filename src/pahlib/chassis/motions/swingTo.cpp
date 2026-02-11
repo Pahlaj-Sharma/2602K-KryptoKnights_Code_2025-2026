@@ -7,6 +7,8 @@ void pahlib::Chassis::swingTo(float theta, DriveSide lockedSide, int timeout, Sw
                               std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
 params.minSpeed = fabs(params.minSpeed);
     this->requestMotionStart();
     // were all motions cancelled?
@@ -108,6 +110,8 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
                               std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
 
     params.minSpeed = fabs(params.minSpeed);
     this->requestMotionStart();
@@ -200,6 +204,8 @@ void pahlib::Chassis::swingTo(float x, float y, DriveSide lockedSide, int timeou
     if (lockedSide == DriveSide::LEFT) this->drivetrain.leftMotors->set_brake_mode_all(brakeMode);
     else this->drivetrain.rightMotors->set_brake_mode_all(brakeMode);
     // stop the drivetrain
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished

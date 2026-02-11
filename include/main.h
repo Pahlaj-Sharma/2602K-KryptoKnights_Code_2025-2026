@@ -83,19 +83,17 @@ extern pahlib::Chassis chassis;
 extern pros::Controller controller;
 extern pros::MotorGroup right_motors;
 extern pros::MotorGroup left_motors;
-extern pros::Motor left_pto;
-extern pros::Motor right_pto;
+extern pros::Motor intake_motor;
 extern pros::Motor score_motor;
 extern pros::Distance rightDistance;
 extern pros::Distance leftDistance;
 extern pros::Distance frontDistance;
 extern pros::Distance backDistance;
-extern pros::adi::DigitalOut pto;
 extern pros::adi::DigitalOut centerGoal;
 extern pros::adi::DigitalOut matchLoad;
 extern pros::adi::DigitalOut antenne;
+extern pros::adi::DigitalOut doublePark;
 extern int selectedAuton;
-extern bool ptoState; // PTO state, false = drivetrain, true = intake
 extern int antiJam;
 
 class ScalarIMU : public pros::IMU {

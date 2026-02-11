@@ -25,18 +25,17 @@ Controller controller(E_CONTROLLER_MASTER);
 
 // --- Motor Definitions ---
 Motor left_front(PORT_LEFT_FRONT, MotorGears::blue);
-Motor left_middle(PORT_LEFT_MIDDLE, MotorGears::green);
+Motor left_middle(PORT_LEFT_MIDDLE, MotorGears::blue);
 Motor left_back(PORT_LEFT_BACK, MotorGears::blue);
 Motor right_front(PORT_RIGHT_FRONT, MotorGears::blue);
-Motor right_middle(PORT_RIGHT_MIDDLE, MotorGears::green);
+Motor right_middle(PORT_RIGHT_MIDDLE, MotorGears::blue);
 Motor right_back(PORT_RIGHT_BACK, MotorGears::blue);
 
-Motor left_pto(PORT_LEFT_PTO, MotorGears::blue);
-Motor right_pto(PORT_RIGHT_PTO, MotorGears::blue);
+Motor intake_motor(PORT_INTAKE_MOTOR, MotorGears::blue);
 Motor score_motor(PORT_SCORE_MOTOR, MotorGears::blue);
 
-MotorGroup left_motors({PORT_LEFT_FRONT, PORT_LEFT_MIDDLE, PORT_LEFT_BACK, PORT_LEFT_PTO}, MotorGears::blue);
-MotorGroup right_motors({PORT_RIGHT_FRONT, PORT_RIGHT_MIDDLE, PORT_RIGHT_BACK, PORT_RIGHT_PTO}, MotorGears::blue);
+MotorGroup left_motors({PORT_LEFT_FRONT, PORT_LEFT_MIDDLE, PORT_LEFT_BACK}, MotorGears::blue);
+MotorGroup right_motors({PORT_RIGHT_FRONT, PORT_RIGHT_MIDDLE, PORT_RIGHT_BACK}, MotorGears::blue);
 
 // --- Sensors ---
 Rotation vertical_encoder(PORT_VERTICAL_ENCODER);
@@ -46,7 +45,6 @@ Distance rightDistance(PORT_DISTANCE_RIGHT);
 Distance leftDistance(PORT_DISTANCE_LEFT);
 Distance frontDistance(PORT_DISTANCE_FRONT);
 Distance backDistance(PORT_DISTANCE_BACK);
-adi::DigitalOut pto(PORT_PTO);
 ScalarIMU inertial(PORT_IMU, IMU_SCALER);
 adi::DigitalOut matchLoad(PORT_MATCH_LOAD);
 adi::DigitalOut centerGoal(PORT_CENTER_GOAL);
@@ -56,17 +54,16 @@ adi::DigitalOut antenne(PORT_ANTENNE);
 // --- Drivetrain Setup ---
 Drivetrain drivetrain(
     &left_motors, &right_motors, TRACK_WIDTH,
-    Omniwheel::NEW_2, WHEEL_RPM, HORIZONTAL_DRIFT
+    Omniwheel::NEW_325, WHEEL_RPM, HORIZONTAL_DRIFT
 );
 
 TrackingWheel vertical_tracking_wheel(
-    &vertical_encoder, Omniwheel::NEW_2, VERTICAL_TRACKING_OFFSET
+    &vertical_encoder, 1.965739f, VERTICAL_TRACKING_OFFSET
 );
 TrackingWheel horizontal_tracking_wheel(
-    &horizontal_encoder, Omniwheel::NEW_2, HORIZONTAL_TRACKING_OFFSET
+    &horizontal_encoder, 1.97048458f,  HORIZONTAL_TRACKING_OFFSET
 );
 
-// FIXXX
 OdomSensors sensors(
     &vertical_tracking_wheel, nullptr,
     &horizontal_tracking_wheel, nullptr, 
@@ -83,8 +80,8 @@ Chassis chassis(
 
 // --- Autonomous Routines ---
 std::map<int, std::pair<std::string, std::function<void()>>> autons = {
-    {0, {"name", auton1}}, {1, {"name", auton1}}, {2, {"name", auton2}},
-    {3, {"name", auton3}}, {4, {"name", auton4}}, {5, {"name", auton5}},
+    {0, {"SKILLS", auton1}}, {1, {"SKILLS", auton1}}, {2, {"SAWO", auton2}},
+    {3, {"RIGHT", auton3}}, {4, {"bum", auton4}}, {5, {"bum+LOWER", auton5}},
     {6, {"name", auton6}}, {7, {"name", auton7}}, {8, {"name", auton8}},
     {9, {"name", auton9}}, {10, {"name", auton10}}
 }; // Maps auton number to name and function
@@ -94,8 +91,7 @@ std::map<int, std::pair<std::string, std::function<void()>>> autons = {
 // 2 = right
 // 3 = left
 
-int selectedAuton = 3;
-bool ptoState = true;
+int selectedAuton = std::clamp((int)((autonSelector.get_value() - 1000.0) / 500), 1, 5);
 int antiJam = 1;
 
 // --- Initialization ---
@@ -110,8 +106,6 @@ void initialize() {
     chassis.calibrate();
     controller.clear();
 
-    toggle_pto(true);
-
     // Background task to update robot info on screen and controller
     Task update_robot_info([&]() {
         int count = 0;
@@ -122,32 +116,22 @@ void initialize() {
                 screen::print(E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta);
             }
 
-            if (count % 200 == 0) {
-                controller.print(0, 0, "Temp: %.1f", std::max(left_middle.get_temperature(), right_middle.get_temperature()));
+            if (count % 150 == 0) {
+                controller.print(0, 0, "Temp: %.1f:%.1f:%d", std::max(left_middle.get_temperature(), right_middle.get_temperature()), std::max(score_motor.get_temperature(), intake_motor.get_temperature()), selectedAuton);
             }
             count++;
             delay(25);
         }
     });
-/*
-    Task anti_jam([&]() {
-        while (true) {
-        if ((std::fabs(right_pto.get_actual_velocity()) < 50) && (controller.get_digital(E_CONTROLLER_DIGITAL_R1) || controller.get_digital(E_CONTROLLER_DIGITAL_L1))) {
-            pros::delay(400);
-            if ((std::fabs(right_pto.get_actual_velocity()) < 50) && (controller.get_digital(E_CONTROLLER_DIGITAL_R1) || controller.get_digital(E_CONTROLLER_DIGITAL_L1))) antiJam = -1;
-            else antiJam = 1;
-        } pros::delay(90);}
-    });
-*/
+
     std::vector<bool> devices_connected = {
-        inertial.is_installed(), rightDistance.is_installed(), leftDistance.is_installed(), frontDistance.is_installed(),
-        backDistance.is_installed(), left_front.is_installed(), left_middle.is_installed(), left_back.is_installed(),
-        right_front.is_installed(), right_middle.is_installed(), right_back.is_installed(), left_pto.is_installed(),
-        right_pto.is_installed(), vertical_encoder.is_installed(), horizontal_encoder.is_installed(), score_motor.is_installed()
+        inertial.is_installed(), left_front.is_installed(), left_middle.is_installed(), left_back.is_installed(),
+        right_front.is_installed(), right_middle.is_installed(), right_back.is_installed(), intake_motor.is_installed(),
+        score_motor.is_installed(), vertical_encoder.is_installed(), horizontal_encoder.is_installed(), score_motor.is_installed()
     };
     std::vector<std::string> device_names = {
-        "IMU", "R_Dist", "L_Dist", "F_Dist", "B_Dist", "L_Front", "L_Middle",
-        "L_Back", "R_Front", "R_Middle", "R_Back", "L_PTO", "R_PTO", "V_Tracker", "H_Tracker", "Score_Motor"
+        "IMU", "L_Front", "L_Middle",
+        "L_Back", "R_Front", "R_Middle", "R_Back", "Intake_Motor", "Score_Motor", "V_Tracker", "H_Tracker", "Score_Motor"
     };
     if (!std::all_of(devices_connected.begin(), devices_connected.end(), [](bool v) { return v; })) {
         int line = 4;
@@ -167,30 +151,43 @@ void disabled() {
 
 void competition_initialize() {
     controller.clear();
+    doublePark.set_value(false); // turn on
     // Select auton using potentiometer before match starts
     while (competition::is_disabled()) {
         // Read the potentiometer value to select auton
-        selectedAuton = static_cast<int>(autonSelector.get_angle() / (330.0 / autons.size()));
-        // Print the selected auton on the screen and controller
-        if (autons.count(selectedAuton)) {
-            std::string autonName = autons.at(selectedAuton).first;
-            screen::print(E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
-            controller.print(0, 5, "%s", autonName.c_str());
-        }
+        const int SLICE_SIZE = 500; // Defines the size of each mode's sensor range
+        selectedAuton = (int)((autonSelector.get_value() - 1000.0) / SLICE_SIZE);
+        selectedAuton = std::clamp(selectedAuton, 1, 5);
+        std::string autonName = autons.at(selectedAuton).first;
+        screen::print(E_TEXT_MEDIUM, 3, "                            ");
+        screen::print(E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
         delay(200);
     }
 }
 
 void autonomous() {
     vertical_encoder.reset_position();
+    horizontal_encoder.reset_position();
+    
     // turn to brake if not consistent
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //left_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //right_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
-
+    doublePark.set_value(false); // turn on
     // 3 is for left
-
-    if (autons.count(selectedAuton)) autons.at(selectedAuton).second();
-    else autons.at(4).second();
+/*
+    Task localization = *new pros::Task {[=] {
+        while (competition::is_autonomous()) {
+            chassis.resetOdometry();
+            pros::delay(1000);
+        }
+    }};
+*/
+    //measure_offsets();
+    // 1 = skills
+    // 2 = sawp
+    // 3 = right
+    if (autons.count(selectedAuton)) autons.at(3).second();
+    else autons.at(1).second();
     
 }
 
@@ -198,11 +195,14 @@ void opcontrol() {
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     
-    bool intakeToggle = false; 
+    bool intakeToggle = false;
     bool scoreToggle = false;
     bool centerToggle = false;
     bool antenneState = false;
     bool loadToggle = false;
+    //antenne.set_value(true);
+    doublePark.set_value(true); // turn off
+    toggle_score(false);
 
     while (true) {
         // Drive Control
@@ -226,15 +226,30 @@ void opcontrol() {
         }
          
         // Intake Center Goal
-        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)) {
+        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_DOWN)) {
             centerToggle = !centerToggle;
             centerGoal.set_value(centerToggle);
-            toggle_score(centerToggle, 80, 70);
+            toggle_score(centerToggle, 0, 0);
+            matchLoad.set_value(centerToggle);
+            if (centerToggle){
+                Task delay([&]() {
+                    toggle_score(centerToggle, -50, 80);
+                    pros::delay(400);
+                    toggle_score(centerToggle, 70, -20);
+                    pros::delay(150);
+                    toggle_score(centerToggle, -50, 80);
+                    pros::delay(400);
+                    toggle_score(centerToggle, 90, -90);
+                });
+            }
         }
 
-        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_LEFT)){
-            ptoState = !ptoState;
-            toggle_pto(ptoState);
+         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)) {
+            centerToggle = !centerToggle;
+            centerGoal.set_value(centerToggle);
+            toggle_score(centerToggle, -40, -80);
+            pros::delay(200);
+            toggle_score(centerToggle, 80, -100);
         }
 
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)){
@@ -293,5 +308,59 @@ void tunePID() {
         }
         delay(50);
     }
+}
+*/
+
+/*
+void measure_offsets() {
+  int iterations = 10;
+  double vertical_offset_total = 0.0;
+  double horizontal_offset_total = 0.0;
+
+  // Calibrate ONCE at the start
+  chassis.calibrate(); 
+  pros::delay(2500); 
+
+  for (int i = 0; i < iterations; i++) {
+    controller.rumble("..--");
+    chassis.cancelAllMotions();
+    
+    // Reset encoders to 0 before the turn
+    vertical_encoder.reset(); 
+    horizontal_encoder.reset();
+    
+    // Use a fixed reference point
+    chassis.setPose(0, 0, 0);
+    double imu_start = inertial.get_heading();
+    
+    double target = (i % 2 == 0) ? 90 : 270;
+
+    // slow turn for high accuracy
+    chassis.turnTo(target, 5000, {.maxSpeed = 30});
+    chassis.waitUntilDone();
+    pros::delay(5000);
+
+    // Calculate actual change in angle
+    double current_theta = inertial.get_heading();
+    double t_delta = degToRad(fabs(current_theta - imu_start));
+
+    // Guard against divide by zero if the robot didn't move
+    if (t_delta < 0.01) continue; 
+
+    double v_delta = vertical_tracking_wheel.getDistanceTraveled();
+    double h_delta = horizontal_tracking_wheel.getDistanceTraveled();
+
+    vertical_offset_total += (v_delta / t_delta);
+    horizontal_offset_total += (h_delta / t_delta);
+    
+    printf("Iteration %d: V_Off: %f, H_Off: %f\n", i+1, v_delta/t_delta, h_delta/t_delta);
+  }
+
+  double final_v_offset = vertical_offset_total / iterations;
+  double final_h_offset = horizontal_offset_total / iterations;
+
+  printf("--- FINAL OFFSETS ---\n");
+  screen::print(pros::E_TEXT_MEDIUM, 5, "Vertical: %f\n", final_v_offset);
+  screen::print(pros::E_TEXT_MEDIUM, 6, "Horizontal: %f\n", final_h_offset);
 }
 */

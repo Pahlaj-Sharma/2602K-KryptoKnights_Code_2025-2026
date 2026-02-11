@@ -156,14 +156,14 @@ void pahlib::Chassis::setBrakeMode(pros::motor_brake_mode_e mode) {
 
 void pahlib::Chassis::moveLinear(float inches, int timeout, float lead, float maxspeed, float minspeed) {
     // Get the robot's current position and orientation
-    const pahlib::Pose currentPose = this->getPose(true);
+    const pahlib::Pose currentPose = this->getPose(true, true);
 
     // Calculate the target position based on the current pose and distance
     const float targetX = currentPose.x + (inches * std::cos(currentPose.theta));
     const float targetY = currentPose.y + (inches * std::sin(currentPose.theta));
 
     // Set the chassis to move to the calculated target position
-    this->moveTo(targetX, targetY, pahlib::radToDeg(currentPose.theta), timeout, {
+    this->moveTo(targetX, targetY, 90 - pahlib::radToDeg(currentPose.theta), timeout, {
         .lead = lead,
         .maxSpeed = maxspeed,
         .minSpeed = minspeed

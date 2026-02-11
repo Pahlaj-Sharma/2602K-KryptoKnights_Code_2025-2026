@@ -4,43 +4,41 @@
 // --- Motor Ports ---
 // Define motor port numbers for clarity and easy modification.
 
-inline constexpr int PORT_RIGHT_FRONT  = 14;
-inline constexpr int PORT_RIGHT_MIDDLE = -17 ;
+inline constexpr int PORT_RIGHT_FRONT  = 8; //14
+inline constexpr int PORT_RIGHT_MIDDLE = 9;
 inline constexpr int PORT_RIGHT_BACK   = 10;
 inline constexpr int PORT_LEFT_FRONT   = -2;
-inline constexpr int PORT_LEFT_MIDDLE  = 11;
-inline constexpr int PORT_LEFT_BACK    = -1;
-inline constexpr int PORT_LEFT_PTO     = 3;
-inline constexpr int PORT_RIGHT_PTO    = -7;
-inline constexpr int PORT_SCORE_MOTOR  = 15;
+inline constexpr int PORT_LEFT_MIDDLE  = -3;
+inline constexpr int PORT_LEFT_BACK    = -4;
+inline constexpr int PORT_INTAKE_MOTOR = 13;
+//inline constexpr int PORT_RIGHT_PTO    = -7;
+inline constexpr int PORT_SCORE_MOTOR  = 6;
 
 // --- Sensor Ports ---
-inline constexpr int PORT_IMU                = 12; // Inertial Measurement Unit
-inline constexpr int PORT_HORIZONTAL_ENCODER = 16; // Horizontal tracking wheel encoder
-inline constexpr int PORT_VERTICAL_ENCODER   = 13;  // Vertical tracking wheel encoder
-inline constexpr int PORT_AUTON_SELECTOR_POT = 6;  // Potentiometer for autonomous routine selection
-inline constexpr int PORT_TEAM_SELECTOR_POT  = 7;  // Potentiometer for team selection
+inline constexpr int PORT_IMU                = 14; // Inertial Measurement Unit
+inline constexpr int PORT_HORIZONTAL_ENCODER = -12; // Horizontal tracking wheel encoder
+inline constexpr int PORT_VERTICAL_ENCODER   = -17;  // Vertical tracking wheel encoder
+inline constexpr int PORT_AUTON_SELECTOR_POT = 2;  // Potentiometer for autonomous routine selection
 inline constexpr int PORT_PTO                = 4;  // Digital output for PTO control
 inline constexpr int PORT_DISTANCE_RIGHT     = 7;
 inline constexpr int PORT_DISTANCE_LEFT      = 18;
 inline constexpr int PORT_DISTANCE_FRONT     = 5;
 inline constexpr int PORT_DISTANCE_BACK      = 19;
-inline constexpr int PORT_MATCH_LOAD         = 1;
-inline constexpr int PORT_CENTER_GOAL        = 3;
-inline constexpr int PORT_DOUBLE_PARK        = 7;
-inline constexpr int PORT_ANTENNE            = 2;
+inline constexpr int PORT_MATCH_LOAD         = 4;
+inline constexpr int PORT_CENTER_GOAL        = 1;
+inline constexpr int PORT_DOUBLE_PARK        = 2;
+inline constexpr int PORT_ANTENNE            = 3;
 
 // --- Drivetrain Constants (in inches/RPM as appropriate) ---
 inline constexpr float TRACK_WIDTH      = 11.55f; // Distance between the centers of the left and right wheels in inches
 inline constexpr int   WHEEL_RPM        = 450;   // Max effective RPM of the drivetrain (e.g., 600 RPM blue motors with 1.33:1 external gearing)
 inline constexpr float HORIZONTAL_DRIFT = 2.0f;   // Horizontal drift in inches, used for odometry calculations
-inline constexpr float IMU_SCALER       = 1.010445f;   // Custom IMU scaling factor, adjust based on IMU's calibration
+inline constexpr float IMU_SCALER       = 1.00821f;   // Custom IMU scaling factor, adjust based on IMU's calibration
 
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
 inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0f;
-inline constexpr float HORIZONTAL_TRACKING_OFFSET   = 0.85f;
-inline constexpr int HYSTERESIS_CYCLES = 3; // Robot must be past target for 3 cycles (30ms), increase if undershooting
+inline constexpr float HORIZONTAL_TRACKING_OFFSET   = -1.5f;
 
 // --- PID Controller Settings for pahlib Chassis ---
 // A struct to hold all the PID constants for clarity and easy management.
@@ -59,7 +57,7 @@ struct PIDConstants {
 
 // Default Lateral PID constants
 inline constexpr PIDConstants LATERAL_PID {
-    10.0f, 0.0f, 9.5f, 0.0f, 3, 1, 100, 2, 500, 20
+    9.5f, 0.0f, 9.5f, 0.0f, 3, 1, 100, 2, 500, 20
 };
 // Custom "Fast" Lateral PID constants
 inline constexpr PIDConstants F_LATERAL_PID {
@@ -120,6 +118,11 @@ inline constexpr float DS_FRONT_CENTER = 5.53f;
 inline constexpr float DS_BACK_CENTER  = 1.37f;
 inline constexpr float DS_LEFT_CENTER  = 1.75f;
 inline constexpr float DS_RIGHT_CENTER = 1.75f;
+
+inline constexpr float DS_FRONT_CENTER_2 = 5.53f;
+inline constexpr float DS_BACK_CENTER_2  = 1.37f;
+inline constexpr float DS_LEFT_CENTER_2  = 1.75f;
+inline constexpr float DS_RIGHT_CENTER_2 = 1.75f;
 
 // Lateral gain schedule (distance in inches)
 struct LateralSchedule {

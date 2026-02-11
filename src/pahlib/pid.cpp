@@ -6,7 +6,6 @@ PID::PID(float kP, float kI, float kD, float kF, float windupRange, bool signFli
     : kP(kP),
       kI(kI),
       kD(kD),
-      kF(kF),
       windupRange(windupRange),
       signFlipReset(signFlipReset) {}
 
@@ -21,7 +20,7 @@ float PID::update(const float error, const float feedforward) {
     prevError = error;
 
     // calculate output
-    return error * kP + integral * kI + derivative * kD + feedforward * kF;
+    return error * kP + integral * kI + derivative * kD + feedforward;
 }
 
 void PID::reset() {

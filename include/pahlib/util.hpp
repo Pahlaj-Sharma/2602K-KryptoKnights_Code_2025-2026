@@ -80,6 +80,11 @@ constexpr float sanitizeAngle(float angle, bool radians = true) {
         else return std::fmod(std::fmod(angle, 360) + 360, 360);
     }
 
+constexpr float sanitizeAngle180(float angle, bool radians = true) {
+        if (radians) return std::fmod(std::fmod(angle, M_PI) + M_PI, M_PI);
+        else return std::fmod(std::fmod(angle, 180) + 180, 180);
+    }
+
 /**
  * @brief Calculate the error between 2 angles. Useful when calculating the error between 2 headings
  *

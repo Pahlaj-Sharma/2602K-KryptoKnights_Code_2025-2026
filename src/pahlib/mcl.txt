@@ -1,0 +1,274 @@
+#include "pahlib/util.hpp"
+#include "pahlib/chassis/odom.hpp"
+#include "pahlib/mcl.hpp"
+#include "pros/distance.hpp"
+#include <vector>
+#include <random>
+#include <cmath>
+#include <algorithm>
+
+namespace pahlib {
+
+    // --- Configuration ---
+    const int NUM_PARTICLES = 200;
+    const double FIELD_BOUNDS_MM = 1783.205;
+    
+    // Sensor mounting offsets relative to robot center (in mm)
+    // YOU MUST TUNE THESE VALUES TO MATCH YOUR ROBOT
+    const double DIST_OFFSET_FRONT = 150.0; 
+    const double DIST_OFFSET_BACK = -150.0;
+    const double DIST_OFFSET_LEFT = 150.0;
+    const double DIST_OFFSET_RIGHT = -150.0;
+
+    // Standard Deviations for noise models
+    const double ODOM_NOISE_TRANS = 2.0; // Translation noise (mm)
+    const double ODOM_NOISE_ROT = 0.01;  // Rotation noise (radians)
+    const double SENSOR_NOISE_LOW = 15.0; // Accuracy < 200mm
+    const double SENSOR_NOISE_HIGH_PERCENT = 0.05; // Accuracy > 200mm (5%)
+
+    // --- Structures ---
+    struct Particle {
+        double x;
+        double y;
+        double theta;
+        double weight;
+    };
+
+    // --- Global Variables ---
+    std::vector<Particle> particles;
+    pros::Distance* distFront = nullptr;
+    pros::Distance* distBack = nullptr;
+    pros::Distance* distLeft = nullptr;
+    pros::Distance* distRight = nullptr;
+    
+    pros::Task* mclTask = nullptr;
+    Pose lastOdomPoseForMCL(0,0,0);
+    bool mclEnabled = false;
+
+    // Random number generation
+    std::default_random_engine gen;
+
+    // --- Helper Functions ---
+
+    double gaussianRandom(double mean, double stddev) {
+        std::normal_distribution<double> d(mean, stddev);
+        return d(gen);
+    }
+
+    double normalizeAngle(double angle) {
+        while (angle > M_PI) angle -= 2 * M_PI;
+        while (angle < -M_PI) angle += 2 * M_PI;
+        return angle;
+    }
+
+    // Initialize particles around a specific pose (usually start pose)
+    void initMCLParticles(Pose startPose) {
+        particles.clear();
+        for (int i = 0; i < NUM_PARTICLES; i++) {
+            particles.push_back({
+                startPose.x + gaussianRandom(0, 10), // Small cloud around start
+                startPose.y + gaussianRandom(0, 10),
+                startPose.theta + gaussianRandom(0, 0.05),
+                1.0 / NUM_PARTICLES
+            });
+        }
+        lastOdomPoseForMCL = startPose;
+    }
+
+    // --- Motion Update (Prediction Step) ---
+    // Move particles based on how much the odometry changed since last loop
+    void mclMotionUpdate() {
+        Pose currentOdom = getPose(true); // Get raw odom from odom.cpp
+        
+        // Calculate delta in local coordinates
+        double dx = currentOdom.x - lastOdomPoseForMCL.x;
+        double dy = currentOdom.y - lastOdomPoseForMCL.y;
+        double dtheta = currentOdom.theta - lastOdomPoseForMCL.theta;
+
+        // Convert global delta to local delta relative to previous heading
+        double localX = dx * std::cos(lastOdomPoseForMCL.theta) + dy * std::sin(lastOdomPoseForMCL.theta);
+        double localY = -dx * std::sin(lastOdomPoseForMCL.theta) + dy * std::cos(lastOdomPoseForMCL.theta);
+
+        for (auto& p : particles) {
+            // Add noise to the control input
+            double noisyX = localX + gaussianRandom(0, ODOM_NOISE_TRANS);
+            double noisyY = localY + gaussianRandom(0, ODOM_NOISE_TRANS);
+            double noisyTheta = dtheta + gaussianRandom(0, ODOM_NOISE_ROT);
+
+            // Apply to particle
+            p.x += noisyX * std::cos(p.theta) - noisyY * std::sin(p.theta);
+            p.y += noisyX * std::sin(p.theta) + noisyY * std::cos(p.theta);
+            p.theta = normalizeAngle(p.theta + noisyTheta);
+        }
+
+        lastOdomPoseForMCL = currentOdom;
+    }
+
+    // --- Sensor Update (Correction Step) ---
+    
+    // Raycast to find expected distance to wall
+    // sensorOffset: dist from center of robot to sensor
+    // sensorAngleRel: angle of sensor relative to robot forward (0=front, pi=back, etc)
+    double getExpectedDistance(Particle p, double sensorOffset, double sensorAngleRel) {
+        double globalSensorAngle = normalizeAngle(p.theta + sensorAngleRel);
+        double sensorX = p.x + sensorOffset * std::cos(globalSensorAngle); // Simplified offset logic
+        double sensorY = p.y + sensorOffset * std::sin(globalSensorAngle);
+        
+        // Calculate distance to all 4 walls
+        // Walls are at x = +/- FIELD_BOUNDS and y = +/- FIELD_BOUNDS
+        
+        double distToRight = (FIELD_BOUNDS_MM - sensorX) / std::cos(globalSensorAngle);
+        double distToTop = (FIELD_BOUNDS_MM - sensorY) / std::sin(globalSensorAngle);
+        double distToLeft = (-FIELD_BOUNDS_MM - sensorX) / std::cos(globalSensorAngle);
+        double distToBottom = (-FIELD_BOUNDS_MM - sensorY) / std::sin(globalSensorAngle);
+
+        double minDist = 10000.0;
+
+        // We only care about positive distances (in front of sensor)
+        if (distToRight > 0) minDist = std::min(minDist, distToRight);
+        if (distToTop > 0) minDist = std::min(minDist, distToTop);
+        if (distToLeft > 0) minDist = std::min(minDist, distToLeft);
+        if (distToBottom > 0) minDist = std::min(minDist, distToBottom);
+
+        return minDist;
+    }
+
+    double calculateProbability(double measured, double expected) {
+        // Sensor Model per specs:
+        // < 200mm: +/- 15mm accuracy (assume sigma = 15)
+        // > 200mm: 5% accuracy (assume sigma = distance * 0.05)
+        
+        double sigma = (expected < 200) ? SENSOR_NOISE_LOW : (expected * SENSOR_NOISE_HIGH_PERCENT);
+        double error = measured - expected;
+        
+        // Gaussian probability density function
+        return (1.0 / (std::sqrt(2 * M_PI) * sigma)) * std::exp(-(error * error) / (2 * sigma * sigma));
+    }
+
+    void mclSensorUpdate() {
+        // Read actual sensors (convert to mm if necessary, V5 API usually mm)
+        double readFront = (distFront) ? distFront->get() : 0;
+        double readBack = (distBack) ? distBack->get() : 0;
+        double readLeft = (distLeft) ? distLeft->get() : 0;
+        double readRight = (distRight) ? distRight->get() : 0;
+
+        // If a sensor returns > 2000 or near 0, it likely didn't hit a wall or is invalid.
+        // We set a flag to ignore specific sensors for this update cycle.
+        bool useFront = (readFront > 20 && readFront < 2000);
+        bool useBack = (readBack > 20 && readBack < 2000);
+        bool useLeft = (readLeft > 20 && readLeft < 2000);
+        bool useRight = (readRight > 20 && readRight < 2000);
+
+        if (!useFront && !useBack && !useLeft && !useRight) return; // No useful data
+
+        double totalWeight = 0;
+
+        for (auto& p : particles) {
+            double prob = 1.0;
+
+            // Calculate likelihood for each active sensor
+            // Note: Angles are relative to robot (Front=0, Left=PI/2, Back=PI, Right=-PI/2)
+            if (useFront) prob *= calculateProbability(readFront, getExpectedDistance(p, DIST_OFFSET_FRONT, 0));
+            if (useLeft) prob *= calculateProbability(readLeft, getExpectedDistance(p, DIST_OFFSET_LEFT, M_PI_2));
+            if (useBack) prob *= calculateProbability(readBack, getExpectedDistance(p, DIST_OFFSET_BACK, M_PI));
+            if (useRight) prob *= calculateProbability(readRight, getExpectedDistance(p, DIST_OFFSET_RIGHT, -M_PI_2));
+
+            p.weight = prob;
+            totalWeight += prob;
+        }
+
+        // Normalize weights
+        if (totalWeight > 0) {
+            for (auto& p : particles) {
+                p.weight /= totalWeight;
+            }
+        }
+    }
+
+    // --- Resampling (Low Variance Sampler) ---
+    void mclResample() {
+        std::vector<Particle> newParticles;
+        double r = (double)rand() / RAND_MAX * (1.0 / NUM_PARTICLES);
+        double c = particles[0].weight;
+        int i = 0;
+
+        for (int m = 0; m < NUM_PARTICLES; m++) {
+            double U = r + m * (1.0 / NUM_PARTICLES);
+            while (U > c && i < NUM_PARTICLES - 1) {
+                i++;
+                c += particles[i].weight;
+            }
+            // Add slight jitter to prevent particle depletion
+            Particle p = particles[i];
+            p.x += gaussianRandom(0, 1.0); 
+            p.y += gaussianRandom(0, 1.0);
+            p.theta += gaussianRandom(0, 0.001);
+            newParticles.push_back(p);
+        }
+        particles = newParticles;
+    }
+
+    // --- Estimate and Update Odometry ---
+    void updateGlobalPose() {
+        // Calculate average pose of particles
+        double avgX = 0;
+        double avgY = 0;
+        double sinSum = 0;
+        double cosSum = 0;
+
+        for (const auto& p : particles) {
+            avgX += p.x;
+            avgY += p.y;
+            sinSum += std::sin(p.theta);
+            cosSum += std::cos(p.theta);
+        }
+
+        avgX /= NUM_PARTICLES;
+        avgY /= NUM_PARTICLES;
+        double avgTheta = std::atan2(sinSum, cosSum);
+
+        // Update the global variable in odom.cpp
+        // We use setPose to "fix" the drift
+        pahlib::setPose(pahlib::Pose(avgX, avgY, avgTheta), true);
+        
+        // Update our local tracker to match the new fixed pose
+        lastOdomPoseForMCL = pahlib::Pose(avgX, avgY, avgTheta);
+    }
+
+    // --- Main MCL Loop ---
+    void mclLoop() {
+        while (true) {
+            if (mclEnabled) {
+                // 1. Prediction (Move particles based on Odom)
+                mclMotionUpdate();
+
+                // 2. Correction (Weight particles based on Distance Sensors)
+                mclSensorUpdate();
+
+                // 3. Resample (Kill bad particles, replicate good ones)
+                mclResample();
+
+                // 4. Update real robot pose
+                updateGlobalPose();
+            }
+            pros::delay(20); // Run at 50Hz (slower than odom is fine)
+        }
+    }
+
+    // --- Initialization API ---
+    void setMCLSensors(int frontPort, int backPort, int leftPort, int rightPort) {
+        if(frontPort != 0) distFront = new pros::Distance(frontPort);
+        if(backPort != 0) distBack = new pros::Distance(backPort);
+        if(leftPort != 0) distLeft = new pros::Distance(leftPort);
+        if(rightPort != 0) distRight = new pros::Distance(rightPort);
+    }
+
+    void startMCL() {
+        if (mclTask == nullptr) {
+            // Initialize particles at current odom pose
+            initMCLParticles(getPose(true));
+            mclEnabled = true;
+            mclTask = new pros::Task(mclLoop);
+        }
+    }
+}

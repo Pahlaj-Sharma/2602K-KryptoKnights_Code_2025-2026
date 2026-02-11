@@ -7,6 +7,8 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
     
     pahlib::PID originalLateralPID = this->lateralPID;
     pahlib::PID originalAngularPID = this->angularPID;
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
 
     params.earlyExitRange = fabs(params.earlyExitRange);
     this->requestMotionStart();
@@ -128,6 +130,8 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
     }
 
     // stop the drivetrain
+    //drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    //drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished
@@ -140,6 +144,8 @@ void pahlib::Chassis::moveTo(float x, float y, int timeout, MoveToPointParams pa
 void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToPoseParams params, std::optional<PIDGains> lateralGains, std::optional<PIDGains> angularGains, bool async) {
     pahlib::PID originalLateralPID = this->lateralPID;
     pahlib::PID originalAngularPID = this->angularPID;
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
 
     // gain scheduling
     const bool useGainScheduling = !lateralGains && !angularGains && params.gainScheduling;
@@ -258,10 +264,10 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
 
         // get output from PIDs
         //float feedforward_velocity = this->getTargetVelocity(timer.getTimePassed() / 1000.0f);
+        //float feedforward_accel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0f);
+        //float feedforward = 1 * sgn(feedforward_velocity) + 1 * feedforward_velocity + 1 * feedforward_accel;
         float lateralOut = lateralPID.update(lateralError);
         float angularOut = angularPID.update(radToDeg(angularError));
-        //float feedforward_accel = this->getTargetAcceleration(timer.getTimePassed() / 1000.0);
-        //lateralOut += feedforward_accel * 0.1f;
 
         // apply restrictions on angular speed
         angularOut = std::clamp(angularOut, -params.maxSpeed, params.maxSpeed);
@@ -312,6 +318,8 @@ void pahlib::Chassis::moveTo(float x, float y, float theta, int timeout, MoveToP
     }
 
     // stop the drivetrain
+    //drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    //drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished

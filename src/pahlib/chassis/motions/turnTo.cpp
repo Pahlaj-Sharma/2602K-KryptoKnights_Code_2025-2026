@@ -7,7 +7,10 @@ void pahlib::Chassis::turnTo(float theta, int timeout, TurnToHeadingParams param
                              std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
-params.minSpeed = std::abs(params.minSpeed);
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+
+    params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
     // were all motions cancelled?
     if (!this->motionRunning) return;
@@ -79,6 +82,8 @@ params.minSpeed = std::abs(params.minSpeed);
     }
 
     // stop the drivetrain
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished
@@ -91,6 +96,8 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
                              std::optional<PIDGains> angularGains, bool async) {
     // Store original PID settings
     pahlib::PID originalAngularPID = this->angularPID;
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
 
     params.minSpeed = std::abs(params.minSpeed);
     this->requestMotionStart();
@@ -167,6 +174,8 @@ void pahlib::Chassis::turnTo(float x, float y, int timeout, TurnToPointParams pa
     }
 
     // stop the drivetrain
+    drivetrain.leftMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    drivetrain.rightMotors->set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
     drivetrain.leftMotors->move(0);
     drivetrain.rightMotors->move(0);
     // set distTraveled to -1 to indicate that the function has finished

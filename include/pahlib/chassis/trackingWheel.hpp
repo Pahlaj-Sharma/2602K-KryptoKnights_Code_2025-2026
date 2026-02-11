@@ -11,7 +11,7 @@ namespace pahlib {
  * @brief A namespace representing the size of omniwheels.
  */
 namespace Omniwheel {
-constexpr float NEW_2 = 1.997563f;
+constexpr float NEW_2 = 1.965739f;
 constexpr float NEW_275 = 2.6875f;
 constexpr float OLD_275 = 2.75;
 constexpr float NEW_275_HALF = 2.744;
