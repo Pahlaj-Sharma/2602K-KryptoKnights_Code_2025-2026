@@ -79,6 +79,7 @@ void opcontrol(void);
  */
 //#include <iostream>
 #include "pahlib/api.hpp"
+
 extern pahlib::Chassis chassis;
 extern pros::Controller controller;
 extern pros::MotorGroup right_motors;
@@ -93,8 +94,10 @@ extern pros::adi::DigitalOut centerGoal;
 extern pros::adi::DigitalOut matchLoad;
 extern pros::adi::DigitalOut antenne;
 extern pros::adi::DigitalOut doublePark;
+extern pros::adi::DigitalOut score;
 extern int selectedAuton;
 extern int antiJam;
+extern RclTracking reset;
 
 class ScalarIMU : public pros::IMU {
 public:

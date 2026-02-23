@@ -938,7 +938,7 @@ class Chassis {
          * chassis.resetOdometry(10, true);
          * @endcode
          */
-        void resetOdometry(float threshold = 15, bool force = false);
+        void resetOdometry(float threshold = 40, bool force = false);
         /**
          * @brief Control the robot during the driver using the tank drive control scheme. In this control scheme one
          * joystick axis controls the left motors' forward and backwards movement of the robot, while the other joystick

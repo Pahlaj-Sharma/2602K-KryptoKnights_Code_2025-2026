@@ -11,7 +11,7 @@ namespace {
     constexpr float MM_TO_INCH = 0.03937;
     constexpr float ANGLE_TOLERANCE = 0.174533; // ~10 degrees in radians
     constexpr float DISTANCE_TOLERANCE = 5.0; // inches
-    constexpr float MAX_VALID_DISTANCE = 25.0; // inches
+    constexpr float MAX_VALID_DISTANCE = 30.0; // inches
     
     // Field walls (in inches, centered coordinate system)
     constexpr float WALL_0_X = 70.2;   // Right wall (+X)
@@ -44,14 +44,17 @@ namespace {
         
         // Get raw distance reading
         float realReading = sensor.sensor.get() * MM_TO_INCH;
+        printf("Raw reading: %.2f inches\n", realReading);
         
         // Validate distance is reasonable
         if (realReading <= 0 || realReading > MAX_VALID_DISTANCE) {
+            printf("REJECTED: out of range\n");
             return result; // Invalid reading
         }
         
         // Calculate sensor angle in field frame (standard position: 90° = forward)
         float sensorAngle = robotPose.theta + sensor.offsetTheta;
+        printf("sensorAngle: %.4f rad, robotTheta: %.4f\n", sensorAngle, robotPose.theta);
         
         // Transform sensor position from robot frame to field frame
         float sensorOffsetX = sensor.offsetX * std::cos(robotPose.theta) - 
@@ -75,19 +78,19 @@ namespace {
             wall = 0;
         }
         // Wall 1: Front wall (+Y direction, sensor pointing at 90°/π/2)
-        else if (angleError = std::remainder(M_PI_2 - sensorAngle, M_TWOPI); 
+        else if (angleError = std::remainder(M_PI_2 - sensorAngle, M_TWOPI),  
                  std::abs(angleError) < ANGLE_TOLERANCE) {
             predictedReading = (WALL_1_Y - sensorY) / std::cos(angleError);
             wall = 1;
         }
         // Wall 2: Left wall (-X direction, sensor pointing at 180°/π)
-        else if (angleError = std::remainder(M_PI - sensorAngle, M_TWOPI); 
+        else if (angleError = std::remainder(M_PI - sensorAngle, M_TWOPI),  
                  std::abs(angleError) < ANGLE_TOLERANCE) {
             predictedReading = (sensorX - WALL_2_X) / std::cos(angleError);
             wall = 2;
         }
         // Wall 3: Back wall (-Y direction, sensor pointing at 270°/3π/2)
-        else if (angleError = std::remainder(M_3PI_2 - sensorAngle, M_TWOPI); 
+        else if (angleError = std::remainder(M_3PI_2 - sensorAngle, M_TWOPI),  
                  std::abs(angleError) < ANGLE_TOLERANCE) {
             predictedReading = (sensorY - WALL_3_Y) / std::cos(angleError);
             wall = 3;
@@ -95,9 +98,14 @@ namespace {
         else {
             return result; // Not aligned with any wall
         }
+
+        printf("Wall selected: %d, angleError: %.4f\n", wall, angleError);
+        printf("Predicted: %.2f, Actual: %.2f, Diff: %.2f\n", predictedReading, realReading, std::abs(realReading - predictedReading));
+    
         
         // Check if predicted and actual readings match (unless forced)
         if (!force && std::abs(realReading - predictedReading) > DISTANCE_TOLERANCE) {
+            printf("REJECTED: predicted vs actual mismatch\n");
             return result; // Reading doesn't match expected distance to wall
         }
         
@@ -122,25 +130,30 @@ namespace {
         // Calculate confidence (closer readings and smaller angle errors = higher confidence)
         result.confidence = (MAX_VALID_DISTANCE - realReading) / MAX_VALID_DISTANCE * 
                            (ANGLE_TOLERANCE - std::abs(angleError)) / ANGLE_TOLERANCE;
-        
+
+        printf("ACCEPTED: axisPosition: %.2f\n", result.axisPosition);
         return result;
     }
 }
 
 void pahlib::Chassis::resetOdometry(float threshold, bool force) {
-    // Get current robot pose (in radians, standard position for calculations)
+    // Get current robot pose (in radians, standard position for calculations), standard pos is 90 degrees north, 0 degrees right, etc
     const pahlib::Pose robotPose = this->getPose(true, true);
     
     // Also get theta in robot position format for setPose later
     const pahlib::Pose robotPoseRobotFrame = this->getPose();
+
+    printf("Sensor raw values: Front=%d, Back=%d, Left=%d, Right=%d\n",
+       frontDistance.get(), backDistance.get(), 
+       leftDistance.get(), rightDistance.get());
     
     // Configure all sensors with their physical offsets
-    // offsetTheta is relative to robot's forward direction (0° = forward, 90° = left, etc.)
+    // offsetTheta is relative to robot's forward direction (0° = forward, -90° = left, etc.)
     std::vector<SensorConfig> sensors = {
-        {frontDistance, DS_FRONT_CENTER, DS_FRONT_CENTER_2, 0},              // Front sensor (0° relative to robot)
-        {backDistance,  DS_BACK_CENTER,  DS_BACK_CENTER_2,  M_PI},           // Back sensor (180° relative to robot)
-        {leftDistance,  DS_LEFT_CENTER,  DS_LEFT_CENTER_2,  -M_PI / 2},      // Left sensor (-90° relative to robot)
-        {rightDistance, DS_RIGHT_CENTER, DS_RIGHT_CENTER_2, M_PI / 2}        // Right sensor (90° relative to robot)
+        {frontDistance, DS_FRONT_X, DS_FRONT_Y, 0},              // Front sensor (0° relative to robot)
+        {backDistance,  DS_BACK_X,  DS_BACK_Y,  M_PI},           // Back sensor (180° relative to robot)
+        {leftDistance,  DS_LEFT_X,  DS_LEFT_Y,  M_PI / 2},      // Left sensor (90 relative to robot)
+        {rightDistance, DS_RIGHT_X, DS_RIGHT_Y, -M_PI / 2}        // Right sensor (-90° relative to robot)
     };
     
     // Collect valid readings from all sensors
@@ -180,9 +193,12 @@ void pahlib::Chassis::resetOdometry(float threshold, bool force) {
     
     if (!resultsX.empty()) {
         float calcX = resultsX[0].axisPosition;
+        printf("calcX: %.2f, robotPose.x: %.2f, diff: %.2f, threshold: %.2f\n", 
+           calcX, robotPose.x, std::abs(calcX - robotPose.x), threshold);
         if (std::abs(calcX - robotPose.x) < threshold) {
             newX = calcX;
             updateX = true;
+            printf("X will be updated!\n");
         }
     }
     
@@ -197,6 +213,8 @@ void pahlib::Chassis::resetOdometry(float threshold, bool force) {
     // Update pose if at least one axis is valid
     // Use robot position format theta for setPose
     if (updateX || updateY) {
+        printf("Calling setPose(%.2f, %.2f, %.2f)\n", newX, newY, robotPoseRobotFrame.theta);
         this->setPose(newX, newY, robotPoseRobotFrame.theta);
     }
+    
 }

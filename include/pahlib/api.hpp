@@ -5,3 +5,4 @@
 #include "pahlib/util.hpp" // IWYU pragma: keep
 #include "pahlib/chassis/chassis.hpp"
 #include "pahlib/chassis/trackingWheel.hpp" // IWYU pragma: keep
+#include "pahlib/RclTracking.hpp"
