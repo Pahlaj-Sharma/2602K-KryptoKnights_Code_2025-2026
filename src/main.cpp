@@ -55,10 +55,10 @@ adi::DigitalOut antenne(PORT_ANTENNE);
 adi::DigitalOut score(6);
 
 // Rcl setup
-inline RclSensor front_rcl(&frontDistance, DS_FRONT_X, DS_FRONT_Y, 0.0, 10.0);
-inline RclSensor right_rcl(&rightDistance, DS_RIGHT_X, DS_RIGHT_Y, 90.0, 10.0);
-inline RclSensor back_rcl(&backDistance, DS_BACK_X, DS_BACK_Y, 180.0, 10.0);
-inline RclSensor left_rcl(&leftDistance, DS_LEFT_X, DS_LEFT_Y, 270.0, 10.0);
+RclSensor front_rcl(&frontDistance, DS_FRONT_X, DS_FRONT_Y, 0.0, 10.0);
+RclSensor right_rcl(&rightDistance, DS_RIGHT_X, DS_RIGHT_Y, 90.0, 10.0);
+RclSensor back_rcl(&backDistance, DS_BACK_X, DS_BACK_Y, 180.0, 10.0);
+RclSensor left_rcl(&leftDistance, DS_LEFT_X, DS_LEFT_Y, 270.0, 10.0);
 
 // loaders
 inline Circle_Obstacle redUpLoader(-67.5, 46.5, 3);

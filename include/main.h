@@ -24,6 +24,7 @@
  * E_CONTROLLER_MASTER is pedantically correct within the PROS styleguide, but
  * not convenient for most student programmers.
  */
+#include "pahlib/RclTracking.hpp"
 #include "pahlib/chassis/chassis.hpp"
 #include "pros/adi.hpp"
 #include "pros/imu.hpp"
@@ -86,10 +87,10 @@ extern pros::MotorGroup right_motors;
 extern pros::MotorGroup left_motors;
 extern pros::Motor intake_motor;
 extern pros::Motor score_motor;
-extern pros::Distance rightDistance;
-extern pros::Distance leftDistance;
-extern pros::Distance frontDistance;
-extern pros::Distance backDistance;
+extern RclSensor right_rcl;
+extern RclSensor left_rcl;
+extern RclSensor front_rcl;
+extern RclSensor back_rcl;
 extern pros::adi::DigitalOut centerGoal;
 extern pros::adi::DigitalOut matchLoad;
 extern pros::adi::DigitalOut antenne;
