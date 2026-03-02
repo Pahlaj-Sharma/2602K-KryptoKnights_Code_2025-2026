@@ -3,7 +3,7 @@
  * Author: Pahlaj Sharma
  * Date Created: June 14, 2025
  * Current Version: 4.01
- * Last Updated: Oct 2, 2025
+ * Last Updated: Mar 2, 2026
  *
  * @copyright (c) 2025, @Pahlaj-Sharma
  * All rights reserved.
@@ -107,9 +107,9 @@ RclTracking reset(&chassis, 20, true, 0.5, 4.0, 10.0, 2.0, 20);
 
 // --- Autonomous Routines ---
 std::map<int, std::pair<std::string, std::function<void()>>> autons = {
-    {0, {"SKILLS", auton1}}, {1, {"SKILLS", auton1}}, {2, {"CSAWP", auton2}},
-    {3, {"RIGHT", auton3}}, {4, {"LEFT", auton4}}, {5, {"RIGHT+LOWER", auton5}},
-    {6, {"NORMAL SAWP", auton6}}, {7, {"NORMAL SAWP", auton7}}
+    {0, {"SKILLS", auton1}}, {1, {"SKILLS", auton1}}, {2, {"SAWP", auton2}},
+    {3, {"RIGHT-7", auton3}}, {4, {"LEFT-9-SPLIT", auton4}}, {5, {"RIGHT-9-SPLIT", auton5}},
+    {6, {"LEFT-4", auton6}}, {7, {"LEFT-7-SPLIT", auton7}}, {8, {"TEST", auton8}}
 }; // Maps auton number to name and function
 
 // CHANGE FOR ANY AUTON
@@ -117,7 +117,7 @@ std::map<int, std::pair<std::string, std::function<void()>>> autons = {
 // 2 = right
 // 3 = left
 
-int selectedAuton = std::clamp((int)((autonSelector.get_value() - 1000) / 500), 1, 6);
+int selectedAuton = std::clamp((int)((autonSelector.get_value() - 1000) / 500), 1, 8);
 int antiJam = 1;
 
 // --- Initialization ---
@@ -197,7 +197,7 @@ void competition_initialize() {
     while (competition::is_disabled()) {
         // Read the potentiometer value to select auton
         const int SLICE_SIZE = 500; // Defines the size of each mode's sensor range
-        selectedAuton = std::clamp((int)((autonSelector.get_value() - 1000) / 500), 1, 6);
+        selectedAuton = std::clamp((int)((autonSelector.get_value() - 1000) / 500), 1, 8);
         std::string autonName = autons.at(selectedAuton).first;
         screen::print(E_TEXT_MEDIUM, 3, "                            ");
         screen::print(E_TEXT_MEDIUM, 3, "Auton: %s", autonName.c_str());
@@ -226,7 +226,7 @@ void autonomous() {
     // 1 = skills
     // 2 = sawp
     // 3 = right
-    if (autons.count(selectedAuton)) autons.at(7).second();
+    if (autons.count(selectedAuton)) autons.at(selectedAuton).second();
     else autons.at(1).second();
     
 }
@@ -286,30 +286,35 @@ void opcontrol() {
             toggle_score(scoreToggle);
         }
          
-        // Intake Center Goal
+        // clear bottom
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_DOWN)) {
-            centerToggle = !centerToggle;
-            centerGoal.set_value(centerToggle);
-            toggle_score(centerToggle, 0, 0);
-            matchLoad.set_value(centerToggle);
-            if (centerToggle){
-                Task delay([&]() {
-                    toggle_score(centerToggle, -50, 80);
-                    pros::delay(400);
-                    toggle_score(centerToggle, 70, -20);
-                    pros::delay(150);
-                    toggle_score(centerToggle, -50, 80);
-                    pros::delay(400);
-                    toggle_score(centerToggle, 90, -90);
-                });
-            }
+            chassis.tank(20, 30, true);
+            toggle_score(false);
+            antenne.set_value(true);
+            antenneState = true;
+            pros::delay(200);
+            chassis.tank(-40, -40, true);
+            pros::delay(200);
+            chassis.tank(65, 65, true);
+            pros::delay(200);
+            chassis.tank(85, 75, true);
+            toggle_preroller(true, 115);
+            pros::delay(1500);
+            matchLoad.set_value(true);
+            intakeToggle = true;
+            chassis.tank(70, 60, true);
+            pros::delay(250);
+            matchLoad.set_value(false);
+            loadToggle = false;
+            pros::delay(500);
+            chassis.tank(0, 0, true);
         }
 
          if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)) {
             centerToggle = !centerToggle;
             centerGoal.set_value(centerToggle);
-            toggle_score(centerToggle, -40, -80);
-            pros::delay(200);
+            toggle_score(centerToggle, -50, -80);
+            pros::delay(250);
             toggle_score(centerToggle, 80, -100);
         }
 
@@ -355,6 +360,8 @@ void opcontrol() {
             */
             chassis.tank(20, 30, true);
             toggle_score(false);
+            antenne.set_value(true);
+            antenneState = true;
             pros::delay(200);
             chassis.tank(-40, -40, true);
             pros::delay(200);
@@ -364,10 +371,12 @@ void opcontrol() {
             toggle_preroller(true, 115);
             pros::delay(1500);
             matchLoad.set_value(true);
-            loadToggle = true;
             intakeToggle = true;
             chassis.tank(60, 70, true);
-            pros::delay(750);
+            pros::delay(250);
+            matchLoad.set_value(false);
+            loadToggle = false;
+            pros::delay(500);
             chassis.tank(0, 0, true);
         }
 

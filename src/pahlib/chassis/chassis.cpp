@@ -279,7 +279,7 @@ float pahlib::MotionProfile::getTargetVelocity(float elapsed_time) const {
         return 0.0f;
     }
     
-    float target_velocity = 0.0f;
+    float target_velocity = 0.0;
     
     // Determine which phase we're in
     if (elapsed_time <= m_time_accel) {

@@ -7,9 +7,9 @@
 inline constexpr int PORT_RIGHT_FRONT  = 10; //14
 inline constexpr int PORT_RIGHT_MIDDLE = 20;
 inline constexpr int PORT_RIGHT_BACK   = 18;
-inline constexpr int PORT_LEFT_FRONT   = -2; //fix
+inline constexpr int PORT_LEFT_FRONT   = -6; //fix
 inline constexpr int PORT_LEFT_MIDDLE  = -19; //19
-inline constexpr int PORT_LEFT_BACK    = -12;
+inline constexpr int PORT_LEFT_BACK    = -7;
 inline constexpr int PORT_INTAKE_MOTOR = 9;
 //inline constexpr int PORT_RIGHT_PTO    = -7;
 inline constexpr int PORT_SCORE_MOTOR  = 1;
