@@ -46,13 +46,13 @@ Distance rightDistance(PORT_DISTANCE_RIGHT);
 Distance leftDistance(PORT_DISTANCE_LEFT);
 Distance frontDistance(PORT_DISTANCE_FRONT);
 Distance backDistance(PORT_DISTANCE_BACK);
-Optical antenne_detector(7);
 ScalarIMU inertial(PORT_IMU, IMU_SCALER);
 adi::DigitalOut matchLoad(PORT_MATCH_LOAD);
 adi::DigitalOut centerGoal(PORT_CENTER_GOAL);
 adi::DigitalOut doublePark(PORT_DOUBLE_PARK);
 adi::DigitalOut antenne(PORT_ANTENNE);
 adi::DigitalOut score(6);
+adi::DigitalOut descore(8);
 
 // Rcl setup
 RclSensor front_rcl(&frontDistance, DS_FRONT_X, DS_FRONT_Y, 0.0, 10.0);
@@ -95,8 +95,8 @@ OdomSensors sensors(
     &inertial
 );
 
-ExpoDriveCurve drive_curve(5, 20, 1.02);
-ExpoDriveCurve steer_curve(5, 35, 1.02);
+ExpoDriveCurve drive_curve(5, 25, 1.05);
+ExpoDriveCurve steer_curve(5, 5, 1.01);
 
 Chassis chassis(
     drivetrain, lateral_PID, angular_PID, sensors,
@@ -118,13 +118,10 @@ std::map<int, std::pair<std::string, std::function<void()>>> autons = {
 // 3 = left
 
 int selectedAuton = std::clamp((int)((autonSelector.get_value() - 1000) / 500), 1, 8);
-int antiJam = 1;
+bool antiJamEnable = true;
 
 // --- Initialization ---
 void initialize() {
-    left_motors.set_gearing(MotorGears::green, 1);
-    right_motors.set_gearing(MotorGears::green, 1);
-
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     vertical_encoder.reset_position();
@@ -144,35 +141,51 @@ void initialize() {
                 screen::print(E_TEXT_MEDIUM, 2, "Theta: %f", chassis.getPose().theta);
             }
 
-            if (count % 150 == 0) {
+            if (count % 100 == 0) {
                 controller.print(0, 0, "Temp: %.1f:%.1f:%d", std::max(left_middle.get_temperature(), right_middle.get_temperature()), std::max(score_motor.get_temperature(), intake_motor.get_temperature()), selectedAuton);
             }
             count++;
             delay(25);
         }
     });
+/*
+    Task antiJam([&]() {
+    while (true) {
+        int targetV = intake_motor.get_target_velocity();
+        float actualV = intake_motor.get_actual_velocity();
 
-    /*
-    Task antiJam = *new pros::Task {[=] {
-        while (true) {
-            if (abs(intake_motor.get_target_velocity()) > 450 && fabs(intake_motor.get_actual_velocity()) < 100 && abs(score_motor.get_target_velocity()) > 200){
-                int temp = intake_motor.get_target_velocity();
-                intake_motor.move(-temp);
-                pros::delay(150);
-                intake_motor.move(temp);
-            } else pros::delay(50);
+        // 1. Check if we are trying to move fast enough to care about jams (> 100 RPM)
+        // 2. Check if the actual speed is less than 66% of the target
+        // 3. Ensure the scoring motor is also active (per your original logic)
+        if (abs(targetV) > 100 && fabs(actualV) < fabs(targetV / 1.5) && abs(score_motor.get_target_velocity()) > 100 && antiJamEnable) {
+            
+            // Reversing the intake to clear the jam
+            intake_motor.move_velocity(-targetV); 
+            pros::delay(200); // Increased slightly to ensure the ring drops back
+            
+            // Return to original commanded speed
+            intake_motor.move_velocity(targetV);
+            
+            // Settle time: Give the motor a moment to spin back up 
+            // before checking for a jam again.
+            pros::delay(300); 
         }
-    }};
-    */
+
+        pros::delay(25); // Standard task heartbeat
+    }
+});
+*/
 
     std::vector<bool> devices_connected = {
         inertial.is_installed(), left_front.is_installed(), left_middle.is_installed(), left_back.is_installed(),
         right_front.is_installed(), right_middle.is_installed(), right_back.is_installed(), intake_motor.is_installed(),
-        score_motor.is_installed(), vertical_encoder.is_installed(), horizontal_encoder.is_installed(), score_motor.is_installed()
+        score_motor.is_installed(), vertical_encoder.is_installed(), horizontal_encoder.is_installed(), score_motor.is_installed(), 
+        rightDistance.is_installed(), leftDistance.is_installed(), frontDistance.is_installed(), backDistance.is_installed()
     };
     std::vector<std::string> device_names = {
         "IMU", "L_Front", "L_Middle",
-        "L_Back", "R_Front", "R_Middle", "R_Back", "Intake_Motor", "Score_Motor", "V_Tracker", "H_Tracker", "Score_Motor"
+        "L_Back", "R_Front", "R_Middle", "R_Back", "Intake_Motor", "Score_Motor", "V_Tracker", "H_Tracker", "Score_Motor", 
+        "Right_Distance", "Left_Distance", "Front_Distance", "Back_Distance"
     };
     if (!std::all_of(devices_connected.begin(), devices_connected.end(), [](bool v) { return v; })) {
         int line = 4;
@@ -196,7 +209,6 @@ void competition_initialize() {
     // Select auton using potentiometer before match starts
     while (competition::is_disabled()) {
         // Read the potentiometer value to select auton
-        const int SLICE_SIZE = 500; // Defines the size of each mode's sensor range
         selectedAuton = std::clamp((int)((autonSelector.get_value() - 1000) / 500), 1, 8);
         std::string autonName = autons.at(selectedAuton).first;
         screen::print(E_TEXT_MEDIUM, 3, "                            ");
@@ -213,19 +225,7 @@ void autonomous() {
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //left_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //right_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
     doublePark.set_value(false); // turn on
-    // 3 is for left
-    /*
-    Task localization = *new pros::Task {[=] {
-        while (competition::is_autonomous()) {
-            chassis.resetOdometry();
-            pros::delay(1000);
-        }
-    }};
-    */
-    //measure_offsets();
-    // 1 = skills
-    // 2 = sawp
-    // 3 = right
+    
     if (autons.count(selectedAuton)) autons.at(selectedAuton).second();
     else autons.at(1).second();
     
@@ -235,34 +235,11 @@ void opcontrol() {
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     
-    bool intakeToggle = false;
-    bool scoreToggle = false;
-    bool centerToggle = false;
-    bool antenneState = false;
-    bool loadToggle = false;
+    bool intakeToggle, scoreToggle, centerToggle, antenneState, loadToggle, descoreState = false;
+
     //antenne.set_value(true);
     doublePark.set_value(true); // turn off
     toggle_score(false);
-
-    /*
-    Task auto_antenne([&]() {
-        int count = 0;
-        while (true) {
-            if (controller.get_digital(E_CONTROLLER_DIGITAL_R2) && !antenneState && antenne_detector.get_proximity() > 200){
-                antenneState = true;
-                antenne.set_value(antenneState);
-                count++;
-                pros::delay(80);
-                while (!(antenne_detector.get_proximity() > 200)){pros::delay(10);}
-                antenneState = false;
-                antenne.set_value(antenneState);
-                count = 0;
-            }
-            pros::delay(50);
-        }
-    });
-    */
-
     while (true) {
         // Drive Control
         int leftY = controller.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
@@ -271,6 +248,7 @@ void opcontrol() {
         
         // Intake Preroller Toggle
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_Y)){
+            toggle_score(false);
             intakeToggle = !intakeToggle;
             toggle_preroller(intakeToggle);
         }
@@ -285,7 +263,61 @@ void opcontrol() {
             score.set_value(scoreToggle);
             toggle_score(scoreToggle);
         }
-         
+
+        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)) {
+            centerToggle = !centerToggle;
+            centerGoal.set_value(centerToggle);
+            toggle_score(centerToggle, -50, -80);
+            pros::delay(250);
+            toggle_score(centerToggle, 95, -105);
+            }
+
+        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)){
+            antenneState = !antenneState;
+            antenne.set_value(antenneState);
+        }
+
+        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_A)){
+            descoreState = !descoreState;
+            descore.set_value(descoreState);
+        }
+
+        if (controller.get_digital(E_CONTROLLER_DIGITAL_L2)) {
+            toggle_score(true, -80, -60);
+
+        } if (controller.get_digital_new_release(E_CONTROLLER_DIGITAL_L2)){
+            toggle_score(false);
+        }
+
+        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_RIGHT)){
+            loadToggle = !loadToggle;
+            matchLoad.set_value(loadToggle);
+            std::cout << "Hello World!";
+        }
+
+        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_UP)) {
+            chassis.tank(20, 30, true);
+            toggle_score(false);
+            antenne.set_value(true);
+            antenneState = true;
+            pros::delay(200);
+            chassis.tank(-40, -40, true);
+            pros::delay(200);
+            chassis.tank(65, 65, true);
+            pros::delay(200);
+            chassis.tank(75, 85, true);
+            toggle_preroller(true, 115);
+            pros::delay(1500);
+            matchLoad.set_value(true);
+            intakeToggle = true;
+            chassis.tank(60, 70, true);
+            pros::delay(250);
+            matchLoad.set_value(false);
+            loadToggle = false;
+            pros::delay(500);
+            chassis.tank(0, 0, true);
+        }
+
         // clear bottom
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_DOWN)) {
             chassis.tank(20, 30, true);
@@ -310,80 +342,9 @@ void opcontrol() {
             chassis.tank(0, 0, true);
         }
 
-         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)) {
-            centerToggle = !centerToggle;
-            centerGoal.set_value(centerToggle);
-            toggle_score(centerToggle, -50, -80);
-            pros::delay(250);
-            toggle_score(centerToggle, 80, -100);
-        }
-
-        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)){
-            antenneState = !antenneState;
-            antenne.set_value(antenneState);
-        }
-
-
-        if (controller.get_digital(E_CONTROLLER_DIGITAL_L2)) {
-            score.set_value(true);
-            toggle_score(true, -80, -60);
-        } if (controller.get_digital_new_release(E_CONTROLLER_DIGITAL_L2)){
-            score.set_value(false);
-            toggle_score(false);
-        }
-
-        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_RIGHT)){
-            loadToggle = !loadToggle;
-            matchLoad.set_value(loadToggle);
-        }
-
-        if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_UP)) {
-            /*
-            chassis.tank(-50, -50, true);
-            pros::delay(250);
-            chassis.tank(75, 85, true);
-            //matchLoad.set_value(true);
-            pros::delay(200);
-            matchLoad.set_value(false);
-            chassis.tank(70, 80, true);
-            antenne.set_value(true);
-            antenneState = true;
-            toggle_preroller(true, 120);
-            intakeToggle = true;
-            pros::delay(1500);
-            matchLoad.set_value(true);
-            loadToggle = true;
-            pros::delay(600);
-            chassis.tank(0, 0, true);
-            matchLoad.set_value(false);
-            loadToggle = false;
-            */
-            chassis.tank(20, 30, true);
-            toggle_score(false);
-            antenne.set_value(true);
-            antenneState = true;
-            pros::delay(200);
-            chassis.tank(-40, -40, true);
-            pros::delay(200);
-            chassis.tank(65, 65, true);
-            pros::delay(200);
-            chassis.tank(75, 85, true);
-            toggle_preroller(true, 115);
-            pros::delay(1500);
-            matchLoad.set_value(true);
-            intakeToggle = true;
-            chassis.tank(60, 70, true);
-            pros::delay(250);
-            matchLoad.set_value(false);
-            loadToggle = false;
-            pros::delay(500);
-            chassis.tank(0, 0, true);
-        }
-
         pros::delay(10);
     }
 }
-
 // --- PID Tuning (Remove When Done) ---
 /*
 Rotation rot_kp(1), rot_ki(2), rot_kd(3);

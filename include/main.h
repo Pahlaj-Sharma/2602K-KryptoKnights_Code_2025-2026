@@ -96,8 +96,9 @@ extern pros::adi::DigitalOut matchLoad;
 extern pros::adi::DigitalOut antenne;
 extern pros::adi::DigitalOut doublePark;
 extern pros::adi::DigitalOut score;
+extern pros::adi::DigitalOut descore;
 extern int selectedAuton;
-extern int antiJam;
+extern bool antiJamEnable;
 extern RclTracking reset;
 
 class ScalarIMU : public pros::IMU {

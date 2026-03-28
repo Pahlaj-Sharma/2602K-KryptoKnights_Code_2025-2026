@@ -16,10 +16,10 @@ inline constexpr int PORT_SCORE_MOTOR  = 1;
 
 // --- Sensor Ports ---
 inline constexpr int PORT_IMU                = 13; // Inertial Measurement Unit
-inline constexpr int PORT_HORIZONTAL_ENCODER = -5; // Horizontal tracking wheel encoder
+inline constexpr int PORT_HORIZONTAL_ENCODER = 5; // Horizontal tracking wheel encoder
 inline constexpr int PORT_VERTICAL_ENCODER   = -14;  // Vertical tracking wheel encoder
 inline constexpr int PORT_AUTON_SELECTOR_POT = 5;  // Potentiometer for autonomous routine selection
-inline constexpr int PORT_PTO                = 4;  // Digital output for PTO control
+//inline constexpr int PORT_PTO                = 4;  // Digital output for PTO control
 inline constexpr int PORT_DISTANCE_RIGHT     = 8;
 inline constexpr int PORT_DISTANCE_LEFT      = 4;
 inline constexpr int PORT_DISTANCE_FRONT     = 3;
@@ -38,7 +38,7 @@ inline constexpr float IMU_SCALER       = 1.00821f;   // Custom IMU scaling fact
 // --- Odometry Tracking Wheel Offsets ---
 // Offsets from the robot's center to the tracking wheel in inches.
 inline constexpr float VERTICAL_TRACKING_OFFSET   = 0.0f;
-inline constexpr float HORIZONTAL_TRACKING_OFFSET   = -1.5f;
+inline constexpr float HORIZONTAL_TRACKING_OFFSET   = -1.6f; //1.5
 
 // --- PID Controller Settings for pahlib Chassis ---
 // A struct to hold all the PID constants for clarity and easy management.
@@ -121,7 +121,7 @@ inline constexpr float DS_RIGHT_X = 6.0f;
 
 inline constexpr float DS_FRONT_Y = -4.5f;
 inline constexpr float DS_BACK_Y  = 4.25f;
-inline constexpr float DS_LEFT_Y  = 3.5f;
+inline constexpr float DS_LEFT_Y  = 2.5f;
 inline constexpr float DS_RIGHT_Y = 2.5f;
 
 // Lateral gain schedule (distance in inches)
