@@ -27,6 +27,7 @@ void matchLoadMove(int amt = 6){
 
 */
 
+// Skills
 void auton1() {
     // SKILLS
     chassis.setPose(-46, 14.5, 90);
@@ -135,11 +136,11 @@ void auton1() {
     matchLoad.set_value(false);
     toggle_score(false);
     pros::delay(50);
-//
+    /*
     chassis.setPose(29.5, 47, 90); //deltete
     reset.setRclPose(chassis.getPose());
     antenne.set_value(true);
-
+    */
     toggle_score(true, 70, 70);
     chassis.tank(50, 50, true);
     pros::delay(300);
@@ -247,7 +248,7 @@ void auton1() {
     pros::delay(600);
     chassis.tank(0, 0, true);
 
-// END PART
+    // END PART
     chassis.setPose(29.5, -47, chassis.getPose().theta); // CHANGE THETA TO THE CHASSIS VALUE
     chassis.tank(0, 0, true);
     matchLoad.set_value(true);
@@ -338,6 +339,7 @@ void auton1() {
     score.set_value(false);
 }
 
+// Normal Sawp
 void auton2() {
     // NORMAL SAWP
     chassis.setPose(-46, 0.5, 180);
@@ -434,25 +436,26 @@ void auton2() {
     
 }
 
+// Right 7
 void auton3() {
     // RIGHT 7
     chassis.setPose(-46, -14.5, 90);
+    reset.setRclPose(chassis.getPose());
     antenne.set_value(true);
-    chassis.turnTo(-22, -22.5, 500, {.minSpeed = 30, .earlyExitRange = 5});
-    chassis.moveTo(-23, -22, 1000, {.minSpeed = 20});
+    //chassis.turnTo(-22, -22.5, 500, {.minSpeed = 30, .earlyExitRange = 5});
+    chassis.moveTo(-26.8, -21, 1000, {.minSpeed = 30});
     toggle_preroller(true);
     chassis.waitUntil(15);
     matchLoad.set_value(true);
     pros::delay(100);
-    chassis.turnTo(250, 500, {.minSpeed = 30, .earlyExitRange = 3});
+    //chassis.turnTo(250, 500, {.minSpeed = 30, .earlyExitRange = 3});
     chassis.moveTo(-45, -40, 2000, {.minSpeed = 50, .earlyExitRange = 5});
-    //chassis.turnTo(270, 500, {.minSpeed = 20, .earlyExitRange = 3});
-    chassis.moveTo(-75, -46, 270, 700, {.lead = 0, .maxSpeed = 58});
+    chassis.moveTo(-75, -47, 270, 800, {.lead = 0, .maxSpeed = 58});
     chassis.waitUntilDone();
     chassis.tank(40, 40, true);
     pros::delay(250);
     chassis.tank(0, 0, true);
-    chassis.moveTo(-15, -47, 270, 1200, {.forwards = false});
+    chassis.moveTo(-15, -47, 700, {.forwards = false, .minSpeed = 35});
     chassis.waitUntilDone();
     toggle_score(true, 127, 127);
     chassis.turnTo(270, 500);
@@ -463,15 +466,16 @@ void auton3() {
     chassis.setPose(-29.5, -47, chassis.getPose().theta);
     toggle_score(false);
     score.set_value(false);
-    chassis.moveTo(-38, -36, 500, {.maxSpeed = 90});
+    chassis.moveTo(-38, -36, 500, {.maxSpeed = 90, .minSpeed = 20});
     matchLoad.set_value(false);
-    chassis.moveTo(-13, -36.5, 270, 1500, {.forwards = false, .minSpeed = 20, .earlyExitRange = 2});
+    chassis.moveTo(-9, -36.5, 270, 1500, {.forwards = false, .minSpeed = 20, .earlyExitRange = 2});
     chassis.waitUntil(5);
     antenne.set_value(false);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD);
     chassis.turnTo(245, 350, {.minSpeed = 50});
 }
 
+// Left 9 Split Goal
 void auton4() {
     // LEFT 9 split
     chassis.setPose(-46, 14.5, 90);
@@ -540,6 +544,7 @@ void auton4() {
 
 }
 
+// Right 9 Split Goal
 void auton5() {
     //RIGHT + LOWER
     chassis.setPose(-46, -14.5, 90);
@@ -595,6 +600,7 @@ void auton5() {
     chassis.turnTo(235, 500);
 }
 
+// Left 4
 void auton6() {
     // LEFT 4
     chassis.setPose(-49, 18, 180);
@@ -630,6 +636,7 @@ void auton6() {
     chassis.turnTo(245, 350, {.minSpeed = 50});
 }
 
+// Left 7 Split
 void auton7() {
     // LEFT 7 Split
     chassis.setPose(-49, 18, 180);
@@ -689,86 +696,128 @@ void auton7() {
     
 }
 
+// Left 7
 void auton8() {
-    chassis.setPose(0, 0, 0);
+    // Left 7
+    chassis.setPose(-46, 14.5, 90);
     reset.setRclPose(chassis.getPose());
+    antenne.set_value(true);
+    //chassis.turnTo(-22, -22.5, 500, {.minSpeed = 30, .earlyExitRange = 5});
+    chassis.moveTo(-26.8, 21, 1000, {.minSpeed = 30});
+    toggle_preroller(true);
+    chassis.waitUntil(15);
+    matchLoad.set_value(true);
+    pros::delay(100);
+    //chassis.turnTo(250, 500, {.minSpeed = 30, .earlyExitRange = 3});
+    chassis.moveTo(-45, 40, 2000, {.minSpeed = 50, .earlyExitRange = 5});
+    chassis.moveTo(-75, 47, 270, 800, {.lead = 0, .maxSpeed = 58});
+    chassis.waitUntilDone();
+    chassis.tank(40, 40, true);
+    pros::delay(250);
+    chassis.tank(0, 0, true);
+    chassis.moveTo(-15, 47.3, 700, {.forwards = false, .minSpeed = 35});
+    chassis.waitUntilDone();
+    toggle_score(true, 127, 127);
+    chassis.turnTo(270, 500);
+    pros::delay(100);
+    matchLoad.set_value(false);
+    score.set_value(true);
+    pros::delay(1200);
+    chassis.setPose(-29.5, 47, chassis.getPose().theta);
+    toggle_score(false);
+    score.set_value(false);
+    chassis.moveTo(-38, 58, 500, {.maxSpeed = 90, .minSpeed = 20});
+    matchLoad.set_value(false);
+    chassis.moveTo(-9, 58.5, 270, 1500, {.forwards = false, .minSpeed = 20, .earlyExitRange = 2});
+    chassis.waitUntil(5);
+    antenne.set_value(false);
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD);
+    chassis.turnTo(245, 350, {.minSpeed = 50});
 }
 
+// Counter Sawp
 void auton9() {
-    
-}
-
-void auton10() {
-    
-}
-
-/*
-// COUNTER SAWP
+    // COUNTER SAWP
     chassis.setPose(-46, 0.5, 180);
+    reset.setRclPose(chassis.getPose());
     antenne.set_value(true);
     pros::delay(0);
-    chassis.moveTo(-46, -37, 2000, {.maxSpeed = 80, .minSpeed = 10, .earlyExitRange = 2});
+    chassis.tank(-50, -50, true);
+    pros::delay(300);
+    chassis.tank(0, 0, true);
+    chassis.moveTo(-46, -33, 2000, {.maxSpeed = 100, .minSpeed = 25, .earlyExitRange = 3});
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD);
     chassis.waitUntil(5);
     matchLoad.set_value(true);
     chassis.waitUntilDone();
     //chassis.resetOdometry();
-    pros::delay(50);
     chassis.turnTo(270, 800, {.minSpeed = 20, .earlyExitRange = 3});
-    chassis.moveTo(-78, -44.5, 270, 900, {.lead = 0, .maxSpeed = 57});
+    chassis.waitUntilDone();
+    reset.updateBotPose(&left_rcl);
+    pros::delay(50);
+    chassis.moveTo(-78, -47, 270, 900, {.lead = 0, .maxSpeed = 55});
     toggle_preroller(true, 100);
     chassis.waitUntilDone();
+    chassis.tank(40, 40, true);
+    reset.updateBotPose(&left_rcl);
     pros::delay(350);
-    chassis.moveTo(-27, -44.5, 270, 1000, {.forwards = false});
+    chassis.tank(0, 0, true);
+    chassis.moveTo(-15, -47, 700, {.forwards = false, .maxSpeed = 85, .minSpeed = 25});
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
-    chassis.waitUntil(8);
-    toggle_score(true, 80, 10);
-    chassis.waitUntil(35);
+    chassis.waitUntil(40);
+    score.set_value(true);
     toggle_score(true, 127, 127);
     chassis.waitUntilDone();
     matchLoad.set_value(false);
-    score.set_value(true);
-    pros::delay(800);
-    chassis.setPose(-29.25, -47, chassis.getPose().theta); // CHAGE THETA TO THE CHASSIS VALUE chassis.getPose().theta
+    chassis.tank(-35, -35, true);
+    pros::delay(600);
+    chassis.tank(0, 0, true);
+    chassis.setPose(-29.5, -47, chassis.getPose().theta); // CHAGE THETA TO THE CHASSIS VALUE chassis.getPose().theta
     toggle_score(false);
     toggle_preroller(true);
+
     chassis.moveTo(-37, -47, 500, {.minSpeed = 40, .earlyExitRange = 5});
     score.set_value(false);
     chassis.turnTo(5, 800, {.minSpeed = 20, .earlyExitRange = 3});
+    toggle_score(true, 80, 80);
+    chassis.moveTo(-16, -15.5, 500, {.minSpeed = 20});
+    toggle_score(false);
     toggle_preroller(true);
-    chassis.moveTo(-16.5, -15.5, 500);
     chassis.waitUntilDone();
-    pros::delay(250);
+    pros::delay(175);
     matchLoad.set_value(true);
-    chassis.turnTo(0, 500, {.minSpeed = 35, .earlyExitRange = 3});
-    chassis.moveTo(-22, 28, 1000, {.maxSpeed = 70});
+    //chassis.turnTo(0, 500, {.minSpeed = 20, .earlyExitRange = 3});
+    chassis.moveTo(-19.5, 25, 1400, {.maxSpeed = 70, .minSpeed = 10}); //max = 70
+    pros::delay(350);
     matchLoad.set_value(false);
     chassis.waitUntilDone();
-    pros::delay(150);
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD);
+    pros::delay(175);
     matchLoad.set_value(true);
     pros::delay(0);
     chassis.moveTo(-44, 40, 1000);
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
     chassis.turnTo(270, 500, {.minSpeed = 20, .earlyExitRange = 3});
-    //chassis.resetOdometry();
+    reset.updateBotPose(&right_rcl);
     pros::delay(50);
-    chassis.moveTo(-23, 44.1, 270, 1400, {.forwards = false});
+    chassis.moveTo(-15, 46.8, 270, 1000, {.forwards = false, .maxSpeed = 85, .minSpeed = 25});
     chassis.waitUntilDone();
+    chassis.turnTo(270, 500);
     score.set_value(true);
     toggle_score(true, 127, 127);
-    pros::delay(1000);
+    pros::delay(800);
     chassis.setPose(-29.25, 47, chassis.getPose().theta); // CHAGE THETA TO THE CHASSIS VALUE chassis.getPose().theta
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD);
-    chassis.moveTo(-78, 47, 270, 1400, {.maxSpeed = 53});
+    chassis.moveTo(-78, 47, 1400, {.minSpeed = 70, .earlyExitRange = 35});
+    chassis.moveTo(-78, 47, 270, 500, {.maxSpeed = 53});
     toggle_score(false);
     toggle_preroller(true);
     score.set_value(false);
     chassis.waitUntilDone();
-    //chassis.resetOdometry();
-    pros::delay(400);
+    chassis.tank(35, 35, true);
+    pros::delay(200);
+    chassis.tank(0, 0, true);
     chassis.moveTo(chassis.getPose().x + 8, chassis.getPose().y - 2, 500, {.forwards = false, .minSpeed = 20, .earlyExitRange = 3});
-    chassis.moveTo(-5, 9, 315, 1500, {.forwards = false, .minSpeed = 20});
+    chassis.moveTo(-7.4, 6.4, 315, 1500, {.forwards = false, .minSpeed = 20});
     chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD);
     chassis.waitUntil(15);
     toggle_score(true, -40, -80);
@@ -776,7 +825,43 @@ void auton10() {
     toggle_score(false);
     chassis.waitUntilDone();
     centerGoal.set_value(true);
-    toggle_score(true, 80, -100);
+    toggle_score(true, 95, -105);
     matchLoad.set_value(false);
+    chassis.tank(-15, -15, true);
+}
 
-*/
+// Right 4
+void auton10() {
+    // RIGHT 4
+    chassis.setPose(-49, -18, 0);
+    reset.setRclPose(chassis.getPose());
+    antenne.set_value(true);
+    pros::delay(0);
+    chassis.moveTo(-46, -39, 800, {.forwards = false, .minSpeed = 20, .earlyExitRange = 3});
+    chassis.turnTo(270, 500, {.minSpeed = 40, .earlyExitRange = 5});
+    matchLoad.set_value(true);
+    toggle_preroller(true);
+    chassis.moveTo(-78, -47, 270, 900, {.lead = 0, .maxSpeed = 58, .minSpeed = 2});
+    chassis.waitUntilDone();
+    chassis.tank(40, 40, true);
+    pros::delay(280);
+    chassis.tank(0, 0, true);
+    chassis.moveTo(-15, -47, 270, 900, {.forwards = false, .maxSpeed = 100, .minSpeed = 20});
+    chassis.waitUntil(60);
+    toggle_score(true, 120, 120);
+    score.set_value(true);
+    chassis.tank(-30, -30, true);
+    pros::delay(800);
+    chassis.setPose(-29.5, -47, chassis.getPose().theta);
+    chassis.tank(0, 0, true);
+    matchLoad.set_value(false);
+    toggle_score(false);
+    score.set_value(false);
+    chassis.moveTo(-38, -36, 500, {.maxSpeed = 90, .minSpeed = 20});
+    matchLoad.set_value(false);
+    chassis.moveTo(-9, -36.5, 270, 1500, {.forwards = false, .minSpeed = 20, .earlyExitRange = 2});
+    chassis.waitUntil(5);
+    antenne.set_value(false);
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_HOLD);
+    chassis.turnTo(245, 350, {.minSpeed = 50});
+}

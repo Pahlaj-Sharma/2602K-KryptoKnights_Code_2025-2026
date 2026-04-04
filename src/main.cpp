@@ -109,7 +109,8 @@ RclTracking reset(&chassis, 20, true, 0.5, 4.0, 10.0, 2.0, 20);
 std::map<int, std::pair<std::string, std::function<void()>>> autons = {
     {0, {"SKILLS", auton1}}, {1, {"SKILLS", auton1}}, {2, {"SAWP", auton2}},
     {3, {"RIGHT-7", auton3}}, {4, {"LEFT-9-SPLIT", auton4}}, {5, {"RIGHT-9-SPLIT", auton5}},
-    {6, {"LEFT-4", auton6}}, {7, {"LEFT-7-SPLIT", auton7}}, {8, {"TEST", auton8}}
+    {6, {"LEFT-4", auton6}}, {7, {"LEFT-7-SPLIT", auton7}}, {8, {"LEFT-7", auton8}}, 
+    {9, {"COUNTER-SAWP", auton9}}, {10, {"RIGHT-4", auton10}}
 }; // Maps auton number to name and function
 
 // CHANGE FOR ANY AUTON
@@ -124,11 +125,10 @@ bool antiJamEnable = true;
 void initialize() {
     left_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
+    reset.startTracking();
+    chassis.calibrate();
     vertical_encoder.reset_position();
     horizontal_encoder.reset_position();
-    reset.startTracking();
-
-    chassis.calibrate();
     controller.clear();
 
     // Background task to update robot info on screen and controller
@@ -226,7 +226,7 @@ void autonomous() {
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST); //right_motors.set_brake_mode(E_MOTOR_BRAKE_COAST, 1);
     doublePark.set_value(false); // turn on
     
-    if (autons.count(selectedAuton)) autons.at(selectedAuton).second();
+    if (autons.count(selectedAuton)) autons.at(9).second();
     else autons.at(1).second();
     
 }
@@ -236,9 +236,11 @@ void opcontrol() {
     right_motors.set_brake_mode_all(E_MOTOR_BRAKE_COAST);
     
     bool intakeToggle, scoreToggle, centerToggle, antenneState, loadToggle, descoreState = false;
-
-    //antenne.set_value(true);
-    doublePark.set_value(true); // turn off
+    pros::Task* centerTask = nullptr;
+    doublePark.set_value(true); // turn off odom
+    centerGoal.set_value(false);
+    score.set_value(false);
+    reset.stopTracking();
     toggle_score(false);
     while (true) {
         // Drive Control
@@ -267,10 +269,14 @@ void opcontrol() {
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)) {
             centerToggle = !centerToggle;
             centerGoal.set_value(centerToggle);
-            toggle_score(centerToggle, -50, -80);
-            pros::delay(250);
-            toggle_score(centerToggle, 95, -105);
-            }
+            if (centerTask == nullptr && centerToggle)  {
+            centerTask = new pros::Task([&](){
+                toggle_score(centerToggle, -50, -80);
+                pros::delay(250);
+                toggle_score(centerToggle, 95, -105);
+            });
+            } else if (centerTask != nullptr) { centerTask->remove(); delete centerTask; centerTask = nullptr; toggle_score(centerToggle);}
+        }
 
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)){
             antenneState = !antenneState;
@@ -292,7 +298,6 @@ void opcontrol() {
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_RIGHT)){
             loadToggle = !loadToggle;
             matchLoad.set_value(loadToggle);
-            std::cout << "Hello World!";
         }
 
         if (controller.get_digital_new_press(E_CONTROLLER_DIGITAL_UP)) {
