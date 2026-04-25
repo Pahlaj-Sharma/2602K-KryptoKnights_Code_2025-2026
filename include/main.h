@@ -98,8 +98,8 @@ extern pros::adi::DigitalOut doublePark;
 extern pros::adi::DigitalOut score;
 extern pros::adi::DigitalOut descore;
 extern int selectedAuton;
-extern bool antiJamEnable;
 extern RclTracking reset;
+//extern pros::adi::DigitalOut lowGoal;
 
 class ScalarIMU : public pros::IMU {
 public:

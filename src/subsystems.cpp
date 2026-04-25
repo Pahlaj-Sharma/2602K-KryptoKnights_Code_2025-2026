@@ -9,5 +9,4 @@ void toggle_preroller(bool toggled, int vel) {
 void toggle_score(bool toggled, int vel, int topVel, bool disableAntiJam) {
     score_motor.move(topVel * toggled);
     intake_motor.move(-vel * toggled);
-    antiJamEnable = !disableAntiJam;
 }
